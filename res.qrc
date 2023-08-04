@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>img/audioplay.png</file>
+        <file>img/audiostop.png</file>
+        <file>img/next.png</file>
+        <file>img/pause.png</file>
+        <file>img/play.png</file>
+        <file>img/prev.png</file>
+        <file>img/record.png</file>
+        <file>img/stoprecord.png</file>
+        <file>img/wave.png</file>
+        <file>img/stop48.png</file>
+        <file>img/stop.png</file>
+        <file>img/next50.png</file>
+        <file>img/pause50.png</file>
+        <file>img/play50.png</file>
+        <file>img/prev50.png</file>
+        <file>img/audiominus.png</file>
+        <file>img/audioplus.png</file>
+        <file>img/stop30.png</file>
+        <file>img/pause30.png</file>
+        <file>img/play30.png</file>
+        <file>img/next30.png</file>
+        <file>img/prev30.png</file>
+    </qresource>
+</RCC>

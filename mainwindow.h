@@ -17,5 +17,6 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    void set_icon_btn();
 };
 #endif // MAINWINDOW_H

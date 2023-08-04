@@ -27,8 +27,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>296</width>
-           <height>527</height>
+           <width>294</width>
+           <height>499</height>
           </rect>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -49,8 +49,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>296</width>
-           <height>527</height>
+           <width>300</width>
+           <height>499</height>
           </rect>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -80,8 +80,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>296</width>
-           <height>527</height>
+           <width>294</width>
+           <height>499</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -102,7 +102,157 @@
      </layout>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="verticalLayout"/>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QPushButton" name="stop">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QPushButton" name="previous">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QPushButton" name="playPause">
+        <property name="minimumSize">
+         <size>
+          <width>40</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>40</width>
+          <height>33</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="shortcut">
+         <string>Ctrl+S</string>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QPushButton" name="next">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QLabel" name="label">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QPushButton" name="volume">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="QSlider" name="horizontalVolumeSlider">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>100</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -127,9 +277,13 @@
      <string>Playback</string>
     </property>
     <addaction name="actionPlay"/>
+    <addaction name="actionPause"/>
     <addaction name="actionStop"/>
     <addaction name="actionNext"/>
     <addaction name="actionPrevious"/>
+    <addaction name="actionVolumePlus"/>
+    <addaction name="actionVolumeMinus"/>
+    <addaction name="actionMute"/>
     <addaction name="actionRecord"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
@@ -151,17 +305,6 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <widget class="QToolBar" name="toolBar">
-   <property name="windowTitle">
-    <string>toolBar</string>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>BottomToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
@@ -173,6 +316,10 @@
    </property>
   </action>
   <action name="actionPlay">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/play30.png</normaloff>:/images/img/play30.png</iconset>
+   </property>
    <property name="text">
     <string>Play</string>
    </property>
@@ -181,21 +328,37 @@
    </property>
   </action>
   <action name="actionStop">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/stop30.png</normaloff>:/images/img/stop30.png</iconset>
+   </property>
    <property name="text">
     <string>Stop</string>
    </property>
   </action>
   <action name="actionNext">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/next30.png</normaloff>:/images/img/next30.png</iconset>
+   </property>
    <property name="text">
     <string>Next</string>
    </property>
   </action>
   <action name="actionPrevious">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/prev30.png</normaloff>:/images/img/prev30.png</iconset>
+   </property>
    <property name="text">
     <string>Previous</string>
    </property>
   </action>
   <action name="actionRecord">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/record.png</normaloff>:/images/img/record.png</iconset>
+   </property>
    <property name="text">
     <string>Record</string>
    </property>
@@ -215,7 +378,45 @@
     <string>Search</string>
    </property>
   </action>
+  <action name="actionPause">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/pause30.png</normaloff>:/images/img/pause30.png</iconset>
+   </property>
+   <property name="text">
+    <string>Pause</string>
+   </property>
+  </action>
+  <action name="actionVolumePlus">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/audioplus.png</normaloff>:/images/img/audioplus.png</iconset>
+   </property>
+   <property name="text">
+    <string>Volume+</string>
+   </property>
+  </action>
+  <action name="actionVolumeMinus">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/audiominus.png</normaloff>:/images/img/audiominus.png</iconset>
+   </property>
+   <property name="text">
+    <string>Volume-</string>
+   </property>
+  </action>
+  <action name="actionMute">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/audiostop.png</normaloff>:/images/img/audiostop.png</iconset>
+   </property>
+   <property name="text">
+    <string>Mute</string>
+   </property>
+  </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="res.qrc"/>
+ </resources>
  <connections/>
 </ui>
