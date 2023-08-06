@@ -1,6 +1,25 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+
 #include <QIcon>
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    set_icon_btn();
+    start();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+    if (radioExplorer) {
+        delete radioExplorer;
+        qDebug() << "radioExplorer";
+    }
+}
 
 void MainWindow::set_icon_btn()
 {
@@ -11,16 +30,8 @@ void MainWindow::set_icon_btn()
     ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
 }
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+void MainWindow::start()
 {
-    ui->setupUi(this);
-    set_icon_btn();
+    radioExplorer = new RadioExplorer(ui);
+    radioExplorer->createMenu();
 }
-
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
-
