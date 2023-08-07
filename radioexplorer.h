@@ -17,6 +17,7 @@ private:
     QStandardItemModel* itemModel;
     QStandardItem*      library;
     QStandardItem*      favorite;
+    QStandardItem*      test;
 
     static const QString LIBRARY;
     static const QString POPULAR;
