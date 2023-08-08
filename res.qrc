@@ -22,5 +22,11 @@
         <file>img/play30.png</file>
         <file>img/next30.png</file>
         <file>img/prev30.png</file>
+        <file>img/search30.png</file>
+        <file>img/close30.png</file>
+        <file>img/close30bold.png</file>
+        <file>img/search30bold.png</file>
+        <file>img/radio30.png</file>
     </qresource>
+    <qresource prefix="/"/>
 </RCC>

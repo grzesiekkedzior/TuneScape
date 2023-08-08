@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>673</width>
-    <height>358</height>
+    <width>851</width>
+    <height>533</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,7 +32,7 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QScrollArea" name="scrollArea">
+      <widget class="QScrollArea" name="scrollTabArea">
        <property name="styleSheet">
         <string notr="true">/* Dostosowanie paska przewijania w QTreeView */
 QScrollBar:vertical {
@@ -86,8 +86,8 @@ QScrollBar::sub-line:horizontal {
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>310</width>
-          <height>236</height>
+          <width>292</width>
+          <height>411</height>
          </rect>
         </property>
         <property name="styleSheet">
@@ -111,45 +111,47 @@ QScrollBar::sub-line:horizontal {
          </property>
          <item>
           <widget class="QTabWidget" name="tabWidget">
-           <widget class="QWidget" name="tab">
+           <property name="tabShape">
+            <enum>QTabWidget::Rounded</enum>
+           </property>
+           <property name="currentIndex">
+            <number>0</number>
+           </property>
+           <widget class="QWidget" name="radioTab">
             <attribute name="title">
-             <string>Tab 1</string>
+             <string>Radio</string>
             </attribute>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout">
-               <item>
-                <widget class="QTreeView" name="treeView">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background-color: transparent;</string>
-                 </property>
-                 <property name="frameShape">
-                  <enum>QFrame::NoFrame</enum>
-                 </property>
-                 <property name="lineWidth">
-                  <number>1</number>
-                 </property>
-                 <property name="sizeAdjustPolicy">
-                  <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
-                 </property>
-                 <property name="indentation">
-                  <number>5</number>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+              <widget class="QTreeView" name="treeView">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">background-color: transparent;</string>
+               </property>
+               <property name="frameShape">
+                <enum>QFrame::StyledPanel</enum>
+               </property>
+               <property name="lineWidth">
+                <number>1</number>
+               </property>
+               <property name="sizeAdjustPolicy">
+                <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+               </property>
+               <property name="indentation">
+                <number>5</number>
+               </property>
+              </widget>
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="tab_2">
+           <widget class="QWidget" name="infoTab">
             <attribute name="title">
-             <string>Tab 2</string>
+             <string>Info</string>
             </attribute>
            </widget>
           </widget>
@@ -157,11 +159,42 @@ QScrollBar::sub-line:horizontal {
         </layout>
        </widget>
       </widget>
-      <widget class="QScrollArea" name="scrollArea_2">
+      <widget class="QScrollArea" name="scrollStackArea">
        <property name="styleSheet">
         <string notr="true">QScrollArea {
 		border: none;
-}</string>
+}
+/* Dostosowanie paska przewijania w QTreeView */
+QScrollBar:vertical {
+    width: 6px;
+    background: transparent;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(0, 0, 0, 30);
+    border-radius: 3px;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    height: 6px;
+    background: transparent;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(0, 0, 0, 30);
+    border-radius: 3px;
+}
+
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+</string>
        </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
@@ -172,13 +205,13 @@ QScrollBar::sub-line:horizontal {
        <property name="widgetResizable">
         <bool>true</bool>
        </property>
-       <widget class="QWidget" name="scrollAreaWidgetContents_2">
+       <widget class="QWidget" name="scrollTabAreaWidgetContents">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>335</width>
-          <height>236</height>
+          <width>531</width>
+          <height>411</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -198,37 +231,25 @@ QScrollBar::sub-line:horizontal {
           <number>0</number>
          </property>
          <item>
-          <widget class="QStackedWidget" name="stackedWidget">
-           <widget class="QWidget" name="page">
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
+          <widget class="QTabWidget" name="tabRadioListWidget">
+           <property name="currentIndex">
+            <number>0</number>
+           </property>
+           <widget class="QWidget" name="listTab">
+            <attribute name="title">
+             <string>List</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_2">
              <item>
-              <widget class="QListView" name="listView">
-               <property name="frameShape">
-                <enum>QFrame::Panel</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Plain</enum>
-               </property>
-              </widget>
+              <widget class="QTableView" name="tableView"/>
              </item>
             </layout>
            </widget>
-           <widget class="QWidget" name="page_2"/>
+           <widget class="QWidget" name="tilesTab">
+            <attribute name="title">
+             <string>Tiles</string>
+            </attribute>
+           </widget>
           </widget>
          </item>
         </layout>
@@ -237,7 +258,7 @@ QScrollBar::sub-line:horizontal {
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <layout class="QHBoxLayout" name="horizontalBarLayout">
       <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QPushButton" name="stop">
         <property name="minimumSize">
@@ -396,7 +417,7 @@ QScrollBar::sub-line:horizontal {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>673</width>
+     <width>851</width>
      <height>26</height>
     </rect>
    </property>
@@ -446,6 +467,10 @@ QScrollBar::sub-line:horizontal {
    </property>
   </action>
   <action name="actionClose">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/close30bold.png</normaloff>:/images/img/close30bold.png</iconset>
+   </property>
    <property name="text">
     <string>Close</string>
    </property>
@@ -509,6 +534,10 @@ QScrollBar::sub-line:horizontal {
    </property>
   </action>
   <action name="actionSearch">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/search30bold.png</normaloff>:/images/img/search30bold.png</iconset>
+   </property>
    <property name="text">
     <string>Search</string>
    </property>
