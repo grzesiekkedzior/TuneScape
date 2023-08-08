@@ -27,6 +27,10 @@
         <file>img/close30bold.png</file>
         <file>img/search30bold.png</file>
         <file>img/radio30.png</file>
+        <file>img/fullscreen30.png</file>
+        <file>img/help30.png</file>
+        <file>img/info30.png</file>
+        <file>img/minimize30.png</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

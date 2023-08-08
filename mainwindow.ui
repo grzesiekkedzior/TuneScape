@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>851</width>
-    <height>533</height>
+    <width>673</width>
+    <height>370</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,6 +19,12 @@
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>210</height>
+    </size>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
@@ -86,8 +92,8 @@ QScrollBar::sub-line:horizontal {
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>292</width>
-          <height>411</height>
+          <width>229</width>
+          <height>248</height>
          </rect>
         </property>
         <property name="styleSheet">
@@ -111,6 +117,12 @@ QScrollBar::sub-line:horizontal {
          </property>
          <item>
           <widget class="QTabWidget" name="tabWidget">
+           <property name="baseSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="tabShape">
             <enum>QTabWidget::Rounded</enum>
            </property>
@@ -124,6 +136,9 @@ QScrollBar::sub-line:horizontal {
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
               <widget class="QTreeView" name="treeView">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                  <horstretch>0</horstretch>
@@ -142,8 +157,26 @@ QScrollBar::sub-line:horizontal {
                <property name="sizeAdjustPolicy">
                 <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
                </property>
+               <property name="autoExpandDelay">
+                <number>-1</number>
+               </property>
                <property name="indentation">
-                <number>5</number>
+                <number>25</number>
+               </property>
+               <property name="rootIsDecorated">
+                <bool>false</bool>
+               </property>
+               <property name="itemsExpandable">
+                <bool>true</bool>
+               </property>
+               <property name="animated">
+                <bool>false</bool>
+               </property>
+               <property name="allColumnsShowFocus">
+                <bool>false</bool>
+               </property>
+               <property name="headerHidden">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -210,8 +243,8 @@ QScrollBar::sub-line:horizontal {
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>531</width>
-          <height>411</height>
+          <width>416</width>
+          <height>248</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -417,7 +450,7 @@ QScrollBar::sub-line:horizontal {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>851</width>
+     <width>673</width>
      <height>26</height>
     </rect>
    </property>
@@ -462,6 +495,10 @@ QScrollBar::sub-line:horizontal {
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/info30.png</normaloff>:/images/img/info30.png</iconset>
+   </property>
    <property name="text">
     <string>About</string>
    </property>
@@ -524,11 +561,19 @@ QScrollBar::sub-line:horizontal {
    </property>
   </action>
   <action name="actionFull_screen">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/fullscreen30.png</normaloff>:/images/img/fullscreen30.png</iconset>
+   </property>
    <property name="text">
     <string>Full screen</string>
    </property>
   </action>
   <action name="actionMinimal">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/images/img/minimize30.png</normaloff>:/images/img/minimize30.png</iconset>
+   </property>
    <property name="text">
     <string>Minimal</string>
    </property>
