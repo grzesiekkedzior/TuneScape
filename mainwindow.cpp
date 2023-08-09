@@ -33,5 +33,7 @@ void MainWindow::set_icon_btn()
 void MainWindow::start()
 {
     radioExplorer = new RadioExplorer(ui);
+    radioList     = new RadioList(ui);
     radioExplorer->createMenu();
+    radioList->loadList();
 }

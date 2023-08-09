@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 #include "radioexplorer.h"
+#include "radiolist.h"
 #include <QMainWindow>
 
 QT_BEGIN_NAMESPACE
@@ -18,6 +19,7 @@ public:
 private:
     Ui::MainWindow *ui;
     RadioExplorer *radioExplorer;
+    RadioList     *radioList;
     void set_icon_btn();
     void start();
 };

@@ -4,10 +4,13 @@
 #include <QStandardItemModel>
 #include <QStandardItem>
 #include <QString>
+#include <QObject>
 
-class RadioExplorer
+class RadioExplorer : public QObject
 {
+    Q_OBJECT
 public:
+    RadioExplorer(QWidget *parent = nullptr);
     RadioExplorer();
     RadioExplorer(Ui::MainWindow *ui);
 

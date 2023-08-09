@@ -7,6 +7,11 @@ const QString RadioExplorer::TOP       = "Top";
 const QString RadioExplorer::NEW       = "New";
 const QString RadioExplorer::FAVORITE  = "Favorite";
 
+RadioExplorer::RadioExplorer(QWidget *parent)
+{
+
+}
+
 RadioExplorer::RadioExplorer(Ui::MainWindow *ui) : ui(ui),
     itemModel(new QStandardItemModel),
     library(new QStandardItem(LIBRARY)),
@@ -33,8 +38,8 @@ void RadioExplorer::createTree()
 {
     itemModel->appendRow(library);
     itemModel->appendRow(favorite);
-    library->appendRow(discover);
     library->appendRow(top);
+    library->appendRow(discover);
     library->appendRow(popular);
     library->appendRow(newRadios);
 }

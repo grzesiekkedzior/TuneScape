@@ -11,11 +11,13 @@ CONFIG += c++17
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    radioexplorer.cpp
+    radioexplorer.cpp \
+    radiolist.cpp
 
 HEADERS += \
     mainwindow.h \
-    radioexplorer.h
+    radioexplorer.h \
+    radiolist.h
 
 FORMS += \
     mainwindow.ui

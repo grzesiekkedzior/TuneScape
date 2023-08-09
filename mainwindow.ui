@@ -274,7 +274,27 @@ QScrollBar::sub-line:horizontal {
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout_2">
              <item>
-              <widget class="QTableView" name="tableView"/>
+              <widget class="QTableView" name="tableView">
+               <property name="styleSheet">
+                <string notr="true">QHeaderView::section { background-color: rgb(217, 236, 235); border: 1px solid gray; }
+QHeaderView::section:horizontal::resize-handle { width: 10px; }</string>
+               </property>
+               <property name="midLineWidth">
+                <number>0</number>
+               </property>
+               <property name="sizeAdjustPolicy">
+                <enum>QAbstractScrollArea::AdjustIgnored</enum>
+               </property>
+               <property name="showGrid">
+                <bool>false</bool>
+               </property>
+               <attribute name="horizontalHeaderStretchLastSection">
+                <bool>true</bool>
+               </attribute>
+               <attribute name="verticalHeaderVisible">
+                <bool>false</bool>
+               </attribute>
+              </widget>
              </item>
             </layout>
            </widget>
