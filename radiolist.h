@@ -26,11 +26,9 @@ private:
     QStringList         headers;
 
     const QString STATION = "Station";
-    const QString PLAYING = "Playing";
     const QString GENRE   = "Genre";
+    const QString COUNTRY = "Country";
     const QString HOMEPAGE = "Homepage";
-
-
 
 };
 

@@ -38,7 +38,22 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
+      <property name="childrenCollapsible">
+       <bool>true</bool>
+      </property>
       <widget class="QScrollArea" name="scrollTabArea">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="styleSheet">
         <string notr="true">/* Dostosowanie paska przewijania w QTreeView */
 QScrollBar:vertical {
@@ -276,7 +291,7 @@ QScrollBar::sub-line:horizontal {
              <item>
               <widget class="QTableView" name="tableView">
                <property name="styleSheet">
-                <string notr="true"/>
+                <string notr="true">padding: 0px; margin: 0px;</string>
                </property>
                <property name="midLineWidth">
                 <number>0</number>
@@ -284,8 +299,23 @@ QScrollBar::sub-line:horizontal {
                <property name="sizeAdjustPolicy">
                 <enum>QAbstractScrollArea::AdjustIgnored</enum>
                </property>
+               <property name="editTriggers">
+                <set>QAbstractItemView::NoEditTriggers</set>
+               </property>
+               <property name="alternatingRowColors">
+                <bool>true</bool>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::ContiguousSelection</enum>
+               </property>
+               <property name="selectionBehavior">
+                <enum>QAbstractItemView::SelectRows</enum>
+               </property>
                <property name="showGrid">
                 <bool>false</bool>
+               </property>
+               <property name="gridStyle">
+                <enum>Qt::SolidLine</enum>
                </property>
                <attribute name="horizontalHeaderStretchLastSection">
                 <bool>true</bool>
