@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>732</width>
-    <height>479</height>
+    <width>911</width>
+    <height>525</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -48,6 +48,18 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="baseSize">
         <size>
          <width>0</width>
@@ -55,37 +67,7 @@
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">/* Dostosowanie paska przewijania w QTreeView */
-QScrollBar:vertical {
-    width: 6px;
-    background: transparent;
-}
-
-QScrollBar::handle:vertical {
-    background: rgba(0, 0, 0, 30);
-    border-radius: 3px;
-}
-
-QScrollBar::add-line:vertical,
-QScrollBar::sub-line:vertical {
-    height: 0px;
-}
-
-QScrollBar:horizontal {
-    height: 6px;
-    background: transparent;
-}
-
-QScrollBar::handle:horizontal {
-    background: rgba(0, 0, 0, 30);
-    border-radius: 3px;
-}
-
-QScrollBar::add-line:horizontal,
-QScrollBar::sub-line:horizontal {
-    width: 0px;
-}
-</string>
+        <string notr="true"/>
        </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
@@ -107,8 +89,8 @@ QScrollBar::sub-line:horizontal {
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>250</width>
-          <height>357</height>
+          <width>313</width>
+          <height>403</height>
          </rect>
         </property>
         <property name="styleSheet">
@@ -132,6 +114,18 @@ QScrollBar::sub-line:horizontal {
          </property>
          <item>
           <widget class="QTabWidget" name="tabWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
            <property name="baseSize">
             <size>
              <width>0</width>
@@ -209,40 +203,7 @@ QScrollBar::sub-line:horizontal {
       </widget>
       <widget class="QScrollArea" name="scrollStackArea">
        <property name="styleSheet">
-        <string notr="true">QScrollArea {
-		border: none;
-}
-/* Dostosowanie paska przewijania w QTreeView */
-QScrollBar:vertical {
-    width: 6px;
-    background: transparent;
-}
-
-QScrollBar::handle:vertical {
-    background: rgba(0, 0, 0, 30);
-    border-radius: 3px;
-}
-
-QScrollBar::add-line:vertical,
-QScrollBar::sub-line:vertical {
-    height: 0px;
-}
-
-QScrollBar:horizontal {
-    height: 6px;
-    background: transparent;
-}
-
-QScrollBar::handle:horizontal {
-    background: rgba(0, 0, 0, 30);
-    border-radius: 3px;
-}
-
-QScrollBar::add-line:horizontal,
-QScrollBar::sub-line:horizontal {
-    width: 0px;
-}
-</string>
+        <string notr="true"/>
        </property>
        <property name="frameShape">
         <enum>QFrame::NoFrame</enum>
@@ -258,8 +219,8 @@ QScrollBar::sub-line:horizontal {
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>454</width>
-          <height>357</height>
+          <width>570</width>
+          <height>403</height>
          </rect>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -496,7 +457,7 @@ QScrollBar::sub-line:horizontal {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>732</width>
+     <width>911</width>
      <height>26</height>
     </rect>
    </property>

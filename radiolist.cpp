@@ -9,6 +9,7 @@ RadioList::RadioList(QObject *parent)
 
 RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(this))
 {
+    jsonListProcesor.processJsonQuery();
     header = ui->tableView->horizontalHeader();
 }
 
@@ -18,18 +19,14 @@ void RadioList::loadList()
     header->setSectionResizeMode(QHeaderView::Interactive);
     model->setHorizontalHeaderLabels(headers);
 
-    // Dodaj przykładowe dane
-    QStringList stations = {"Station 1", "Station 2", "Station 3"};
-    QStringList genres = {"Rock", "Pop", "Jazz"};
-    QStringList countries = {"Usa", "Poland", "Germany"};
-    QStringList homepages = {"http://www.station1.com", "http://www.station2.com", "http://www.station3.com"};
+    int dataSize = jsonListProcesor.getTableRows().size();
 
-    for (int row = 0; row < stations.size(); ++row) {
+    for (int row = 0; row < dataSize; ++row) {
         QList<QStandardItem*> rowItems;
-        rowItems.append(new QStandardItem(stations.at(row)));
-        rowItems.append(new QStandardItem(countries.at(row)));
-        rowItems.append(new QStandardItem(genres.at(row)));
-        rowItems.append(new QStandardItem(homepages.at(row)));
+        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));
+        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).country));
+        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).genre));
+        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).stationUrl));
         model->appendRow(rowItems);
     }
     ui->tableView->setModel(model);
