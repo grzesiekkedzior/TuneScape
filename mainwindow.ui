@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>911</width>
-    <height>525</height>
+    <height>552</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,7 +15,7 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <sizepolicy hsizetype="Expanding" vsizetype="Ignored">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
@@ -23,7 +23,7 @@
    <property name="minimumSize">
     <size>
      <width>0</width>
-     <height>210</height>
+     <height>70</height>
     </size>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -42,8 +42,11 @@
        <bool>true</bool>
       </property>
       <widget class="QScrollArea" name="scrollTabArea">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -89,9 +92,15 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>313</width>
-          <height>403</height>
+          <width>165</width>
+          <height>431</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <property name="styleSheet">
          <string notr="true"/>
@@ -202,6 +211,12 @@
        </widget>
       </widget>
       <widget class="QScrollArea" name="scrollStackArea">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="styleSheet">
         <string notr="true"/>
        </property>
@@ -219,9 +234,15 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>570</width>
-          <height>403</height>
+          <width>719</width>
+          <height>431</height>
          </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_3">
          <property name="spacing">
@@ -241,6 +262,12 @@
          </property>
          <item>
           <widget class="QTabWidget" name="tabRadioListWidget">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="currentIndex">
             <number>0</number>
            </property>
@@ -392,6 +419,9 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Expanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
           <width>40</width>
@@ -401,7 +431,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit">
+       <widget class="QLineEdit" name="serachInput">
         <property name="styleSheet">
          <string notr="true">border: noborder;</string>
         </property>
@@ -458,7 +488,7 @@
      <x>0</x>
      <y>0</y>
      <width>911</width>
-     <height>26</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include <QIcon>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -35,5 +36,21 @@ void MainWindow::start()
     radioExplorer = new RadioExplorer(ui);
     radioList     = new RadioList(ui);
     radioExplorer->createMenu();
-    radioList->loadList();
+    //radioList->loadList();
+
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+
+    if (height() < 140 && ui->splitter->isVisible()) {
+        ui->splitter->hide();
+        ui->serachInput->hide();
+
+    } else if (height() >= 140 && !ui->splitter->isVisible()) {
+        ui->splitter->show();
+        ui->serachInput->show();
+    }
+    qDebug() << ui->centralwidget->geometry().height();
 }

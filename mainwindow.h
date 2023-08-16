@@ -3,6 +3,7 @@
 #include "radioexplorer.h"
 #include "radiolist.h"
 #include <QMainWindow>
+#include <QResizeEvent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -16,11 +17,14 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+
 private:
     Ui::MainWindow *ui;
     RadioExplorer *radioExplorer;
     RadioList     *radioList;
     void set_icon_btn();
     void start();
+    void resizeEvent(QResizeEvent *event);
+
 };
 #endif // MAINWINDOW_H
