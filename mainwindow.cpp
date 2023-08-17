@@ -36,8 +36,7 @@ void MainWindow::start()
     radioExplorer = new RadioExplorer(ui);
     radioList     = new RadioList(ui);
     radioExplorer->createMenu();
-    //radioList->loadList();
-
+    //radioList->loadDiscoverList();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -53,4 +52,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
         ui->serachInput->show();
     }
     qDebug() << ui->centralwidget->geometry().height();
+
+
 }

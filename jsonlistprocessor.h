@@ -1,20 +1,14 @@
 #ifndef JSONLISTPROCESSOR_H
 #define JSONLISTPROCESSOR_H
 
+#include "radiostations.h"
+
 #include <QObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QEventLoop>
 #include <QNetworkReply>
 #include <QJsonDocument>
-
-struct serverAddress {
-    QStringList addresses = {
-        "http://de1.api.radio-browser.info/json/stations",
-        "https://fr1.api.radio-browser.info/json/stations",
-        "https://at1.api.radio-browser.info/json/stations"
-    };
-};
 
 struct TableRow {
     QString station;
@@ -27,12 +21,12 @@ class JsonListProcessor : public QObject
 {
     Q_OBJECT
 public:
-    //explicit JsonListProcessor(QObject *parent = nullptr);
     JsonListProcessor();
     ~JsonListProcessor();
 
     void processJsonQuery();
     QVector<TableRow>& getTableRows();
+    void loadEndpoint(QString endpoint);
 
 signals:
 
@@ -42,12 +36,14 @@ private:
     const QString GENRE     = "tags";
     const QString COUNTRY   = "country";
     const QString URL       = "homepage";
+    QString                 endpoint;
     QVector<TableRow>       tableRows;
     QNetworkAccessManager   manager;
     QNetworkReply           *reply;
     QJsonDocument           doc;
+    RadioStations           severAddress;
 
-    QNetworkReply* checkAvailability(serverAddress);
+    QNetworkReply* checkAvailability(const QStringList &radioAddresses);
     QJsonDocument createJasonDocument(QNetworkReply *reply);
 };
 

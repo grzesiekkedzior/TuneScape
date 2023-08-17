@@ -1,27 +1,21 @@
 #include "radioexplorer.h"
 
-const QString RadioExplorer::LIBRARY   = "Library";
-const QString RadioExplorer::POPULAR   = "Popular";
-const QString RadioExplorer::DISCOVER  = "Discover";
-const QString RadioExplorer::TOP       = "Top";
-const QString RadioExplorer::NEW       = "New";
-const QString RadioExplorer::FAVORITE  = "Favorite";
+
 
 RadioExplorer::RadioExplorer(QWidget *parent)
 {
 
 }
 
-RadioExplorer::RadioExplorer(Ui::MainWindow *ui) : ui(ui),
-    itemModel(new QStandardItemModel),
-    library(new QStandardItem(LIBRARY)),
-    discover(new QStandardItem(DISCOVER)),
-    top(new QStandardItem(TOP)),
-    popular(new QStandardItem(POPULAR)),
-    newRadios(new QStandardItem(NEW)),
-    favorite(new QStandardItem(FAVORITE))
+RadioExplorer::RadioExplorer(Ui::MainWindow *ui) : ui(ui)
 {
-
+    itemModel= new QStandardItemModel;
+    library = new QStandardItem(LIBRARY);
+    discover = new QStandardItem(DISCOVER);
+    top = new QStandardItem(TOP);
+    popular = new QStandardItem(POPULAR);
+    newRadios = new QStandardItem(NEW);
+    favorite = new QStandardItem(FAVORITE);
 }
 
 void RadioExplorer::setNotEditableTree()

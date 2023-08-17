@@ -13,13 +13,15 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     radioexplorer.cpp \
-    radiolist.cpp
+    radiolist.cpp \
+    radiostations.cpp
 
 HEADERS += \
     jsonlistprocessor.h \
     mainwindow.h \
     radioexplorer.h \
-    radiolist.h
+    radiolist.h \
+    radiostations.h
 
 FORMS += \
     mainwindow.ui
