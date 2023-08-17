@@ -15,22 +15,34 @@ public:
     explicit RadioList(QObject *parent = nullptr);
     RadioList(Ui::MainWindow *ui);
 
-    void loadList();
+    void loadRadioList();
 
-signals:
-
+private slots:
+    void onTreeViewItemClicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow     *ui      = nullptr;
     QStandardItemModel *model   = nullptr;
     QHeaderView        *header  = nullptr;
     QStringList         headers;
+    QString             treeItem;
     JsonListProcessor   jsonListProcesor;
+
+
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
     const QString COUNTRY   = "Country";
     const QString HOMEPAGE  = "Homepage";
+    const QString LIBRARY   = "Library";
+    const QString FAVORITE  = "Favorite";
+
+    const QString JSON_ENDPOINT_TOP         = "json/stations/topvote/5";
+    const QString JSON_ENDPOINT_DISCOVER    = "json/stations";
+    const QString JSON_ENDPOINT_POPULAR     = "json/stations/topclick/5";
+    const QString JSON_ENDPOINT_NEW         = "json/stations/lastchange/5";
+    const QString JSON_ENDPOINT_EMPTY       = "empty";
+
 
 };
 

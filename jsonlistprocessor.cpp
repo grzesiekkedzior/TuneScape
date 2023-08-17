@@ -4,16 +4,12 @@
 #include <QJsonObject>
 #include <QNetworkRequest>
 
-//JsonListProcessor::JsonListProcessor(QObject *parent)
-//    : QObject{parent}
-//{
+JsonListProcessor::JsonListProcessor() {}
 
-//}
-
-JsonListProcessor::JsonListProcessor()
+void JsonListProcessor::loadEndpoint(QString endpoint)
 {
-    serverAddress sw;
-    reply = checkAvailability(sw);
+    RadioStations radioStations(endpoint);
+    reply = checkAvailability(radioStations.getAddresses());
     QEventLoop loop;
     //This loop wait until request finished, then close it
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
@@ -29,6 +25,7 @@ JsonListProcessor::~JsonListProcessor()
 
 void JsonListProcessor::processJsonQuery()
 {
+    tableRows.clear();
     doc = createJasonDocument(reply);
     if (doc.isArray())
     {
@@ -48,7 +45,6 @@ void JsonListProcessor::processJsonQuery()
             country     = country.trimmed();
             stationUrl  = stationUrl.trimmed();
 
-
             TableRow row;
             row.station = stationName;
             row.genre = genre;
@@ -65,9 +61,9 @@ QVector<TableRow> &JsonListProcessor::getTableRows()
     return tableRows;
 }
 
-QNetworkReply* JsonListProcessor::checkAvailability(serverAddress sw)
+QNetworkReply* JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
 {
-    for (const QString &address : sw.addresses) {
+    for (const QString &address : radioAddresses) {
         QNetworkRequest request((QUrl(address)));
         reply = manager.get(request);
 

@@ -26,12 +26,12 @@ private:
     QStandardItem       *newRadios;
     QStandardItem       *favorite;
 
-    static const QString LIBRARY;
-    static const QString POPULAR;
-    static const QString DISCOVER;
-    static const QString TOP;
-    static const QString NEW;
-    static const QString FAVORITE;
+    const QString LIBRARY   = "Library";
+    const QString POPULAR   = "Popular";
+    const QString DISCOVER  = "Discover";
+    const QString TOP       = "Top";
+    const QString NEW       = "New";
+    const QString FAVORITE  = "Favorite";
 
     void setNotEditableTree();
     void createTree();
