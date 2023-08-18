@@ -19,6 +19,7 @@ public:
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
+    void loadMoreStationsIfNeeded();
 
 private:
     Ui::MainWindow     *ui      = nullptr;
@@ -27,6 +28,7 @@ private:
     QStringList         headers;
     QString             treeItem;
     JsonListProcessor   jsonListProcesor;
+    int loadedStationsCount = 0;
 
 
 
@@ -42,6 +44,8 @@ private:
     const QString JSON_ENDPOINT_POPULAR     = "json/stations/topclick/5";
     const QString JSON_ENDPOINT_NEW         = "json/stations/lastchange/5";
     const QString JSON_ENDPOINT_EMPTY       = "empty";
+    const QString LIBRARY_TREE              = "Library";
+    const QString FAVORITE_TREE             = "Favorite";
 
 
 };

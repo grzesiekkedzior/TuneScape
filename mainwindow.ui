@@ -92,8 +92,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>327</width>
-          <height>403</height>
+          <width>167</width>
+          <height>430</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -234,8 +234,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>556</width>
-          <height>403</height>
+          <width>716</width>
+          <height>430</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -494,7 +494,7 @@
      <x>0</x>
      <y>0</y>
      <width>911</width>
-     <height>25</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

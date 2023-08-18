@@ -1,5 +1,6 @@
 #include "radiolist.h"
 #include <QHeaderView>
+#include <QScrollBar>
 
 RadioList::RadioList(QObject *parent)
     : QObject{parent}
@@ -8,6 +9,9 @@ RadioList::RadioList(QObject *parent)
 RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(this))
 {
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
+    connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
+
+
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
     header->setSectionResizeMode(QHeaderView::Interactive);
@@ -17,14 +21,14 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
 void RadioList::loadRadioList()
 {
     int rowCount = model->rowCount();
-    if (rowCount > 0) {
+    qDebug() << treeItem;
+    if (rowCount > 0 && treeItem != "Discover") {
         model->removeRows(0, rowCount);
     }
-
     int dataSize = jsonListProcesor.getTableRows().size();
-    qDebug() << dataSize;
+    int batchSize = 50; // Ilość stacji do załadowania w jednej partii
 
-    for (int row = 0; row < dataSize; ++row) {
+    for (int row = loadedStationsCount; row < qMin(loadedStationsCount + batchSize, dataSize); ++row) {
         QList<QStandardItem*> rowItems;
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).country));
@@ -35,7 +39,21 @@ void RadioList::loadRadioList()
     ui->tableView->setModel(model);
 
     ui->tableView->resizeRowsToContents();
+    loadedStationsCount += batchSize;
+}
 
+
+
+void RadioList::loadMoreStationsIfNeeded()
+{
+    QScrollBar *scrollBar = ui->tableView->verticalScrollBar();
+    int currentPosition = scrollBar->value();
+    int maximumPosition = scrollBar->maximum();
+
+    if (currentPosition >= maximumPosition * 0.8) {
+
+        loadRadioList();
+    }
 }
 
 auto checkItem = [] (const QString &item, const QString &target) {
@@ -45,20 +63,21 @@ auto checkItem = [] (const QString &item, const QString &target) {
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
     QString item = index.data().toString();
-
-    if (checkItem(item, "Top")) {
-        jsonListProcesor.loadEndpoint(JSON_ENDPOINT_TOP);
-    }if (checkItem(item, "Discover")) {
-        jsonListProcesor.loadEndpoint(JSON_ENDPOINT_DISCOVER);
-    }if (checkItem(item, "Popular")) {
-        jsonListProcesor.loadEndpoint(JSON_ENDPOINT_POPULAR);
-    } if (checkItem(item, "New")) {
-        jsonListProcesor.loadEndpoint(JSON_ENDPOINT_NEW);
-    } else {
-        this->treeItem = JSON_ENDPOINT_EMPTY;
+    qDebug() << item;
+    if (!checkItem(item, LIBRARY_TREE) && !checkItem(item, FAVORITE_TREE)) {
+        if (checkItem(item, "Top")) {
+            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_TOP);
+        }if (checkItem(item, "Discover")) {
+            this->treeItem = item;
+            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_DISCOVER);
+        }if (checkItem(item, "Popular")) {
+            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_POPULAR);
+        } if (checkItem(item, "New")) {
+            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_NEW);
+        }
+        loadedStationsCount = 0;
+        jsonListProcesor.processJsonQuery();
+        loadRadioList();
     }
-
-    jsonListProcesor.processJsonQuery();
-    loadRadioList();
 }
 

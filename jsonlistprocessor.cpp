@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QNetworkRequest>
+#include <QMessageBox>
 
 JsonListProcessor::JsonListProcessor() {}
 
@@ -27,6 +28,11 @@ void JsonListProcessor::processJsonQuery()
 {
     tableRows.clear();
     doc = createJasonDocument(reply);
+    if (!doc.isEmpty()) {
+        QMessageBox mb;
+        mb.setText("The Internet connection failed.");
+        mb.exec();
+    }
     if (doc.isArray())
     {
         QJsonArray stationsArray = doc.array();
