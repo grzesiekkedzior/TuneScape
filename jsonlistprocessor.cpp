@@ -4,23 +4,60 @@
 #include <QJsonObject>
 #include <QNetworkRequest>
 #include <QMessageBox>
+#include <QProgressBar>
+#include <QTimer>
 
-JsonListProcessor::JsonListProcessor() {}
+JsonListProcessor::JsonListProcessor() {
+    connectionTimer = new QTimer(this);
+    connectionTimer->setInterval(5000);
+    connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkConnection);
+    connectionTimer->start();
+}
 
 void JsonListProcessor::loadEndpoint(QString endpoint)
 {
+    this->endpoint = endpoint;
     RadioStations radioStations(endpoint);
-    for (;;) {
+
+    ui->statusbar->showMessage("Connecting...");
+
+    while (true) {
         reply = checkAvailability(radioStations.getAddresses());
-        if (reply == nullptr) {
-            QMessageBox mb;
-            mb.setText("All services are not available.");
-            mb.exec();
-        } else {
+
+        if (reply) {
+            setConnection(reply);
             break;
         }
     }
+}
 
+void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
+{
+    if (connectionReply == nullptr) {
+        ui->statusbar->showMessage("Connection lost");
+        ui->statusbar->setStyleSheet("color: red");
+    } else {
+        ui->statusbar->showMessage("Connected");
+        ui->statusbar->setStyleSheet("color: green");
+    }
+}
+
+void JsonListProcessor::checkConnection()
+{
+    if (endpoint.isEmpty()) {
+        qDebug() << "Endpoint not set";
+        return;
+    }
+
+    RadioStations radioStations(endpoint);
+    QNetworkReply *connectionReply = checkAvailability(radioStations.getAddresses());
+
+    setConnection(connectionReply);
+}
+
+void JsonListProcessor::setUi(Ui::MainWindow *ui)
+{
+    this->ui = ui;
 }
 
 JsonListProcessor::~JsonListProcessor()
@@ -73,20 +110,28 @@ QVector<TableRow> &JsonListProcessor::getTableRows()
 
 QNetworkReply* JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
 {
-    QEventLoop loop;
-    int status;
+    int status = -1;
+    QNetworkReply* currentReply = nullptr;
 
+    QEventLoop loop;
     for (const QString &address : radioAddresses) {
         QNetworkRequest request((QUrl(address)));
-        reply = manager.get(request);
-        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        currentReply = manager.get(request);
+        QObject::connect(currentReply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec();
-        status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        status = currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         qDebug() << status;
-        if (reply->error() == QNetworkReply::NoError) return reply;
+        if (currentReply->error() == QNetworkReply::NoError) break;
     }
 
-    return nullptr;
+    if (status == 200) {
+        return currentReply;
+    } else {
+        if (currentReply) {
+            currentReply->deleteLater();
+        }
+        return nullptr;
+    }
 }
 
 QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply)

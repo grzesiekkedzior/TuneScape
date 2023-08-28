@@ -8,6 +8,7 @@ RadioList::RadioList(QObject *parent)
 
 RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(this))
 {
+    jsonListProcesor.setUi(ui);
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
 
@@ -21,12 +22,12 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
 void RadioList::loadRadioList()
 {
     int rowCount = model->rowCount();
-    qDebug() << treeItem;
+    qDebug() << "loadRadioList" << treeItem;
     if (rowCount > 0 && treeItem != "Discover") {
         model->removeRows(0, rowCount);
     }
     int dataSize = jsonListProcesor.getTableRows().size();
-    int batchSize = 50; // Ilość stacji do załadowania w jednej partii
+    int batchSize = 50;
 
     for (int row = loadedStationsCount; row < qMin(loadedStationsCount + batchSize, dataSize); ++row) {
         QList<QStandardItem*> rowItems;
@@ -40,6 +41,8 @@ void RadioList::loadRadioList()
 
     ui->tableView->resizeRowsToContents();
     loadedStationsCount += batchSize;
+
+
 }
 
 
@@ -63,16 +66,19 @@ auto checkItem = [] (const QString &item, const QString &target) {
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
     QString item = index.data().toString();
-    qDebug() << item;
+    qDebug() << "onTreeViewItemClicked " << item;
     if (!checkItem(item, LIBRARY_TREE) && !checkItem(item, FAVORITE_TREE)) {
         if (checkItem(item, "Top")) {
+            if(this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.loadEndpoint(JSON_ENDPOINT_TOP);
         }if (checkItem(item, "Discover")) {
             this->treeItem = item;
             jsonListProcesor.loadEndpoint(JSON_ENDPOINT_DISCOVER);
         }if (checkItem(item, "Popular")) {
+            if(this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.loadEndpoint(JSON_ENDPOINT_POPULAR);
         } if (checkItem(item, "New")) {
+            if(this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.loadEndpoint(JSON_ENDPOINT_NEW);
         }
         loadedStationsCount = 0;
