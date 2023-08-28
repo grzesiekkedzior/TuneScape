@@ -10,11 +10,17 @@ JsonListProcessor::JsonListProcessor() {}
 void JsonListProcessor::loadEndpoint(QString endpoint)
 {
     RadioStations radioStations(endpoint);
-    reply = checkAvailability(radioStations.getAddresses());
-    QEventLoop loop;
-    //This loop wait until request finished, then close it
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
+    for (;;) {
+        reply = checkAvailability(radioStations.getAddresses());
+        if (reply == nullptr) {
+            QMessageBox mb;
+            mb.setText("All services are not available.");
+            mb.exec();
+        } else {
+            break;
+        }
+    }
+
 }
 
 JsonListProcessor::~JsonListProcessor()
@@ -29,9 +35,7 @@ void JsonListProcessor::processJsonQuery()
     tableRows.clear();
     doc = createJasonDocument(reply);
     if (!doc.isEmpty()) {
-        QMessageBox mb;
-        mb.setText("The Internet connection failed.");
-        mb.exec();
+
     }
     if (doc.isArray())
     {
@@ -69,10 +73,16 @@ QVector<TableRow> &JsonListProcessor::getTableRows()
 
 QNetworkReply* JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
 {
+    QEventLoop loop;
+    int status;
+
     for (const QString &address : radioAddresses) {
         QNetworkRequest request((QUrl(address)));
         reply = manager.get(request);
-
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        loop.exec();
+        status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << status;
         if (reply->error() == QNetworkReply::NoError) return reply;
     }
 
