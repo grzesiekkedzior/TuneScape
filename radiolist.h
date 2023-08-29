@@ -1,8 +1,9 @@
 #ifndef RADIOLIST_H
 #define RADIOLIST_H
 
-#include "ui_mainwindow.h"
 #include "jsonlistprocessor.h"
+#include "ui_mainwindow.h"
+
 #include <QObject>
 #include <QStandardItemModel>
 #include <QHeaderView>
@@ -16,21 +17,20 @@ public:
     RadioList(Ui::MainWindow *ui);
 
     void loadRadioList();
+    void setLoadedStationsCount(int num);
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
 
 private:
+    int loadedStationsCount = 0;
     Ui::MainWindow     *ui      = nullptr;
     QStandardItemModel *model   = nullptr;
     QHeaderView        *header  = nullptr;
     QStringList         headers;
     QString             treeItem;
     JsonListProcessor   jsonListProcesor;
-    int loadedStationsCount = 0;
-
-
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";

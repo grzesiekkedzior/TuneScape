@@ -9,9 +9,9 @@ RadioList::RadioList(QObject *parent)
 RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(this))
 {
     jsonListProcesor.setUi(ui);
+    jsonListProcesor.setRadioList(this);
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
-
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -41,11 +41,12 @@ void RadioList::loadRadioList()
 
     ui->tableView->resizeRowsToContents();
     loadedStationsCount += batchSize;
-
-
 }
 
-
+void RadioList::setLoadedStationsCount(int num)
+{
+    this->loadedStationsCount = num;
+}
 
 void RadioList::loadMoreStationsIfNeeded()
 {
@@ -81,9 +82,11 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             if(this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.loadEndpoint(JSON_ENDPOINT_NEW);
         }
-        loadedStationsCount = 0;
-        jsonListProcesor.processJsonQuery();
-        loadRadioList();
+        if (jsonListProcesor.checkInternetConnection()) {
+            loadedStationsCount = 0;
+            jsonListProcesor.processJsonQuery();
+            loadRadioList();
+        }
     }
 }
 

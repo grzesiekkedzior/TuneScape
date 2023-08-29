@@ -1,58 +1,91 @@
 #include "jsonlistprocessor.h"
+#include "radiolist.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QNetworkRequest>
-#include <QMessageBox>
 #include <QProgressBar>
 #include <QTimer>
+#include <QTcpSocket>
 
 JsonListProcessor::JsonListProcessor() {
     connectionTimer = new QTimer(this);
     connectionTimer->setInterval(5000);
-    connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkConnection);
+    connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkInternetConnection);
     connectionTimer->start();
+
+    internetConnectionChecker = new QTimer(this);
+    internetConnectionChecker->setInterval(5000);
+    connect(internetConnectionChecker, &QTimer::timeout, this, &JsonListProcessor::retryInternetConnection);
 }
 
 void JsonListProcessor::loadEndpoint(QString endpoint)
 {
     this->endpoint = endpoint;
-    RadioStations radioStations(endpoint);
 
+    RadioStations radioStations(endpoint);
     ui->statusbar->showMessage("Connecting...");
 
-    while (true) {
+    if (checkInternetConnection()) {
         reply = checkAvailability(radioStations.getAddresses());
-
-        if (reply) {
-            setConnection(reply);
-            break;
-        }
+        setConnection(reply);
+    } else {
+        internetConnectionChecker->start();
     }
+}
+
+void JsonListProcessor::connected()
+{
+    ui->statusbar->showMessage("Connected");
+    ui->statusbar->setStyleSheet("color: green");
 }
 
 void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
 {
     if (connectionReply == nullptr) {
-        ui->statusbar->showMessage("Connection lost");
-        ui->statusbar->setStyleSheet("color: red");
+        lostConnection();
     } else {
-        ui->statusbar->showMessage("Connected");
-        ui->statusbar->setStyleSheet("color: green");
+        connected();
     }
 }
 
-void JsonListProcessor::checkConnection()
+bool JsonListProcessor::checkInternetConnection()
 {
-    if (endpoint.isEmpty()) {
-        qDebug() << "Endpoint not set";
-        return;
+    bool isConnected = false;
+    QTcpSocket checkConnectionSocket;
+    checkConnectionSocket.connectToHost("google.com", 443);
+    checkConnectionSocket.waitForConnected(2000);
+
+    if (checkConnectionSocket.state() == QTcpSocket::ConnectedState) {
+        isConnected = true;
+    } else {
+        lostConnection();
+        internetConnectionChecker->start();
     }
 
-    RadioStations radioStations(endpoint);
-    QNetworkReply *connectionReply = checkAvailability(radioStations.getAddresses());
+    checkConnectionSocket.close();
+    return isConnected;
+}
 
-    setConnection(connectionReply);
+void JsonListProcessor::lostConnection()
+{
+    ui->statusbar->showMessage("Connection lost");
+    ui->statusbar->setStyleSheet("color: red");
+}
+
+void JsonListProcessor::retryInternetConnection()
+{
+    if (!checkInternetConnection()) {
+        lostConnection();
+    } else {
+        ui->statusbar->showMessage("Connected");
+        ui->statusbar->setStyleSheet("color: green");
+        internetConnectionChecker->stop();
+        loadEndpoint(endpoint);
+        radioList->setLoadedStationsCount(0);
+        processJsonQuery();
+        radioList->loadRadioList();
+    }
 }
 
 void JsonListProcessor::setUi(Ui::MainWindow *ui)
@@ -60,20 +93,27 @@ void JsonListProcessor::setUi(Ui::MainWindow *ui)
     this->ui = ui;
 }
 
+void JsonListProcessor::setRadioList(RadioList *radioList)
+{
+    this->radioList = radioList;
+}
+
 JsonListProcessor::~JsonListProcessor()
 {
     if (reply) {
         reply->deleteLater();
+    }
+    if (radioList) {
+        delete radioList;
     }
 }
 
 void JsonListProcessor::processJsonQuery()
 {
     tableRows.clear();
-    doc = createJasonDocument(reply);
-    if (!doc.isEmpty()) {
+    if (reply)
+        doc = createJasonDocument(reply);
 
-    }
     if (doc.isArray())
     {
         QJsonArray stationsArray = doc.array();
@@ -110,28 +150,20 @@ QVector<TableRow> &JsonListProcessor::getTableRows()
 
 QNetworkReply* JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
 {
-    int status = -1;
-    QNetworkReply* currentReply = nullptr;
-
     QEventLoop loop;
+    int status;
+
     for (const QString &address : radioAddresses) {
         QNetworkRequest request((QUrl(address)));
-        currentReply = manager.get(request);
-        QObject::connect(currentReply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        reply = manager.get(request);
+        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec();
-        status = currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        qDebug() << status;
-        if (currentReply->error() == QNetworkReply::NoError) break;
+        status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "status " << status;
+        if (reply->error() == QNetworkReply::NoError) return reply;
     }
 
-    if (status == 200) {
-        return currentReply;
-    } else {
-        if (currentReply) {
-            currentReply->deleteLater();
-        }
-        return nullptr;
-    }
+    return nullptr;
 }
 
 QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply)

@@ -1,6 +1,7 @@
 #ifndef JSONLISTPROCESSOR_H
 #define JSONLISTPROCESSOR_H
 
+
 #include "radiostations.h"
 #include "ui_mainwindow.h"
 
@@ -10,6 +11,9 @@
 #include <QEventLoop>
 #include <QNetworkReply>
 #include <QJsonDocument>
+#include <QTimer>
+
+class RadioList;
 
 struct TableRow {
     QString station;
@@ -29,10 +33,10 @@ public:
     QVector<TableRow>& getTableRows();
     void loadEndpoint(QString endpoint);
     void setUi(Ui::MainWindow *ui);
-
-signals:
-private slots:
-    void checkConnection();
+    void setRadioList(RadioList *radioList);
+    bool checkInternetConnection();
+    void lostConnection();
+    void connected();
 
 private:
     const QString NAME      = "name";
@@ -47,10 +51,14 @@ private:
     RadioStations           severAddress;
     Ui::MainWindow          *ui;
     QTimer                  *connectionTimer;
+    QTimer                  *internetConnectionChecker;
+    RadioList               *radioList = nullptr;
 
     QNetworkReply* checkAvailability(const QStringList &radioAddresses);
     QJsonDocument createJasonDocument(QNetworkReply *reply);
+    void retryInternetConnection();
     void setConnection(QNetworkReply *connectionReply);
+
 };
 
 #endif // JSONLISTPROCESSOR_H
