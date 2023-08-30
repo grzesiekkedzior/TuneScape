@@ -13,6 +13,8 @@ public:
     ~RadioAudioManager();
     void loadStream(const QUrl &url);
     void playStream();
+    void stopStream();
+    QMediaPlayer *getMediaPlayer() const;
 
 signals:
 

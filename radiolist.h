@@ -23,8 +23,8 @@ public:
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
-
     void onTableViewDoubleClicked(const QModelIndex &index);
+    void onPlayPauseButtonCliced();
 
 private:
     int loadedStationsCount = 0;
@@ -35,6 +35,7 @@ private:
     QString             treeItem;
     JsonListProcessor   jsonListProcesor;
     RadioAudioManager   radioManager;
+    QString             currentRadioPlayingAddress = "";
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
@@ -52,6 +53,7 @@ private:
     const QString FAVORITE_TREE             = "Favorite";
 
 
+    void playStream(int radioNumber);
 };
 
 #endif // RADIOLIST_H

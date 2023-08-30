@@ -28,3 +28,13 @@ void RadioAudioManager::playStream()
 {
     player->play();
 }
+
+void RadioAudioManager::stopStream()
+{
+    player->stop();
+}
+
+QMediaPlayer *RadioAudioManager::getMediaPlayer() const
+{
+    return this->player;
+}
