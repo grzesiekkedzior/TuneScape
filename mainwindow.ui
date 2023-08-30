@@ -53,7 +53,7 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>180</width>
          <height>0</height>
         </size>
        </property>
@@ -92,8 +92,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>167</width>
-          <height>430</height>
+          <width>180</width>
+          <height>431</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -129,6 +129,12 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
@@ -147,7 +153,16 @@
            <property name="currentIndex">
             <number>0</number>
            </property>
+           <property name="usesScrollButtons">
+            <bool>true</bool>
+           </property>
            <widget class="QWidget" name="radioTab">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
             <attribute name="title">
              <string>Radio</string>
             </attribute>
@@ -163,6 +178,12 @@
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>0</height>
+                </size>
+               </property>
                <property name="styleSheet">
                 <string notr="true">background-color: transparent;</string>
                </property>
@@ -171,6 +192,9 @@
                </property>
                <property name="lineWidth">
                 <number>1</number>
+               </property>
+               <property name="verticalScrollBarPolicy">
+                <enum>Qt::ScrollBarAlwaysOff</enum>
                </property>
                <property name="sizeAdjustPolicy">
                 <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
@@ -234,8 +258,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>716</width>
-          <height>430</height>
+          <width>704</width>
+          <height>431</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -494,7 +518,7 @@
      <x>0</x>
      <y>0</y>
      <width>911</width>
-     <height>26</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
