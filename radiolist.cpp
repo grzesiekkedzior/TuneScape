@@ -14,6 +14,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
     connect(ui->playPause, &QPushButton::clicked, this, &RadioList::onPlayPauseButtonCliced);
+    connect(ui->stop, &QPushButton::clicked, this, &RadioList::onStopButtonClicked);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -102,8 +103,8 @@ void RadioList::playStream(int radioNumber)
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
-    int radioNumber = index.row();
-    playStream(radioNumber);
+    radioIndexNumber = index.row();
+    playStream(radioIndexNumber);
 
     if (radioManager.getMediaPlayer()->isPlaying())
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
@@ -119,5 +120,19 @@ void RadioList::onPlayPauseButtonCliced()
                && radioManager.getMediaPlayer()->isAvailable()) {
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
         radioManager.playStream();
+    }
+
+    if (currentRadioPlayingAddress.isEmpty() && !jsonListProcesor.getTableRows().isEmpty()) {
+        playStream(radioIndexNumber);
+        ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
+    }
+}
+
+void RadioList::onStopButtonClicked()
+{
+    if (radioManager.getMediaPlayer()->isPlaying()) {
+        ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+        radioManager.stopStream();
+        currentRadioPlayingAddress = "";
     }
 }

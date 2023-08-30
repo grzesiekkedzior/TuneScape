@@ -25,6 +25,7 @@ private slots:
     void loadMoreStationsIfNeeded();
     void onTableViewDoubleClicked(const QModelIndex &index);
     void onPlayPauseButtonCliced();
+    void onStopButtonClicked();
 
 private:
     int loadedStationsCount = 0;
@@ -36,6 +37,7 @@ private:
     JsonListProcessor   jsonListProcesor;
     RadioAudioManager   radioManager;
     QString             currentRadioPlayingAddress = "";
+    int radioIndexNumber = 0;
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
