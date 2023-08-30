@@ -1,4 +1,4 @@
-QT       += core gui network
+QT       += core gui network multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,6 +12,7 @@ SOURCES += \
     jsonlistprocessor.cpp \
     main.cpp \
     mainwindow.cpp \
+    radioaudiomanager.cpp \
     radioexplorer.cpp \
     radiolist.cpp \
     radiostations.cpp
@@ -19,6 +20,7 @@ SOURCES += \
 HEADERS += \
     jsonlistprocessor.h \
     mainwindow.h \
+    radioaudiomanager.h \
     radioexplorer.h \
     radiolist.h \
     radiostations.h

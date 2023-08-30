@@ -37,14 +37,19 @@ public:
     bool checkInternetConnection();
     void lostConnection();
     void connected();
+    QString getStreamAddresses(int index) const;
+
 
 private:
-    const QString NAME      = "name";
-    const QString GENRE     = "tags";
-    const QString COUNTRY   = "country";
-    const QString URL       = "homepage";
-    QString endpoint        = "";
+    const QString NAME          = "name";
+    const QString GENRE         = "tags";
+    const QString COUNTRY       = "country";
+    const QString URL           = "homepage";
+    const QString URL_RESOLVED  = "url_resolved";
+    QString endpoint            = "";
+
     QVector<TableRow>       tableRows;
+    QVector<QString>        streamAddresses;
     QNetworkAccessManager   manager;
     QNetworkReply           *reply;
     QJsonDocument           doc;

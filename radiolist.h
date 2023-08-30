@@ -2,6 +2,7 @@
 #define RADIOLIST_H
 
 #include "jsonlistprocessor.h"
+#include "radioaudiomanager.h"
 #include "ui_mainwindow.h"
 
 #include <QObject>
@@ -23,6 +24,8 @@ private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
 
+    void onTableViewDoubleClicked(const QModelIndex &index);
+
 private:
     int loadedStationsCount = 0;
     Ui::MainWindow     *ui      = nullptr;
@@ -31,6 +34,7 @@ private:
     QStringList         headers;
     QString             treeItem;
     JsonListProcessor   jsonListProcesor;
+    RadioAudioManager   radioManager;
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";

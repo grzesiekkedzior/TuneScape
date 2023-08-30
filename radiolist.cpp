@@ -12,6 +12,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     jsonListProcesor.setRadioList(this);
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
+    connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -90,3 +91,12 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     }
 }
 
+void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
+{
+    int radioNumber = index.row();
+    QString radioAddress = jsonListProcesor.getStreamAddresses(radioNumber);
+    QUrl streamUrl(radioAddress);
+    radioManager.loadStream(streamUrl);
+    radioManager.playStream();
+    qDebug() << radioAddress;
+}

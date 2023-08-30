@@ -40,6 +40,11 @@ void JsonListProcessor::connected()
     ui->statusbar->setStyleSheet("color: green");
 }
 
+QString JsonListProcessor::getStreamAddresses(int index) const
+{
+    return this->streamAddresses[index];
+}
+
 void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
 {
     if (connectionReply == nullptr) {
@@ -139,6 +144,9 @@ void JsonListProcessor::processJsonQuery()
             row.stationUrl = stationUrl;
 
             tableRows.append(row);
+
+            QString streamUrl = stationObject["url_resolved"].toString();
+            this->streamAddresses.push_back(streamUrl);
         }
     }
 }
