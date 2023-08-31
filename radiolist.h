@@ -25,10 +25,14 @@ private slots:
     void loadMoreStationsIfNeeded();
     void onTableViewDoubleClicked(const QModelIndex &index);
     void onPlayPauseButtonCliced();
+    void onNextButtonClicked();
+    void onPrevButtonClicked();
     void onStopButtonClicked();
+    void onTableViewClicked(const QModelIndex &index);
+    void tableViewActivated(const QModelIndex &index);
 
 private:
-    int loadedStationsCount = 0;
+    int loadedStationsCount = -1;
     Ui::MainWindow     *ui      = nullptr;
     QStandardItemModel *model   = nullptr;
     QHeaderView        *header  = nullptr;
