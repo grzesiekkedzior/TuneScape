@@ -41,7 +41,9 @@ private:
     JsonListProcessor   jsonListProcesor;
     RadioAudioManager   radioManager;
     QString             currentRadioPlayingAddress = "";
+    QString item = "";
     int radioIndexNumber = 0;
+    int radioEnterIndexNumber = 0;
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
@@ -60,6 +62,8 @@ private:
 
 
     void playStream(int radioNumber);
+    void clearTableViewColor();
+    void setIndexColor();
 };
 
 #endif // RADIOLIST_H

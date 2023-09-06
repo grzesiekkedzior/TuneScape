@@ -37,6 +37,7 @@ public:
     bool checkInternetConnection();
     void lostConnection();
     void connected();
+    QVector<QString>& getStreamAddresses();
     QString getStreamAddresses(int index) const;
 
 

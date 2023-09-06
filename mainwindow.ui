@@ -292,6 +292,10 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="styleSheet">
+            <string notr="true">selection-background-color: rgb(221, 234, 255);
+selection-color: rgb(4, 4, 4);</string>
+           </property>
            <property name="currentIndex">
             <number>0</number>
            </property>
@@ -307,6 +311,12 @@
                </property>
                <property name="midLineWidth">
                 <number>0</number>
+               </property>
+               <property name="verticalScrollBarPolicy">
+                <enum>Qt::ScrollBarAlwaysOff</enum>
+               </property>
+               <property name="horizontalScrollBarPolicy">
+                <enum>Qt::ScrollBarAsNeeded</enum>
                </property>
                <property name="sizeAdjustPolicy">
                 <enum>QAbstractScrollArea::AdjustIgnored</enum>

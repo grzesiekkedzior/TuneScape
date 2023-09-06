@@ -73,7 +73,7 @@ auto checkItem = [] (const QString &item, const QString &target) {
 
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
-    QString item = index.data().toString();
+    item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item;
     if (!checkItem(item, LIBRARY_TREE) && !checkItem(item, FAVORITE_TREE)) {
         if (checkItem(item, "Top")) {
@@ -105,11 +105,19 @@ void RadioList::playStream(int radioNumber)
     radioManager.playStream();
 }
 
+void RadioList::setIndexColor()
+{
+    for (int column = 0; column < model->columnCount(); column++) {
+        model->setData(model->index(radioIndexNumber, column), QColor(222, 255, 223), Qt::BackgroundRole);
+    }
+}
+
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
     radioIndexNumber = index.row();
     playStream(radioIndexNumber);
-
+    clearTableViewColor();
+    setIndexColor();
     if (radioManager.getMediaPlayer()->isPlaying())
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
 }
@@ -128,6 +136,8 @@ void RadioList::onPlayPauseButtonCliced()
 
     // if the radio stations are not loaded from server (unacktive button then)
     if (currentRadioPlayingAddress.isEmpty() && !jsonListProcesor.getTableRows().isEmpty()) {
+        clearTableViewColor();
+        setIndexColor();
         playStream(radioIndexNumber);
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
     }
@@ -136,6 +146,8 @@ void RadioList::onPlayPauseButtonCliced()
     if (!jsonListProcesor.getTableRows().isEmpty()
         && !radioManager.getMediaPlayer()->isPlaying()
         && currentRadioPlayingAddress == "") {
+        clearTableViewColor();
+        setIndexColor();
         playStream(radioIndexNumber);
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
     }
@@ -147,7 +159,10 @@ void RadioList::onNextButtonClicked()
     if (radioManager.getMediaPlayer()->isPlaying()
         && radioIndexNumber < jsonListProcesor.getTableRows().size()-1) {
         ++radioIndexNumber;
+        clearTableViewColor();
+        setIndexColor();
         playStream(radioIndexNumber);
+
         qDebug() << radioIndexNumber << jsonListProcesor.getTableRows().size();
     }
 
@@ -160,9 +175,21 @@ void RadioList::onPrevButtonClicked()
         --radioIndexNumber;
         playStream(radioIndexNumber);
 
+        clearTableViewColor();
+        setIndexColor();
+
         qDebug() << radioIndexNumber << jsonListProcesor.getTableRows().size();
     }
 
+}
+
+void RadioList::clearTableViewColor()
+{
+    for (int row = 0; row < model->rowCount(); ++row) {
+        for (int column = 0; column < model->columnCount(); ++column) {
+            model->setData(model->index(row, column), QColor(Qt::white), Qt::BackgroundRole);
+        }
+    }
 }
 
 void RadioList::onStopButtonClicked()
@@ -171,16 +198,19 @@ void RadioList::onStopButtonClicked()
         ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
         radioManager.stopStream();
         currentRadioPlayingAddress = "";
+
     }
+    clearTableViewColor();
 }
 
 void RadioList::onTableViewClicked(const QModelIndex &index)
 {
-    this->radioIndexNumber = index.row();
+    //this->radioIndexNumber = index.row();
 }
 
 void RadioList::tableViewActivated(const QModelIndex &index)
 {
+    clearTableViewColor();
     onTableViewDoubleClicked(index);
     this->radioIndexNumber = index.row();
 }

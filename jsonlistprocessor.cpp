@@ -40,6 +40,11 @@ void JsonListProcessor::connected()
     ui->statusbar->setStyleSheet("color: green");
 }
 
+QVector<QString> &JsonListProcessor::getStreamAddresses()
+{
+    return this->streamAddresses;
+}
+
 QString JsonListProcessor::getStreamAddresses(int index) const
 {
     return this->streamAddresses[index];
