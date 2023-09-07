@@ -45,7 +45,7 @@ void RadioList::loadRadioList()
         model->appendRow(rowItems);
     }
     ui->tableView->setModel(model);
-
+    this->treeItem = "Discover";
     ui->tableView->resizeRowsToContents();
     loadedStationsCount += batchSize;
 }
