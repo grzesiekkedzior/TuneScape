@@ -36,7 +36,7 @@ void MainWindow::start()
     radioExplorer = new RadioExplorer(ui);
     radioList     = new RadioList(ui);
     radioExplorer->createMenu();
-    //radioList->loadDiscoverList();
+    radioList->loadAllData();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

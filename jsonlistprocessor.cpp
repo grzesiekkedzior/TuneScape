@@ -121,6 +121,7 @@ JsonListProcessor::~JsonListProcessor()
 void JsonListProcessor::processJsonQuery()
 {
     tableRows.clear();
+    streamAddresses.clear();
     if (reply)
         doc = createJasonDocument(reply);
 
@@ -185,3 +186,14 @@ QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply)
     doc = QJsonDocument::fromJson(data);
     return doc;
 }
+
+void JsonListProcessor::setTableRows(const QVector<TableRow> &rows)
+{
+    tableRows = rows;
+}
+
+void JsonListProcessor::setStreamAddresses(const QVector<QString> &addresses)
+{
+    streamAddresses = addresses;
+}
+

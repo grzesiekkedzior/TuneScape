@@ -50,6 +50,30 @@ void RadioList::loadRadioList()
     loadedStationsCount += batchSize;
 }
 
+void RadioList::loadAllData()
+{
+    QStringList endpoints = {
+        JSON_ENDPOINT_TOP,
+        JSON_ENDPOINT_DISCOVER,
+        JSON_ENDPOINT_POPULAR,
+        JSON_ENDPOINT_NEW
+    };
+
+    for (const QString &endpoint : endpoints) {
+        jsonListProcesor.loadEndpoint(endpoint);
+        jsonListProcesor.processJsonQuery();
+
+        // Wait for processing data
+        QCoreApplication::processEvents();
+
+        QVector<TableRow> tableRows = jsonListProcesor.getTableRows();
+        QVector<QString> streamAddresses = jsonListProcesor.getStreamAddresses();
+
+        allTableRows.push_back(tableRows);
+        allStreamAddresses.push_back(streamAddresses);
+    }
+}
+
 void RadioList::setLoadedStationsCount(int num)
 {
     this->loadedStationsCount = num;
@@ -73,29 +97,35 @@ auto checkItem = [] (const QString &item, const QString &target) {
 
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
+
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item;
+
     if (!checkItem(item, LIBRARY_TREE) && !checkItem(item, FAVORITE_TREE)) {
         if (checkItem(item, "Top")) {
-            if(this->treeItem == "Discover") this->treeItem = "";
-            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_TOP);
-        }if (checkItem(item, "Discover")) {
+            if (this->treeItem == "Discover") this->treeItem = "";
+            jsonListProcesor.setTableRows(allTableRows[Stations::TOP]);
+            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::TOP]);
+        } else if (checkItem(item, "Discover")) {
             this->treeItem = item;
-            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_DISCOVER);
-        }if (checkItem(item, "Popular")) {
-            if(this->treeItem == "Discover") this->treeItem = "";
-            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_POPULAR);
-        } if (checkItem(item, "New")) {
-            if(this->treeItem == "Discover") this->treeItem = "";
-            jsonListProcesor.loadEndpoint(JSON_ENDPOINT_NEW);
+            jsonListProcesor.setTableRows(allTableRows[Stations::DISCOVERY]);
+            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::DISCOVERY]);
+        } else if (checkItem(item, "Popular")) {
+            if (this->treeItem == "Discover") this->treeItem = "";
+            jsonListProcesor.setTableRows(allTableRows[Stations::POPULAR]);
+            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::POPULAR]);
+        } else if (checkItem(item, "New")) {
+            if (this->treeItem == "Discover") this->treeItem = "";
+            jsonListProcesor.setTableRows(allTableRows[Stations::NEW]);
+            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::NEW]);
         }
         if (jsonListProcesor.checkInternetConnection()) {
             loadedStationsCount = 0;
-            jsonListProcesor.processJsonQuery();
             loadRadioList();
         }
     }
 }
+
 
 void RadioList::playStream(int radioNumber)
 {

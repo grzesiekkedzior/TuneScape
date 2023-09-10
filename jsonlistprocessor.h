@@ -40,6 +40,9 @@ public:
     QVector<QString>& getStreamAddresses();
     QString getStreamAddresses(int index) const;
 
+    void setTableRows(const QVector<TableRow> &rows);
+    void setStreamAddresses(const QVector<QString> &addresses);
+
 
 private:
     const QString NAME          = "name";
@@ -51,6 +54,7 @@ private:
 
     QVector<TableRow>       tableRows;
     QVector<QString>        streamAddresses;
+
     QNetworkAccessManager   manager;
     QNetworkReply           *reply;
     QJsonDocument           doc;

@@ -10,6 +10,10 @@
 #include <QHeaderView>
 #include <QStringList>
 
+enum Stations {
+    TOP, DISCOVERY, POPULAR, NEW
+};
+
 class RadioList : public QObject
 {
     Q_OBJECT
@@ -18,7 +22,10 @@ public:
     RadioList(Ui::MainWindow *ui);
 
     void loadRadioList();
+    void loadAllData();
     void setLoadedStationsCount(int num);
+
+    void setTypeMenu();
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
@@ -60,6 +67,8 @@ private:
     const QString LIBRARY_TREE              = "Library";
     const QString FAVORITE_TREE             = "Favorite";
 
+    QVector<QVector<TableRow>>  allTableRows;
+    QVector<QVector<QString>>   allStreamAddresses;
 
     void playStream(int radioNumber);
     void clearTableViewColor();
