@@ -39,7 +39,10 @@ private slots:
     void tableViewActivated(const QModelIndex &index);
 
 private:
-    int loadedStationsCount = -1;
+    int loadedStationsCount     = -1;
+    int currentPlaylistIndex    = -1;
+    int currentStationIndex     = -1;
+    int currentPlayListPlaying  = -1;
     Ui::MainWindow     *ui      = nullptr;
     QStandardItemModel *model   = nullptr;
     QHeaderView        *header  = nullptr;

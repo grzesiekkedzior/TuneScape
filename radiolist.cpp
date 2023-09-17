@@ -89,6 +89,9 @@ void RadioList::loadMoreStationsIfNeeded()
 
         loadRadioList();
     }
+    if (currentPlayListPlaying == currentPlaylistIndex) {
+        setIndexColor();
+    }
 }
 
 auto checkItem = [] (const QString &item, const QString &target) {
@@ -106,22 +109,35 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             if (this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::TOP]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::TOP]);
+            currentPlaylistIndex = Stations::TOP;
         } else if (checkItem(item, "Discover")) {
+            int rowCount = model->rowCount();
+            qDebug() << "loadRadioList" << treeItem;
+            if (rowCount > 0) {
+                model->removeRows(0, rowCount);
+            }
             this->treeItem = item;
             jsonListProcesor.setTableRows(allTableRows[Stations::DISCOVERY]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::DISCOVERY]);
+            currentPlaylistIndex = Stations::DISCOVERY;
         } else if (checkItem(item, "Popular")) {
             if (this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::POPULAR]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::POPULAR]);
+            currentPlaylistIndex = Stations::POPULAR;
         } else if (checkItem(item, "New")) {
             if (this->treeItem == "Discover") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::NEW]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::NEW]);
+            currentPlaylistIndex = Stations::NEW;
         }
         if (jsonListProcesor.checkInternetConnection()) {
             loadedStationsCount = 0;
             loadRadioList();
+        }
+
+        if (currentPlayListPlaying == currentPlaylistIndex) {
+            setIndexColor();
         }
     }
 }
@@ -145,6 +161,8 @@ void RadioList::setIndexColor()
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
     radioIndexNumber = index.row();
+    currentStationIndex = index.row();
+    currentPlayListPlaying = currentPlaylistIndex;
     playStream(radioIndexNumber);
     clearTableViewColor();
     setIndexColor();
@@ -228,7 +246,12 @@ void RadioList::onStopButtonClicked()
         ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
         radioManager.stopStream();
         currentRadioPlayingAddress = "";
+        radioIndexNumber = 0;
 
+    } else {
+        ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+        currentRadioPlayingAddress = "";
+        radioIndexNumber = 0;
     }
     clearTableViewColor();
 }
@@ -236,6 +259,7 @@ void RadioList::onStopButtonClicked()
 void RadioList::onTableViewClicked(const QModelIndex &index)
 {
     //this->radioIndexNumber = index.row();
+    qDebug() << this->radioIndexNumber;
 }
 
 void RadioList::tableViewActivated(const QModelIndex &index)

@@ -9,6 +9,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->previous->hide();
+    ui->next->hide();
     set_icon_btn();
     start();
 }
