@@ -2,8 +2,8 @@
 #define JSONLISTPROCESSOR_H
 
 
-#include "radiostations.h"
-#include "ui_mainwindow.h"
+#include "include/radiostations.h"
+#include "../ui_mainwindow.h"
 
 #include <QObject>
 #include <QNetworkAccessManager>

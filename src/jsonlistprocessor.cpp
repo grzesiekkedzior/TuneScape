@@ -1,5 +1,5 @@
-#include "jsonlistprocessor.h"
-#include "radiolist.h"
+#include "include/jsonlistprocessor.h"
+#include "include/radiolist.h"
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>

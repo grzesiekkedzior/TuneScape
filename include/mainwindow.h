@@ -1,7 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-#include "radioexplorer.h"
-#include "radiolist.h"
+#include "include/radioexplorer.h"
+#include "include/radiolist.h"
 #include <QMainWindow>
 #include <QResizeEvent>
 

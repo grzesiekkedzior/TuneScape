@@ -16,6 +16,7 @@ public:
     void stopStream();
     QMediaPlayer *getMediaPlayer() const;
     QAudioOutput *getAudioAutput() const;
+    void setVolume(int value);
 
 signals:
 

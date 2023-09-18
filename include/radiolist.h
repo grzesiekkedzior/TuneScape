@@ -1,9 +1,9 @@
 #ifndef RADIOLIST_H
 #define RADIOLIST_H
 
-#include "jsonlistprocessor.h"
-#include "radioaudiomanager.h"
-#include "ui_mainwindow.h"
+#include "include/jsonlistprocessor.h"
+#include "include/radioaudiomanager.h"
+#include "../ui_mainwindow.h"
 
 #include <QObject>
 #include <QStandardItemModel>

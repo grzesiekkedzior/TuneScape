@@ -1,4 +1,4 @@
-#include "radiostations.h"
+#include "include/radiostations.h"
 
 RadioStations::RadioStations(QObject *parent)
     : QObject{parent}

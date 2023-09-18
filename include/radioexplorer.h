@@ -1,6 +1,6 @@
 #ifndef RADIOEXPLORER_H
 #define RADIOEXPLORER_H
-#include "ui_mainwindow.h"
+#include "../ui_mainwindow.h"
 #include <QStandardItemModel>
 #include <QStandardItem>
 #include <QString>
