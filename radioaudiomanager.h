@@ -15,6 +15,7 @@ public:
     void playStream();
     void stopStream();
     QMediaPlayer *getMediaPlayer() const;
+    QAudioOutput *getAudioAutput() const;
 
 signals:
 

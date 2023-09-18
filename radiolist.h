@@ -38,6 +38,7 @@ private slots:
     void onTableViewClicked(const QModelIndex &index);
     void tableViewActivated(const QModelIndex &index);
 
+
 private:
     int loadedStationsCount     = -1;
     int currentPlaylistIndex    = -1;
@@ -76,6 +77,7 @@ private:
     void playStream(int radioNumber);
     void clearTableViewColor();
     void setIndexColor();
+    void sliderMoved(int move);
 };
 
 #endif // RADIOLIST_H

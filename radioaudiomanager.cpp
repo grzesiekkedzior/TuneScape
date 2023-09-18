@@ -20,7 +20,6 @@ RadioAudioManager::~RadioAudioManager()
 
 void RadioAudioManager::loadStream(const QUrl &url)
 {
-    audioOutput->setVolume(50);
     player->setSource(url);
 }
 
@@ -37,4 +36,15 @@ void RadioAudioManager::stopStream()
 QMediaPlayer *RadioAudioManager::getMediaPlayer() const
 {
     return this->player;
+}
+
+QAudioOutput *RadioAudioManager::getAudioAutput() const
+{
+    return this->audioOutput;
+}
+
+void RadioAudioManager::setVolume(int value)
+{
+    float volume = value * 0.01;
+    this->audioOutput->setVolume(volume);
 }

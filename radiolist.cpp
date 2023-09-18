@@ -19,6 +19,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->stop, &QPushButton::clicked, this, &RadioList::onStopButtonClicked);
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTableViewClicked);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
+    connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -142,7 +143,6 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     }
 }
 
-
 void RadioList::playStream(int radioNumber)
 {
     currentRadioPlayingAddress = jsonListProcesor.getStreamAddresses(radioNumber);
@@ -155,6 +155,17 @@ void RadioList::setIndexColor()
 {
     for (int column = 0; column < model->columnCount(); column++) {
         model->setData(model->index(radioIndexNumber, column), QColor(222, 255, 223), Qt::BackgroundRole);
+    }
+}
+
+void RadioList::sliderMoved(int move)
+{
+    radioManager.setVolume(move);
+    if (move == 0) {
+        ui->volume->setIcon(QIcon(":/images/img/audiostop.png"));
+    }
+    if (move == 1){
+        ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
     }
 }
 
@@ -213,7 +224,6 @@ void RadioList::onNextButtonClicked()
 
         qDebug() << radioIndexNumber << jsonListProcesor.getTableRows().size();
     }
-
 }
 
 void RadioList::onPrevButtonClicked()
