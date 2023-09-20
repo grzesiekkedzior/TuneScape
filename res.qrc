@@ -33,6 +33,7 @@
         <file>img/minimize30.png</file>
         <file>img/radio-tower-3-120.png</file>
         <file>img/radio-10-120.png</file>
+        <file>img/radio-10-96.png</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>

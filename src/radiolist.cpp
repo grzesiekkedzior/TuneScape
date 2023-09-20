@@ -172,8 +172,46 @@ void RadioList::sliderMoved(int move)
 
 void RadioList::setRadioImage(const QModelIndex &index)
 {
-    //TO DO
+    QEventLoop loop;
+    QUrl imageUrl(jsonListProcesor.getIconAddresses(index.row()));
+
+    QNetworkAccessManager manager;
+
+    QNetworkRequest request(imageUrl);
+    QNetworkReply *reply = manager.get(request);
+
+    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    if (reply->error() == QNetworkReply::NoError) {
+
+        QVariant contentType = reply->header(QNetworkRequest::ContentTypeHeader);
+        QString contentTypeString = contentType.toString();
+
+        if (contentTypeString.startsWith("image/")) {
+            QByteArray imageData = reply->readAll();
+            QPixmap pixmap;
+            pixmap.loadFromData(imageData);
+
+            if (!pixmap.isNull()) {
+                QSize imageSize(120, 120);
+                pixmap = pixmap.scaled(imageSize, Qt::KeepAspectRatio);
+                ui->infoLabel->setPixmap(pixmap);
+                ui->infoLabel->show();
+            }
+        } else {
+            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            ui->infoLabel->show();
+        }
+    } else {
+        qDebug() << "Error:" << reply->errorString();
+        ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        ui->infoLabel->show();
+    }
+
+    reply->deleteLater();
 }
+
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
