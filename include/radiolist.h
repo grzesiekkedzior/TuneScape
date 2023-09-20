@@ -78,6 +78,8 @@ private:
     void clearTableViewColor();
     void setIndexColor();
     void sliderMoved(int move);
+    void setRadioImage(const QModelIndex &index);
+
 };
 
 #endif // RADIOLIST_H

@@ -50,6 +50,11 @@ QString JsonListProcessor::getStreamAddresses(int index) const
     return this->streamAddresses[index];
 }
 
+QString JsonListProcessor::getIconAddresses(int index) const
+{
+    return this->iconAddresses[index];
+}
+
 void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
 {
     if (connectionReply == nullptr) {
@@ -151,8 +156,10 @@ void JsonListProcessor::processJsonQuery()
 
             tableRows.append(row);
 
-            QString streamUrl = stationObject["url_resolved"].toString();
+            QString streamUrl = stationObject[URL_RESOLVED].toString();
+            QString iconUrl   = stationObject[FAVICON].toString();
             this->streamAddresses.push_back(streamUrl);
+            this->iconAddresses.push_back(iconUrl);
         }
     }
 }

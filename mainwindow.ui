@@ -166,7 +166,7 @@
             <attribute name="title">
              <string>Radio</string>
             </attribute>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
               <widget class="QTreeView" name="treeView">
                <property name="enabled">
@@ -219,6 +219,31 @@
                </property>
                <property name="headerHidden">
                 <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="infoLabel">
+               <property name="minimumSize">
+                <size>
+                 <width>0</width>
+                 <height>150</height>
+                </size>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="res.qrc">:/images/img/radio-10-120.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>false</bool>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="margin">
+                <number>16</number>
                </property>
               </widget>
              </item>

@@ -39,6 +39,7 @@ public:
     void connected();
     QVector<QString>& getStreamAddresses();
     QString getStreamAddresses(int index) const;
+    QString getIconAddresses(int index) const;
 
     void setTableRows(const QVector<TableRow> &rows);
     void setStreamAddresses(const QVector<QString> &addresses);
@@ -50,10 +51,12 @@ private:
     const QString COUNTRY       = "country";
     const QString URL           = "homepage";
     const QString URL_RESOLVED  = "url_resolved";
+    const QString FAVICON       = "favicon";
     QString endpoint            = "";
 
     QVector<TableRow>       tableRows;
     QVector<QString>        streamAddresses;
+    QVector<QString>        iconAddresses;
 
     QNetworkAccessManager   manager;
     QNetworkReply           *reply;

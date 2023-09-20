@@ -13,6 +13,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
+    connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
     connect(ui->playPause, &QPushButton::clicked, this, &RadioList::onPlayPauseButtonCliced);
     connect(ui->next, &QPushButton::clicked, this, &RadioList::onNextButtonClicked);
     connect(ui->previous, &QPushButton::clicked, this, &RadioList::onPrevButtonClicked);
@@ -167,6 +168,11 @@ void RadioList::sliderMoved(int move)
     if (move == 1){
         ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
     }
+}
+
+void RadioList::setRadioImage(const QModelIndex &index)
+{
+    //TO DO
 }
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
