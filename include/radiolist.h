@@ -1,6 +1,7 @@
 #ifndef RADIOLIST_H
 #define RADIOLIST_H
 
+#include "StreamReader.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "../ui_mainwindow.h"
@@ -39,6 +40,7 @@ private slots:
     void tableViewActivated(const QModelIndex &index);
 
 
+
 private:
     int loadedStationsCount     = -1;
     int currentPlaylistIndex    = -1;
@@ -51,6 +53,7 @@ private:
     QString             treeItem;
     JsonListProcessor   jsonListProcesor;
     RadioAudioManager   radioManager;
+    StreamReader streamReader;
     QString             currentRadioPlayingAddress = "";
     QString item = "";
     int radioIndexNumber = 0;
@@ -79,6 +82,8 @@ private:
     void setIndexColor();
     void sliderMoved(int move);
     void setRadioImage(const QModelIndex &index);
+    void getSongTitle(const QString &url);
+    void handleDataReceived(const QString& data);
 
 };
 

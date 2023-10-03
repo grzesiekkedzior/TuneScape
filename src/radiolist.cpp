@@ -14,6 +14,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
+    connect(ui->tableView, &QTableView::activated, this, &RadioList::setRadioImage);
     connect(ui->playPause, &QPushButton::clicked, this, &RadioList::onPlayPauseButtonCliced);
     connect(ui->next, &QPushButton::clicked, this, &RadioList::onNextButtonClicked);
     connect(ui->previous, &QPushButton::clicked, this, &RadioList::onPrevButtonClicked);
@@ -21,6 +22,9 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTableViewClicked);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
+    connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
+
+
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -144,12 +148,19 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     }
 }
 
+void RadioList::getSongTitle(const QString &url)
+{
+    streamReader.startStreaming(url);
+}
+
 void RadioList::playStream(int radioNumber)
 {
     currentRadioPlayingAddress = jsonListProcesor.getStreamAddresses(radioNumber);
+    getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
     radioManager.loadStream(streamUrl);
     radioManager.playStream();
+
 }
 
 void RadioList::setIndexColor()
@@ -321,4 +332,18 @@ void RadioList::tableViewActivated(const QModelIndex &index)
     clearTableViewColor();
     onTableViewDoubleClicked(index);
     this->radioIndexNumber = index.row();
+}
+
+void RadioList::handleDataReceived(const QString& data) {
+    QString metaData = data;
+    int titleStart = metaData.indexOf("StreamTitle='");
+    int titleEnd = metaData.indexOf("';", titleStart);
+
+    if (titleStart != -1 && titleEnd != -1) {
+        QString title = metaData.mid(titleStart + 13, titleEnd - (titleStart + 13));
+        qDebug() << title;
+        ui->infoData->clear();
+        ui->infoData->setText(title);
+    }
+    metaData = "";
 }
