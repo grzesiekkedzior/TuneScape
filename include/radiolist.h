@@ -76,6 +76,7 @@ private:
 
     QVector<QVector<TableRow>>  allTableRows;
     QVector<QVector<QString>>   allStreamAddresses;
+    QVector<QVector<QString>>   allIconsAddresses;
 
     void playStream(int radioNumber);
     void clearTableViewColor();

@@ -38,11 +38,13 @@ public:
     void lostConnection();
     void connected();
     QVector<QString>& getStreamAddresses();
+    QVector<QString>& getIconAddresses();
     QString getStreamAddresses(int index) const;
     QString getIconAddresses(int index) const;
 
     void setTableRows(const QVector<TableRow> &rows);
     void setStreamAddresses(const QVector<QString> &addresses);
+    void setIconAddresses(const QVector<QString> &icons);
 
 
 private:

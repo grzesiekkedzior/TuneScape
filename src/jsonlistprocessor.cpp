@@ -55,6 +55,11 @@ QString JsonListProcessor::getIconAddresses(int index) const
     return this->iconAddresses[index];
 }
 
+QVector<QString> &JsonListProcessor::getIconAddresses()
+{
+    return this->iconAddresses;
+}
+
 void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
 {
     if (connectionReply == nullptr) {
@@ -127,6 +132,7 @@ void JsonListProcessor::processJsonQuery()
 {
     tableRows.clear();
     streamAddresses.clear();
+    iconAddresses.clear();
     if (reply)
         doc = createJasonDocument(reply);
 
@@ -202,5 +208,10 @@ void JsonListProcessor::setTableRows(const QVector<TableRow> &rows)
 void JsonListProcessor::setStreamAddresses(const QVector<QString> &addresses)
 {
     streamAddresses = addresses;
+}
+
+void JsonListProcessor::setIconAddresses(const QVector<QString> &icons)
+{
+    iconAddresses = icons;
 }
 
