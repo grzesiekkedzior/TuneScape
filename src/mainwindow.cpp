@@ -54,6 +54,4 @@ void MainWindow::resizeEvent(QResizeEvent *event)
         ui->serachInput->show();
     }
     qDebug() << ui->centralwidget->geometry().height();
-
-
 }

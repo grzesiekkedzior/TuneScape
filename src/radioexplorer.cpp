@@ -31,11 +31,11 @@ void RadioExplorer::setNotEditableTree()
 void RadioExplorer::createTree()
 {
     itemModel->appendRow(library);
-    itemModel->appendRow(favorite);
     library->appendRow(top);
     library->appendRow(discover);
     library->appendRow(popular);
     library->appendRow(newRadios);
+    library->appendRow(favorite);
 }
 
 void RadioExplorer::setBoldFont()
@@ -43,7 +43,6 @@ void RadioExplorer::setBoldFont()
     QFont boldFont;
     boldFont.setBold(true);
     library->setData(boldFont, Qt::FontRole);
-    favorite->setData(boldFont, Qt::FontRole);
 }
 
 void RadioExplorer::setModelView()

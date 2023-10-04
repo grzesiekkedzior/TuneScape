@@ -53,11 +53,13 @@ private:
     QString             treeItem;
     JsonListProcessor   jsonListProcesor;
     RadioAudioManager   radioManager;
-    StreamReader streamReader;
+    StreamReader        streamReader;
     QString             currentRadioPlayingAddress = "";
-    QString item = "";
+    QString             item = "";
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;
+    bool isStopClicked        = false;
+    bool isTreeClicked        = false;
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
@@ -85,7 +87,8 @@ private:
     void setRadioImage(const QModelIndex &index);
     void getSongTitle(const QString &url);
     void handleDataReceived(const QString& data);
-
+    
+    void clearRadioInfoLabel();
 };
 
 #endif // RADIOLIST_H
