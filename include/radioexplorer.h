@@ -28,7 +28,7 @@ private:
 
     const QString LIBRARY   = "Library";
     const QString POPULAR   = "Popular";
-    const QString DISCOVER  = "Discover";
+    //const QString DISCOVER  = "Discover";
     const QString TOP       = "Top";
     const QString NEW       = "New";
     const QString FAVORITE  = "Favorite";

@@ -12,7 +12,7 @@
 #include <QStringList>
 
 enum Stations {
-    TOP, DISCOVERY, POPULAR, NEW
+    TOP, /**DISCOVERY,*/ POPULAR, NEW
 };
 
 class RadioList : public QObject
@@ -68,10 +68,10 @@ private:
     const QString LIBRARY   = "Library";
     const QString FAVORITE  = "Favorite";
 
-    const QString JSON_ENDPOINT_TOP         = "json/stations/topvote/5";
-    const QString JSON_ENDPOINT_DISCOVER    = "json/stations";
-    const QString JSON_ENDPOINT_POPULAR     = "json/stations/topclick/5";
-    const QString JSON_ENDPOINT_NEW         = "json/stations/lastchange/5";
+    const QString JSON_ENDPOINT_TOP         = "json/stations/topvote/20";
+    //const QString JSON_ENDPOINT_DISCOVER    = "json/stations";
+    const QString JSON_ENDPOINT_POPULAR     = "json/stations/topclick/20";
+    const QString JSON_ENDPOINT_NEW         = "json/stations/lastchange/20";
     const QString JSON_ENDPOINT_EMPTY       = "empty";
     const QString LIBRARY_TREE              = "Library";
     const QString FAVORITE_TREE             = "Favorite";
