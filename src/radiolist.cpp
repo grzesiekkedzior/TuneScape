@@ -23,7 +23,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
-    connect(ui->serachInput, &QLineEdit::textChanged, this, &RadioList::searchStations);
+    connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
 
 
 
@@ -67,19 +67,7 @@ void RadioList::loadAllData()
     };
 
     for (const QString &endpoint : endpoints) {
-        jsonListProcesor.loadEndpoint(endpoint);
-        jsonListProcesor.processJsonQuery();
-
-        // Wait for processing data
-        QCoreApplication::processEvents();
-
-        QVector<TableRow> tableRows = jsonListProcesor.getTableRows();
-        QVector<QString> streamAddresses = jsonListProcesor.getStreamAddresses();
-        QVector<QString> iconAddresses = jsonListProcesor.getIconAddresses();
-
-        allTableRows.push_back(tableRows);
-        allStreamAddresses.push_back(streamAddresses);
-        allIconsAddresses.push_back(iconAddresses);
+        setVectorsOfStation(endpoint);
     }
 }
 
@@ -368,23 +356,8 @@ void RadioList::handleDataReceived(const QString& data) {
     metaData = "";
 }
 
-void RadioList::searchStations(const QString &data)
+void RadioList::setVectorsOfStation(const QString endpoint)
 {
-    if (allTableRows.size() > 3
-        && allIconsAddresses.size() > 3
-        && allStreamAddresses.size() > 3) {
-        allTableRows.pop_back();
-        allIconsAddresses.pop_back();
-        allStreamAddresses.pop_back();
-    }
-    int rowCount = model->rowCount();
-    qDebug() << "loadRadioList" << treeItem;
-    model->removeRows(0, rowCount);
-
-
-    const QString endpoint = JSON_ENDPOINT_SEARCH + data;
-    qDebug() << allTableRows.size();
-
     jsonListProcesor.loadEndpoint(endpoint);
     jsonListProcesor.processJsonQuery();
 
@@ -394,10 +367,31 @@ void RadioList::searchStations(const QString &data)
     QVector<TableRow> tableRows = jsonListProcesor.getTableRows();
     QVector<QString> streamAddresses = jsonListProcesor.getStreamAddresses();
     QVector<QString> iconAddresses = jsonListProcesor.getIconAddresses();
-
     allTableRows.push_back(tableRows);
     allStreamAddresses.push_back(streamAddresses);
     allIconsAddresses.push_back(iconAddresses);
+}
+
+void RadioList::searchStations()
+{
+    // This is ugly but I dont change it to dont complicate code
+    //**********************************************************
+    if (allTableRows.size() > 3
+        && allIconsAddresses.size() > 3
+        && allStreamAddresses.size() > 3) {
+        allTableRows.pop_back();
+        allIconsAddresses.pop_back();
+        allStreamAddresses.pop_back();
+    }
+    //**********************************************************
+    int rowCount = model->rowCount();
+    model->removeRows(0, rowCount);
+
+    QString data = ui->serachInput->text();
+    const QString endpoint = JSON_ENDPOINT_SEARCH + data;
+    qDebug() << allTableRows.size();
+
+    setVectorsOfStation(endpoint);
 
     jsonListProcesor.setTableRows(allTableRows[Stations::SEARCH]);
     jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::SEARCH]);
@@ -410,5 +404,4 @@ void RadioList::searchStations(const QString &data)
     }
 
     this->treeItem = "Search";
-
 }

@@ -93,9 +93,10 @@ private:
     void setRadioImage(const QModelIndex &index);
     void getSongTitle(const QString &url);
     void handleDataReceived(const QString& data);
-    void searchStations(const QString& data);
+    void searchStations();
     
     void clearRadioInfoLabel();
+    void setVectorsOfStation(const QString endpoint);
 };
 
 #endif // RADIOLIST_H
