@@ -12,7 +12,7 @@
 #include <QStringList>
 
 enum Stations {
-    TOP, /**DISCOVERY,*/ POPULAR, NEW
+    TOP, /**DISCOVERY,*/ POPULAR, NEW, SEARCH
 };
 
 class RadioList : public QObject
@@ -27,6 +27,7 @@ public:
     void setLoadedStationsCount(int num);
 
     void setTypeMenu();
+    void startSearchTimer();
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
@@ -54,12 +55,15 @@ private:
     JsonListProcessor   jsonListProcesor;
     RadioAudioManager   radioManager;
     StreamReader        streamReader;
+    QTimer              searchTimer;
+
     QString             currentRadioPlayingAddress = "";
     QString             item = "";
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;
     bool isStopClicked        = false;
     bool isTreeClicked        = false;
+    bool isSearching = false;
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
@@ -72,6 +76,7 @@ private:
     //const QString JSON_ENDPOINT_DISCOVER    = "json/stations";
     const QString JSON_ENDPOINT_POPULAR     = "json/stations/topclick/20";
     const QString JSON_ENDPOINT_NEW         = "json/stations/lastchange/20";
+    const QString JSON_ENDPOINT_SEARCH      = "json/stations/search?name=";
     const QString JSON_ENDPOINT_EMPTY       = "empty";
     const QString LIBRARY_TREE              = "Library";
     const QString FAVORITE_TREE             = "Favorite";
@@ -80,6 +85,7 @@ private:
     QVector<QVector<QString>>   allStreamAddresses;
     QVector<QVector<QString>>   allIconsAddresses;
 
+
     void playStream(int radioNumber);
     void clearTableViewColor();
     void setIndexColor();
@@ -87,6 +93,7 @@ private:
     void setRadioImage(const QModelIndex &index);
     void getSongTitle(const QString &url);
     void handleDataReceived(const QString& data);
+    void searchStations(const QString& data);
     
     void clearRadioInfoLabel();
 };

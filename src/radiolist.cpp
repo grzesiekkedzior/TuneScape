@@ -11,7 +11,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     jsonListProcesor.setUi(ui);
     jsonListProcesor.setRadioList(this);
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
-    //connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
+    connect(ui->tableView->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioList::loadMoreStationsIfNeeded);
     //connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::setRadioImage);
@@ -23,6 +23,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
+    connect(ui->serachInput, &QLineEdit::textChanged, this, &RadioList::searchStations);
 
 
 
@@ -36,9 +37,9 @@ void RadioList::loadRadioList()
 {
     int rowCount = model->rowCount();
     qDebug() << "loadRadioList" << treeItem;
-    //if (rowCount > 0 && treeItem != "Discover") {
+    if (rowCount > 0 && treeItem != "Search") {
         model->removeRows(0, rowCount);
-    //}
+    }
     int dataSize = jsonListProcesor.getTableRows().size();
     int batchSize = 50;
 
@@ -51,7 +52,7 @@ void RadioList::loadRadioList()
         model->appendRow(rowItems);
     }
     ui->tableView->setModel(model);
-    //this->treeItem = "Discover";
+    this->treeItem = "Search";
     ui->tableView->resizeRowsToContents();
     loadedStationsCount += batchSize;
 }
@@ -114,7 +115,7 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 
     if (!checkItem(item, LIBRARY_TREE) && !checkItem(item, FAVORITE_TREE)) {
         if (checkItem(item, "Top")) {
-            //if (this->treeItem == "Discover") this->treeItem = "";
+            if (this->treeItem == "Search") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::TOP]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::TOP]);
             jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::TOP]);
@@ -131,13 +132,13 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::DISCOVERY]);
             currentPlaylistIndex = Stations::DISCOVERY;
         } */else if (checkItem(item, "Popular")) {
-            //if (this->treeItem == "Discover") this->treeItem = "";
+            if (this->treeItem == "Search") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::POPULAR]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::POPULAR]);
             jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::POPULAR]);
             currentPlaylistIndex = Stations::POPULAR;
         } else if (checkItem(item, "New")) {
-            //if (this->treeItem == "Discover") this->treeItem = "";
+            if (this->treeItem == "Search") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::NEW]);
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::NEW]);
             jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::NEW]);
@@ -365,4 +366,49 @@ void RadioList::handleDataReceived(const QString& data) {
         ui->infoData->setText(title);
     }
     metaData = "";
+}
+
+void RadioList::searchStations(const QString &data)
+{
+    if (allTableRows.size() > 3
+        && allIconsAddresses.size() > 3
+        && allStreamAddresses.size() > 3) {
+        allTableRows.pop_back();
+        allIconsAddresses.pop_back();
+        allStreamAddresses.pop_back();
+    }
+    int rowCount = model->rowCount();
+    qDebug() << "loadRadioList" << treeItem;
+    model->removeRows(0, rowCount);
+
+
+    const QString endpoint = JSON_ENDPOINT_SEARCH + data;
+    qDebug() << allTableRows.size();
+
+    jsonListProcesor.loadEndpoint(endpoint);
+    jsonListProcesor.processJsonQuery();
+
+    // Wait for processing data
+    QCoreApplication::processEvents();
+
+    QVector<TableRow> tableRows = jsonListProcesor.getTableRows();
+    QVector<QString> streamAddresses = jsonListProcesor.getStreamAddresses();
+    QVector<QString> iconAddresses = jsonListProcesor.getIconAddresses();
+
+    allTableRows.push_back(tableRows);
+    allStreamAddresses.push_back(streamAddresses);
+    allIconsAddresses.push_back(iconAddresses);
+
+    jsonListProcesor.setTableRows(allTableRows[Stations::SEARCH]);
+    jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::SEARCH]);
+    jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::SEARCH]);
+    currentPlaylistIndex = Stations::SEARCH;
+
+    if (jsonListProcesor.checkInternetConnection()) {
+        loadedStationsCount = 0;
+        loadRadioList();
+    }
+
+    this->treeItem = "Search";
+
 }

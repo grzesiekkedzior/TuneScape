@@ -5,6 +5,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QUrl>
+#include <QTimer>
 
 class StreamReader : public QObject
 {
@@ -13,6 +14,7 @@ class StreamReader : public QObject
 public:
     StreamReader(QObject* parent = nullptr);
     void startStreaming(const QUrl& url);
+    void cleanupReplies();
 
 signals:
     void dataReceived(const QString& data);
@@ -24,6 +26,7 @@ private slots:
 private:
     QNetworkAccessManager* manager;
     QNetworkReply* reply;
+    QTimer replyCleanupTimer;
 };
 
 #endif // STREAMREADER_H
