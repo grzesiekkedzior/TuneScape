@@ -14,7 +14,7 @@ class StreamReader : public QObject
 public:
     StreamReader(QObject* parent = nullptr);
     void startStreaming(const QUrl& url);
-    //void cleanupReplies();
+    void cleanupReplies();
 
 signals:
     void dataReceived(const QString& data);

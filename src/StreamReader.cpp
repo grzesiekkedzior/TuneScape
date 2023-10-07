@@ -11,6 +11,7 @@ StreamReader::StreamReader(QObject* parent) : QObject(parent) {
 }
 
 void StreamReader::startStreaming(const QUrl& url) {
+    delete reply;
     QNetworkRequest request(url);
     request.setRawHeader("Icy-MetaData", "1");
     reply = manager->get(request);
@@ -18,12 +19,14 @@ void StreamReader::startStreaming(const QUrl& url) {
     connect(reply, &QNetworkReply::readyRead, this, &StreamReader::onReadyRead);
 }
 
-//void StreamReader::cleanupReplies()
-//{
-//    qDebug() << "FreeConnection";
-//    if (reply)
-//        reply->deleteLater();
-//}
+void StreamReader::cleanupReplies()
+{
+    qDebug() << "FreeConnection";
+    if (reply){
+        delete reply;
+    }
+
+}
 
 void StreamReader::onFinished(QNetworkReply* reply) {
     if (reply->error() != QNetworkReply::NoError) {

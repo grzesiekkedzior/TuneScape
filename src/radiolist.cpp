@@ -232,6 +232,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
     if (radioManager.getMediaPlayer()->isPlaying())
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
     isStopClicked = false;
+
 }
 
 void RadioList::onPlayPauseButtonCliced()
@@ -326,6 +327,7 @@ void RadioList::onStopButtonClicked()
             ui->tableView->setCurrentIndex(newIndex);
         }
         clearTableViewColor();
+
     }
 }
 

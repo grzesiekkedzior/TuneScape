@@ -20,6 +20,16 @@ RadioAudioManager::~RadioAudioManager()
 
 void RadioAudioManager::loadStream(const QUrl &url)
 {
+    streamReader.cleanupReplies();
+    player->stop();
+    delete player;
+    delete audioOutput;
+
+
+    player = new QMediaPlayer;
+    audioOutput = new QAudioOutput;
+    player->setAudioOutput(audioOutput);
+
     player->setSource(url);
 }
 

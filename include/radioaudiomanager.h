@@ -1,5 +1,6 @@
 #ifndef RADIOAUDIOMANAGER_H
 #define RADIOAUDIOMANAGER_H
+#include "include/StreamReader.h"
 
 #include <QObject>
 #include <QMediaPlayer>
@@ -23,6 +24,7 @@ signals:
 private:
     QMediaPlayer *player;
     QAudioOutput *audioOutput;
+    StreamReader streamReader;
 
 
 };
