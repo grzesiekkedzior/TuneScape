@@ -571,7 +571,11 @@ selection-color: rgb(4, 4, 4);</string>
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -580,26 +584,18 @@ selection-color: rgb(4, 4, 4);</string>
      <height>26</height>
     </rect>
    </property>
+   <property name="defaultUp">
+    <bool>false</bool>
+   </property>
+   <property name="nativeMenuBar">
+    <bool>true</bool>
+   </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>Radio</string>
     </property>
     <addaction name="actionSearch"/>
     <addaction name="actionClose"/>
-   </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>Playback</string>
-    </property>
-    <addaction name="actionPlay"/>
-    <addaction name="actionPause"/>
-    <addaction name="actionStop"/>
-    <addaction name="actionNext"/>
-    <addaction name="actionPrevious"/>
-    <addaction name="actionVolumePlus"/>
-    <addaction name="actionVolumeMinus"/>
-    <addaction name="actionMute"/>
-    <addaction name="actionRecord"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -615,11 +611,9 @@ selection-color: rgb(4, 4, 4);</string>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuHelp"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionAbout">
    <property name="icon">
     <iconset resource="res.qrc">
@@ -636,54 +630,6 @@ selection-color: rgb(4, 4, 4);</string>
    </property>
    <property name="text">
     <string>Close</string>
-   </property>
-  </action>
-  <action name="actionPlay">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/play30.png</normaloff>:/images/img/play30.png</iconset>
-   </property>
-   <property name="text">
-    <string>Play</string>
-   </property>
-   <property name="priority">
-    <enum>QAction::NormalPriority</enum>
-   </property>
-  </action>
-  <action name="actionStop">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/stop30.png</normaloff>:/images/img/stop30.png</iconset>
-   </property>
-   <property name="text">
-    <string>Stop</string>
-   </property>
-  </action>
-  <action name="actionNext">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/next30.png</normaloff>:/images/img/next30.png</iconset>
-   </property>
-   <property name="text">
-    <string>Next</string>
-   </property>
-  </action>
-  <action name="actionPrevious">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/prev30.png</normaloff>:/images/img/prev30.png</iconset>
-   </property>
-   <property name="text">
-    <string>Previous</string>
-   </property>
-  </action>
-  <action name="actionRecord">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/record.png</normaloff>:/images/img/record.png</iconset>
-   </property>
-   <property name="text">
-    <string>Record</string>
    </property>
   </action>
   <action name="actionFull_screen">
@@ -711,42 +657,6 @@ selection-color: rgb(4, 4, 4);</string>
    </property>
    <property name="text">
     <string>Search</string>
-   </property>
-  </action>
-  <action name="actionPause">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/pause30.png</normaloff>:/images/img/pause30.png</iconset>
-   </property>
-   <property name="text">
-    <string>Pause</string>
-   </property>
-  </action>
-  <action name="actionVolumePlus">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/audioplus.png</normaloff>:/images/img/audioplus.png</iconset>
-   </property>
-   <property name="text">
-    <string>Volume+</string>
-   </property>
-  </action>
-  <action name="actionVolumeMinus">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/audiominus.png</normaloff>:/images/img/audiominus.png</iconset>
-   </property>
-   <property name="text">
-    <string>Volume-</string>
-   </property>
-  </action>
-  <action name="actionMute">
-   <property name="icon">
-    <iconset resource="res.qrc">
-     <normaloff>:/images/img/audiostop.png</normaloff>:/images/img/audiostop.png</iconset>
-   </property>
-   <property name="text">
-    <string>Mute</string>
    </property>
   </action>
  </widget>
