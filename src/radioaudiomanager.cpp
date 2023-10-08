@@ -21,14 +21,14 @@ RadioAudioManager::~RadioAudioManager()
 void RadioAudioManager::loadStream(const QUrl &url)
 {
     streamReader.cleanupReplies();
-    player->stop();
-    delete player;
-    delete audioOutput;
+    //player->stop();
+    //player->deleteLater();
+    //audioOutput->deleteLater();
 
 
-    player = new QMediaPlayer;
-    audioOutput = new QAudioOutput;
-    player->setAudioOutput(audioOutput);
+    //player = new QMediaPlayer;
+    //audioOutput = new QAudioOutput;
+    //player->setAudioOutput(audioOutput);
 
     player->setSource(url);
 }
@@ -55,6 +55,6 @@ QAudioOutput *RadioAudioManager::getAudioAutput() const
 
 void RadioAudioManager::setVolume(int value)
 {
-    float volume = value * 0.01;
+    float volume = (value * 0.01);
     this->audioOutput->setVolume(volume);
 }
