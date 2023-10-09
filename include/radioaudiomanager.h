@@ -27,6 +27,8 @@ private:
     StreamReader streamReader;
 
 
+
+
 };
 
 #endif // RADIOAUDIOMANAGER_H
