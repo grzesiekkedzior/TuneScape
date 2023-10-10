@@ -97,6 +97,7 @@ private:
     
     void clearRadioInfoLabel();
     void setVectorsOfStation(const QString endpoint);
+    void setTopListOnStart();
 };
 
 #endif // RADIOLIST_H

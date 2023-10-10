@@ -57,6 +57,14 @@ void RadioList::loadRadioList()
     loadedStationsCount += batchSize;
 }
 
+void RadioList::setTopListOnStart()
+{
+    QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
+    QModelIndex topIndex = ui->treeView->model()->index(0, 0, libraryIndex);
+    onTreeViewItemClicked(topIndex);
+    ui->treeView->selectionModel()->select(topIndex, QItemSelectionModel::Select);
+}
+
 void RadioList::loadAllData()
 {
     QStringList endpoints = {
@@ -69,6 +77,8 @@ void RadioList::loadAllData()
     for (const QString &endpoint : endpoints) {
         setVectorsOfStation(endpoint);
     }
+
+    setTopListOnStart();
 }
 
 void RadioList::setLoadedStationsCount(int num)

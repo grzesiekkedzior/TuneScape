@@ -39,6 +39,10 @@ void MainWindow::start()
     radioList     = new RadioList(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
+
+    // version beta
+    ui->tabWidget->removeTab(1);
+    ui->tabRadioListWidget->removeTab(1);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
