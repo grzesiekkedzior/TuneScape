@@ -31,6 +31,7 @@ void MainWindow::set_icon_btn()
     ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
     ui->next->setIcon(QIcon(":/images/img/next30.png"));
     ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
+    ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
 }
 
 void MainWindow::start()

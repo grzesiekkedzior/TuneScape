@@ -34,6 +34,8 @@
         <file>img/radio-tower-3-120.png</file>
         <file>img/radio-10-120.png</file>
         <file>img/radio-10-96.png</file>
+        <file>img/bookmark-empty.png</file>
+        <file>img/bookmark-file.png</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>
