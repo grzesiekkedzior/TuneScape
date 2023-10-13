@@ -12,7 +12,7 @@
 #include <QStringList>
 
 enum Stations {
-    TOP, /**DISCOVERY,*/ POPULAR, NEW, SEARCH
+    TOP, /**DISCOVERY,*/ POPULAR, NEW, FAVORITE, SEARCH
 };
 
 class RadioList : public QObject
@@ -39,6 +39,7 @@ private slots:
     void onStopButtonClicked();
     void onTableViewClicked(const QModelIndex &index);
     void tableViewActivated(const QModelIndex &index);
+    void addRadioToFavorite();
 
 
 
@@ -59,11 +60,13 @@ private:
 
     QString             currentRadioPlayingAddress = "";
     QString             item = "";
-    int radioIndexNumber = 0;
-    int radioEnterIndexNumber = 0;
-    bool isStopClicked        = false;
-    bool isTreeClicked        = false;
-    bool isSearching = false;
+    int radioIndexNumber            = 0;
+    int radioEnterIndexNumber       = 0;
+    int radioIndexCurrentPlaying    = 0;
+    int radioPlaylistCurrentPlaying = 0;
+    bool isStopClicked              = false;
+    bool isTreeClicked              = false;
+    bool isSearching                = false;
 
     const QString STATION   = "Station";
     const QString GENRE     = "Genre";
@@ -97,7 +100,13 @@ private:
     
     void clearRadioInfoLabel();
     void setVectorsOfStation(const QString endpoint);
+    void setFavoriteStatons();
     void setTopListOnStart();
+    bool isRadioAdded(const QString data);
+    void removeRadio(const QString data);
+    bool isAddressExists(const QString address);
+
+    void checkIsRadioOnPlaylist();
 };
 
 #endif // RADIOLIST_H

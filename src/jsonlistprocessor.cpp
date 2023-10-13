@@ -143,7 +143,6 @@ void JsonListProcessor::processJsonQuery()
         for (const QJsonValue &value : stationsArray)
         {
             QJsonObject stationObject = value.toObject();
-
             QString stationName = stationObject[NAME].toString();
             QString genre = stationObject[GENRE].toString();
             QString country = stationObject[COUNTRY].toString();

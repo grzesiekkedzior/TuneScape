@@ -37,5 +37,4 @@
         <file>img/bookmark-empty.png</file>
         <file>img/bookmark-file.png</file>
     </qresource>
-    <qresource prefix="/"/>
 </RCC>

@@ -1,6 +1,7 @@
 #include "include/radiolist.h"
 #include <QHeaderView>
 #include <QScrollBar>
+#include <QFile>
 
 RadioList::RadioList(QObject *parent)
     : QObject{parent}
@@ -24,6 +25,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
+    connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
 
 
 
@@ -65,6 +67,122 @@ void RadioList::setTopListOnStart()
     ui->treeView->selectionModel()->select(topIndex, QItemSelectionModel::Select);
 }
 
+bool RadioList::isRadioAdded(const QString data)
+{
+    QFile file("playlist.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+
+    QTextStream in(&file);
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        if (line == data) return true;
+    }
+
+    return false;
+}
+
+void RadioList::removeRadio(const QString data)
+{
+    QFile inputFile("playlist.txt");
+    if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text))
+        return;
+
+    QFile outputFile("temp_playlist.txt");
+    if (!outputFile.open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
+
+    QTextStream in(&inputFile);
+    QTextStream out(&outputFile);
+
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed(); // Usuwanie znaków białych
+        qDebug() << data;
+        qDebug() << line;
+        if (line != data) {
+            out << line << "\n";
+        }
+    }
+
+    inputFile.close();
+    outputFile.close();
+
+    // swap file
+    if (QFile::remove("playlist.txt") && QFile::rename("temp_playlist.txt", "playlist.txt")) {
+        qDebug() << "Correct" << data;
+    } else {
+        qDebug() << "Error " << data;
+    }
+}
+
+bool RadioList::isAddressExists(const QString address)
+{
+    QFile file("playlist.txt");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        qDebug() << "Error opening the file: " << file.errorString();
+        return false;
+    }
+
+    QTextStream in(&file);
+    const QString lowerCaseAddress = address.toLower();
+
+    while (!in.atEnd())
+    {
+        QString line = in.readLine();
+        if (line.toLower().contains(lowerCaseAddress))
+        {
+            file.close();
+            return true;
+        }
+    }
+
+    file.close();
+    return false;
+}
+
+void RadioList::setFavoriteStatons()
+{
+
+    QVector<TableRow> tableRows;
+    QVector<QString> streamAddresses;
+    QVector<QString> iconAddresses;
+
+    // Read favorite radio from file
+    QFile file("playlist.txt");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            // divide line and add to vectors
+            QStringList fields = line.split(",");
+            if (fields.size() >= 6) {
+                TableRow row;
+                row.station = fields[2];
+                row.country = fields[3];
+                row.genre = fields[4];
+                row.stationUrl = fields[5];
+                tableRows.append(row);
+                streamAddresses.push_back(fields[1]);
+                iconAddresses.push_back(fields[0]);
+            }
+        }
+        file.close();
+    }
+
+    if (allTableRows.size() > Stations::FAVORITE) {
+        allTableRows[Stations::FAVORITE] = tableRows;
+        allStreamAddresses[Stations::FAVORITE] = streamAddresses;
+        allIconsAddresses[Stations::FAVORITE] = iconAddresses;
+    } else {
+        allTableRows.push_back(tableRows);
+        allStreamAddresses.push_back(streamAddresses);
+        allIconsAddresses.push_back(iconAddresses);
+    }
+
+}
+
+
 void RadioList::loadAllData()
 {
     QStringList endpoints = {
@@ -79,6 +197,7 @@ void RadioList::loadAllData()
     }
 
     setTopListOnStart();
+    setFavoriteStatons();
 }
 
 void RadioList::setLoadedStationsCount(int num)
@@ -111,7 +230,7 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item;
 
-    if (!checkItem(item, LIBRARY_TREE) && !checkItem(item, FAVORITE_TREE)) {
+    if (!checkItem(item, LIBRARY_TREE)) {
         if (checkItem(item, "Top")) {
             if (this->treeItem == "Search") this->treeItem = "";
             jsonListProcesor.setTableRows(allTableRows[Stations::TOP]);
@@ -141,6 +260,13 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::NEW]);
             jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::NEW]);
             currentPlaylistIndex = Stations::NEW;
+        } else if (checkItem(item, "Favorite")) {
+            if (this->treeItem == "Search") this->treeItem = "";
+            jsonListProcesor.setTableRows(allTableRows[Stations::FAVORITE]);
+            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::FAVORITE]);
+            jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::FAVORITE]);
+            currentPlaylistIndex = Stations::FAVORITE;
+            qDebug() << "HELLO";
         }
         if (jsonListProcesor.checkInternetConnection()) {
             loadedStationsCount = 0;
@@ -158,13 +284,26 @@ void RadioList::getSongTitle(const QString &url)
     streamReader.startStreaming(url);
 }
 
+void RadioList::checkIsRadioOnPlaylist()
+{
+    if (isAddressExists(currentRadioPlayingAddress)) {
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+    } else {
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+    }
+}
+
 void RadioList::playStream(int radioNumber)
 {
+    radioIndexCurrentPlaying = radioNumber;
+    radioPlaylistCurrentPlaying = currentPlaylistIndex;
     currentRadioPlayingAddress = jsonListProcesor.getStreamAddresses(radioNumber);
+    checkIsRadioOnPlaylist();
     getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
     radioManager.loadStream(streamUrl);
     radioManager.playStream();
+
 
 }
 
@@ -247,7 +386,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 
 void RadioList::onPlayPauseButtonCliced()
 {
-    if (isTreeClicked) {
+    if (isTreeClicked && jsonListProcesor.checkInternetConnection()) {
         if (radioManager.getMediaPlayer()->isPlaying()) {
             radioManager.stopStream();
         } else if (currentRadioPlayingAddress != ""
@@ -356,6 +495,40 @@ void RadioList::tableViewActivated(const QModelIndex &index)
     this->radioIndexNumber = index.row();
 }
 
+void RadioList::addRadioToFavorite()
+{
+    if (radioManager.getMediaPlayer()->isPlaying()) {
+        if (radioPlaylistCurrentPlaying < allTableRows.size() && radioIndexCurrentPlaying < allTableRows[radioPlaylistCurrentPlaying].size()) {
+            QString data = allIconsAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying) + ","
+                           + allStreamAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying) + ","
+                           + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).station + ","
+                           + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).country + ","
+                           + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).genre + ","
+                           + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).stationUrl;
+
+            if (isRadioAdded(data)) {
+                qDebug() << "remove";
+                removeRadio(data);
+                ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+            } else if (!data.isEmpty()) {
+                QFile file("playlist.txt");
+
+                if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+                    qDebug() << "Error";
+                    return;
+                }
+
+                QTextStream out(&file);
+                out << data << "\n";
+                file.close();
+                ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+            }
+        }
+        setFavoriteStatons();
+    }
+
+}
+
 void RadioList::handleDataReceived(const QString& data) {
     QString metaData = data;
     int titleStart = metaData.indexOf("StreamTitle='");
@@ -390,9 +563,9 @@ void RadioList::searchStations()
 {
     // This is ugly but I dont change it to dont complicate code
     //**********************************************************
-    if (allTableRows.size() > 3
-        && allIconsAddresses.size() > 3
-        && allStreamAddresses.size() > 3) {
+    if (allTableRows.size() > 4
+        && allIconsAddresses.size() > 4
+        && allStreamAddresses.size() > 4) {
         allTableRows.pop_back();
         allIconsAddresses.pop_back();
         allStreamAddresses.pop_back();
