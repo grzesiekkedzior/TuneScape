@@ -28,6 +28,7 @@ public:
 
     void setTypeMenu();
     void startSearchTimer();
+    void onInternetConnectionRestored();
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
@@ -107,6 +108,7 @@ private:
     bool isAddressExists(const QString address);
 
     void checkIsRadioOnPlaylist();
+
 };
 
 #endif // RADIOLIST_H

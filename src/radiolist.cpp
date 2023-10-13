@@ -27,8 +27,6 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
 
-
-
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
     header->setSectionResizeMode(QHeaderView::Interactive);
@@ -42,6 +40,7 @@ void RadioList::loadRadioList()
     if (rowCount > 0 && treeItem != "Search") {
         model->removeRows(0, rowCount);
     }
+
     int dataSize = jsonListProcesor.getTableRows().size();
     int batchSize = 50;
 
@@ -53,6 +52,7 @@ void RadioList::loadRadioList()
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).stationUrl));
         model->appendRow(rowItems);
     }
+
     ui->tableView->setModel(model);
     this->treeItem = "Search";
     ui->tableView->resizeRowsToContents();
@@ -170,6 +170,7 @@ void RadioList::setFavoriteStatons()
         file.close();
     }
 
+    // I think here is better solution to do
     if (allTableRows.size() > Stations::FAVORITE) {
         allTableRows[Stations::FAVORITE] = tableRows;
         allStreamAddresses[Stations::FAVORITE] = streamAddresses;
@@ -179,9 +180,7 @@ void RadioList::setFavoriteStatons()
         allStreamAddresses.push_back(streamAddresses);
         allIconsAddresses.push_back(iconAddresses);
     }
-
 }
-
 
 void RadioList::loadAllData()
 {
@@ -212,7 +211,6 @@ void RadioList::loadMoreStationsIfNeeded()
     int maximumPosition = scrollBar->maximum();
 
     if (currentPosition >= maximumPosition * 0.8) {
-
         loadRadioList();
     }
     if (currentPlayListPlaying == currentPlaylistIndex) {
@@ -293,6 +291,15 @@ void RadioList::checkIsRadioOnPlaylist()
     }
 }
 
+void RadioList::onInternetConnectionRestored()
+{
+    allIconsAddresses.clear();
+    allStreamAddresses.clear();
+    allTableRows.clear();
+    loadAllData();
+}
+
+
 void RadioList::playStream(int radioNumber)
 {
     radioIndexCurrentPlaying = radioNumber;
@@ -303,8 +310,6 @@ void RadioList::playStream(int radioNumber)
     QUrl streamUrl(currentRadioPlayingAddress);
     radioManager.loadStream(streamUrl);
     radioManager.playStream();
-
-
 }
 
 void RadioList::setIndexColor()
@@ -367,21 +372,22 @@ void RadioList::setRadioImage(const QModelIndex &index)
     reply->deleteLater();
 }
 
-
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
-    qDebug() << "onTableViewDoubleClicked";
-    radioIndexNumber = index.row();
-    currentStationIndex = index.row();
-    currentPlayListPlaying = currentPlaylistIndex;
-    playStream(radioIndexNumber);
-    clearTableViewColor();
-    setIndexColor();
+    if (jsonListProcesor.checkInternetConnection()) {
+        radioIndexNumber = index.row();
+        currentStationIndex = index.row();
+        currentPlayListPlaying = currentPlaylistIndex;
+        playStream(radioIndexNumber);
+        clearTableViewColor();
+        setIndexColor();
 
-    if (radioManager.getMediaPlayer()->isPlaying())
-        ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
-    isStopClicked = false;
-    ui->infoData->clear();
+        if (radioManager.getMediaPlayer()->isPlaying())
+            ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
+
+        isStopClicked = false;
+        ui->infoData->clear();
+    }
 }
 
 void RadioList::onPlayPauseButtonCliced()
@@ -415,10 +421,9 @@ void RadioList::onPlayPauseButtonCliced()
             radioManager.getMediaPlayer()->isPlaying()
                 ? ":/images/img/pause30.png" : ":/images/img/play30.png"));
     }
-
 }
 
-
+// Not use for now
 void RadioList::onNextButtonClicked()
 {
     if (radioManager.getMediaPlayer()->isPlaying()
@@ -427,11 +432,10 @@ void RadioList::onNextButtonClicked()
         clearTableViewColor();
         setIndexColor();
         playStream(radioIndexNumber);
-
-        qDebug() << radioIndexNumber << jsonListProcesor.getTableRows().size();
     }
 }
 
+// Not use for now
 void RadioList::onPrevButtonClicked()
 {
     if (radioManager.getMediaPlayer()->isPlaying()
@@ -441,10 +445,7 @@ void RadioList::onPrevButtonClicked()
 
         clearTableViewColor();
         setIndexColor();
-
-        qDebug() << radioIndexNumber << jsonListProcesor.getTableRows().size();
     }
-
 }
 
 void RadioList::clearTableViewColor()
@@ -478,10 +479,10 @@ void RadioList::onStopButtonClicked()
             ui->tableView->setCurrentIndex(newIndex);
         }
         clearTableViewColor();
-
     }
 }
 
+// Not use now
 void RadioList::onTableViewClicked(const QModelIndex &index)
 {
     //this->radioIndexNumber = index.row();
@@ -526,7 +527,6 @@ void RadioList::addRadioToFavorite()
         }
         setFavoriteStatons();
     }
-
 }
 
 void RadioList::handleDataReceived(const QString& data) {
@@ -561,7 +561,7 @@ void RadioList::setVectorsOfStation(const QString endpoint)
 
 void RadioList::searchStations()
 {
-    // This is ugly but I dont change it to dont complicate code
+    // This is ugly but I dont change it to don't complicate code
     //**********************************************************
     if (allTableRows.size() > 4
         && allIconsAddresses.size() > 4

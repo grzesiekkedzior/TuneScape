@@ -101,10 +101,10 @@ void JsonListProcessor::retryInternetConnection()
         ui->statusbar->showMessage("Connected");
         ui->statusbar->setStyleSheet("color: green");
         internetConnectionChecker->stop();
-        loadEndpoint(endpoint);
-        radioList->setLoadedStationsCount(0);
-        processJsonQuery();
-        radioList->loadRadioList();
+        //loadEndpoint(endpoint);
+        //radioList->setLoadedStationsCount(0);
+        //processJsonQuery();
+        radioList->onInternetConnectionRestored();
     }
 }
 

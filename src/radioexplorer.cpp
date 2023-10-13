@@ -1,11 +1,6 @@
 #include "include/radioexplorer.h"
 
-
-
-RadioExplorer::RadioExplorer(QWidget *parent)
-{
-
-}
+RadioExplorer::RadioExplorer(QWidget *parent) {}
 
 RadioExplorer::RadioExplorer(Ui::MainWindow *ui) : ui(ui)
 {
@@ -58,4 +53,3 @@ void RadioExplorer::createMenu()
     createTree();
     setModelView();
 }
-
