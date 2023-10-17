@@ -622,6 +622,35 @@ selection-color: rgb(4, 4, 4);</string>
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="infoApp">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/images/img/iconmonstr-info-48.png</normaloff>:/images/img/iconmonstr-info-48.png</iconset>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>

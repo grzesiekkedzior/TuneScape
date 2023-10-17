@@ -35,5 +35,8 @@
         <file>img/radio-10-96.png</file>
         <file>img/bookmark-empty.png</file>
         <file>img/bookmark-file.png</file>
+        <file>img/iconmonstr-info-48.png</file>
+        <file>img/bookmarkgold-33-240.png</file>
+        <file>img/bookmarkgoldfull-33-240.png</file>
     </qresource>
 </RCC>

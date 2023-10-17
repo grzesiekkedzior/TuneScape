@@ -4,6 +4,7 @@
 #include "include/radiolist.h"
 #include <QMainWindow>
 #include <QResizeEvent>
+#include <QDialog>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -16,15 +17,21 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-
+private slots:
+    void info();
 
 private:
     Ui::MainWindow *ui;
     RadioExplorer *radioExplorer;
     RadioList     *radioList;
+    QDialog *licenseDialog;
+    QLabel *licenseLabel;
+    QLabel *aboutAudioLink;
+    QScrollArea *scrollArea;
     void set_icon_btn();
     void start();
     void resizeEvent(QResizeEvent *event);
 
+    void infoDialogApp();
 };
 #endif // MAINWINDOW_H

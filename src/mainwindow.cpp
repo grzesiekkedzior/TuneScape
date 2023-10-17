@@ -3,16 +3,25 @@
 
 #include <QIcon>
 #include <QDebug>
+#include <QMessageBox>
+#include <QFile>
+
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+
+    infoDialogApp();
+
+    //******************************************************************
     ui->setupUi(this);
     ui->previous->hide();
     ui->next->hide();
     set_icon_btn();
     start();
+    connect(ui->infoApp, &QPushButton::clicked, this, &MainWindow::info);
 }
 
 MainWindow::~MainWindow()
@@ -59,4 +68,49 @@ void MainWindow::resizeEvent(QResizeEvent *event)
         ui->serachInput->show();
     }
     qDebug() << ui->centralwidget->geometry().height();
+}
+
+void MainWindow::info()
+{
+
+    QFile file("license.txt");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        QString licenseText = in.readAll();
+        licenseLabel->setText(licenseText);
+        file.close();
+    }
+
+    licenseDialog->show();
+}
+
+void MainWindow::infoDialogApp()
+{
+    licenseDialog = new QDialog(this);
+    licenseDialog->setWindowTitle("About");
+
+    scrollArea = new QScrollArea(licenseDialog);
+    scrollArea->setWidgetResizable(true);
+
+    QWidget *scrollAreaWidget = new QWidget;
+    scrollArea->setWidget(scrollAreaWidget);
+
+    licenseLabel = new QLabel;
+    licenseLabel->setWordWrap(true);
+
+    aboutAudioLink = new QLabel;
+    aboutAudioLink->setText("<p style=\"font-size: 18pt; line-height: 1.5;\">AudioLink 0.0.1</p>"
+                            "This is a free and Open Source online radio player based on "
+                            "<a href=\"https://www.radio-browser.info\">radio-browser service.</a> "
+                            "This is the beta version. If you want help to develop this app, look at "
+                            "<a href=\"https://github.com/grzesiekkedzior/AudioLink\"><u>AudioLink</u></a>");
+    aboutAudioLink->setOpenExternalLinks(true);
+    aboutAudioLink->setWordWrap(true);
+
+    QVBoxLayout *scrollAreaLayout = new QVBoxLayout(scrollAreaWidget);
+    scrollAreaLayout->addWidget(aboutAudioLink);
+    scrollAreaLayout->addWidget(licenseLabel);
+
+    QVBoxLayout *dialogLayout = new QVBoxLayout(licenseDialog);
+    dialogLayout->addWidget(scrollArea);
 }
