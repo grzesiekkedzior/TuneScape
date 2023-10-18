@@ -42,8 +42,6 @@ private slots:
     void tableViewActivated(const QModelIndex &index);
     void addRadioToFavorite();
 
-
-
 private:
     int loadedStationsCount     = -1;
     int currentPlaylistIndex    = -1;
@@ -61,6 +59,7 @@ private:
 
     QString             currentRadioPlayingAddress = "";
     QString             item = "";
+
     int radioIndexNumber            = 0;
     int radioEnterIndexNumber       = 0;
     int radioIndexCurrentPlaying    = 0;
@@ -69,12 +68,12 @@ private:
     bool isTreeClicked              = false;
     bool isSearching                = false;
 
-    const QString STATION   = "Station";
-    const QString GENRE     = "Genre";
-    const QString COUNTRY   = "Country";
-    const QString HOMEPAGE  = "Homepage";
-    const QString LIBRARY   = "Library";
-    const QString FAVORITE  = "Favorite";
+    const QString STATION           = "Station";
+    const QString GENRE             = "Genre";
+    const QString COUNTRY           = "Country";
+    const QString HOMEPAGE          = "Homepage";
+    const QString LIBRARY           = "Library";
+    const QString FAVORITE          = "Favorite";
 
     const QString JSON_ENDPOINT_TOP         = "json/stations/topvote/20";
     //const QString JSON_ENDPOINT_DISCOVER    = "json/stations";
@@ -108,7 +107,7 @@ private:
     bool isAddressExists(const QString address);
 
     void checkIsRadioOnPlaylist();
-
+    void setRadioListVectors(Stations s);
 };
 
 #endif // RADIOLIST_H

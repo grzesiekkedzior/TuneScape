@@ -25,10 +25,6 @@ private:
     QMediaPlayer *player;
     QAudioOutput *audioOutput;
     StreamReader streamReader;
-
-
-
-
 };
 
 #endif // RADIOAUDIOMANAGER_H

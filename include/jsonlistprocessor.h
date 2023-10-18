@@ -30,13 +30,13 @@ public:
     ~JsonListProcessor();
 
     void processJsonQuery();
-    QVector<TableRow>& getTableRows();
     void loadEndpoint(QString endpoint);
     void setUi(Ui::MainWindow *ui);
     void setRadioList(RadioList *radioList);
     bool checkInternetConnection();
     void lostConnection();
     void connected();
+    QVector<TableRow>& getTableRows();
     QVector<QString>& getStreamAddresses();
     QVector<QString>& getIconAddresses();
     QString getStreamAddresses(int index) const;

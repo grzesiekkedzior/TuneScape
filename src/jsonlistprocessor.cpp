@@ -213,4 +213,3 @@ void JsonListProcessor::setIconAddresses(const QVector<QString> &icons)
 {
     iconAddresses = icons;
 }
-

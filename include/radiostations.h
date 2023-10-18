@@ -10,7 +10,6 @@ struct ServerAddress {
     };
 };
 
-
 class RadioStations : public QObject
 {
     Q_OBJECT
@@ -19,8 +18,6 @@ public:
     RadioStations(const QString &endpoint);
 
     QStringList getAddresses() const;
-
-signals:
 
 private:
     QStringList     fullServerAddresses;

@@ -39,4 +39,7 @@
         <file>img/bookmarkgold-33-240.png</file>
         <file>img/bookmarkgoldfull-33-240.png</file>
     </qresource>
+    <qresource prefix="/src">
+        <file>files/license.txt</file>
+    </qresource>
 </RCC>

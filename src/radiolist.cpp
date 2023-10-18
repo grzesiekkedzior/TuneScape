@@ -222,6 +222,13 @@ auto checkItem = [] (const QString &item, const QString &target) {
     return item == target;
 };
 
+void RadioList::setRadioListVectors(Stations s)
+{
+    jsonListProcesor.setTableRows(allTableRows[s]);
+    jsonListProcesor.setStreamAddresses(allStreamAddresses[s]);
+    jsonListProcesor.setIconAddresses(allIconsAddresses[s]);
+}
+
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
     isTreeClicked = true;
@@ -231,9 +238,7 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     if (!checkItem(item, LIBRARY_TREE)) {
         if (checkItem(item, "Top")) {
             if (this->treeItem == "Search") this->treeItem = "";
-            jsonListProcesor.setTableRows(allTableRows[Stations::TOP]);
-            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::TOP]);
-            jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::TOP]);
+            setRadioListVectors(Stations::TOP);
             currentPlaylistIndex = Stations::TOP;
         } /*else if (checkItem(item, "Discover")) {
             int rowCount = model->rowCount();
@@ -248,21 +253,15 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             currentPlaylistIndex = Stations::DISCOVERY;
         } */else if (checkItem(item, "Popular")) {
             if (this->treeItem == "Search") this->treeItem = "";
-            jsonListProcesor.setTableRows(allTableRows[Stations::POPULAR]);
-            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::POPULAR]);
-            jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::POPULAR]);
+            setRadioListVectors(Stations::POPULAR);
             currentPlaylistIndex = Stations::POPULAR;
         } else if (checkItem(item, "New")) {
             if (this->treeItem == "Search") this->treeItem = "";
-            jsonListProcesor.setTableRows(allTableRows[Stations::NEW]);
-            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::NEW]);
-            jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::NEW]);
+            setRadioListVectors(Stations::NEW);
             currentPlaylistIndex = Stations::NEW;
         } else if (checkItem(item, "Favorite")) {
             if (this->treeItem == "Search") this->treeItem = "";
-            jsonListProcesor.setTableRows(allTableRows[Stations::FAVORITE]);
-            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::FAVORITE]);
-            jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::FAVORITE]);
+            setRadioListVectors(Stations::FAVORITE);
             currentPlaylistIndex = Stations::FAVORITE;
             qDebug() << "HELLO";
         }
@@ -299,7 +298,6 @@ void RadioList::onInternetConnectionRestored()
     loadAllData();
 }
 
-
 void RadioList::playStream(int radioNumber)
 {
     radioIndexCurrentPlaying = radioNumber;
@@ -322,12 +320,10 @@ void RadioList::setIndexColor()
 void RadioList::sliderMoved(int move)
 {
     radioManager.setVolume(move);
-    if (move == 0) {
+    if (move == 0)
         ui->volume->setIcon(QIcon(":/images/img/audiostop.png"));
-    }
-    if (move == 1){
+    if (move == 1)
         ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
-    }
 }
 
 void RadioList::setRadioImage(const QModelIndex &index)
@@ -580,9 +576,7 @@ void RadioList::searchStations()
 
     setVectorsOfStation(endpoint);
 
-    jsonListProcesor.setTableRows(allTableRows[Stations::SEARCH]);
-    jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::SEARCH]);
-    jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::SEARCH]);
+    setRadioListVectors(Stations::SEARCH);
     currentPlaylistIndex = Stations::SEARCH;
 
     if (jsonListProcesor.checkInternetConnection()) {

@@ -6,8 +6,6 @@
 #include <QMessageBox>
 #include <QFile>
 
-
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -72,8 +70,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::info()
 {
-
-    QFile file("license.txt");
+    QFile file(":/src/files/license.txt");
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         QString licenseText = in.readAll();
