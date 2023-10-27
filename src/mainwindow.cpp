@@ -95,17 +95,17 @@ void MainWindow::infoDialogApp()
     licenseLabel = new QLabel;
     licenseLabel->setWordWrap(true);
 
-    aboutAudioLink = new QLabel;
-    aboutAudioLink->setText("<p style=\"font-size: 18pt; line-height: 1.5;\">AudioLink 0.0.1</p>"
+    aboutTuneScape = new QLabel;
+    aboutTuneScape->setText("<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 0.0.1</p>"
                             "This is a free and Open Source online radio player based on "
                             "<a href=\"https://www.radio-browser.info\">radio-browser service.</a> "
                             "This is the beta version. If you want help to develop this app, look at "
-                            "<a href=\"https://github.com/grzesiekkedzior/AudioLink\"><u>AudioLink</u></a>");
-    aboutAudioLink->setOpenExternalLinks(true);
-    aboutAudioLink->setWordWrap(true);
+                            "<a href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</u></a>");
+    aboutTuneScape->setOpenExternalLinks(true);
+    aboutTuneScape->setWordWrap(true);
 
     QVBoxLayout *scrollAreaLayout = new QVBoxLayout(scrollAreaWidget);
-    scrollAreaLayout->addWidget(aboutAudioLink);
+    scrollAreaLayout->addWidget(aboutTuneScape);
     scrollAreaLayout->addWidget(licenseLabel);
 
     QVBoxLayout *dialogLayout = new QVBoxLayout(licenseDialog);

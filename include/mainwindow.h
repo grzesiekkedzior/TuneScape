@@ -26,7 +26,7 @@ private:
     RadioList     *radioList;
     QDialog *licenseDialog;
     QLabel *licenseLabel;
-    QLabel *aboutAudioLink;
+    QLabel *aboutTuneScape;
     QScrollArea *scrollArea;
     void set_icon_btn();
     void start();
