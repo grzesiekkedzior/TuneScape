@@ -1,13 +1,13 @@
 
-# AudioLink
-![AudioLink](https://github.com/grzesiekkedzior/AudioLink/assets/23739158/53a26f2d-1d05-4fa1-8e06-5feef7886616)
+# TuneScape
+![TuneScape](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a00bb9ad-15b4-4486-b47a-22e90499dc29)
 
 This is an open-source internet radio app that provides access to a wide range of radio stations. It leverages a database of radio stations from the website https://www.radio-browser.info/ to offer a diverse selection of online radio channels for all users.
 
-**AudioLink** for now is being tested on the Windows platform.
+**TuneScape** for now is being tested on the Windows platform.
 
 # License
-**AudioLink** is released under the GPLv3 license.
+**TuneScape** is released under the GPLv3 license.
 
 # How it works
 
@@ -15,9 +15,9 @@ You can add a station to favorites when the station is playing and the same when
 
 The meta data is read even when you pause playing the radio so that titles change fluently.
 
-**AudioLink** informs you when connection will be lost and when the connect refreshes all automatically.
+**TuneScape** informs you when connection will be lost and when the connect refreshes all automatically.
 
-**AudioLink** uses for every start all the newest radio databases. In that case, sometimes it can be a little slow, but only at the start.
+**TuneScape** uses for every start all the newest radio databases. In that case, sometimes it can be a little slow, but only at the start.
 
 If you search for a radio station that you are interested in and you want to listen to later, add it to your favorite bookmark.
 
