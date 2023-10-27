@@ -1,6 +1,6 @@
 
 # TuneScape
-![TuneScape](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/53a26f2d-1d05-4fa1-8e06-5feef7886616)
+![TuneScape](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a00bb9ad-15b4-4486-b47a-22e90499dc29)
 
 This is an open-source internet radio app that provides access to a wide range of radio stations. It leverages a database of radio stations from the website https://www.radio-browser.info/ to offer a diverse selection of online radio channels for all users.
 
