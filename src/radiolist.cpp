@@ -23,6 +23,7 @@ RadioList::RadioList(Ui::MainWindow *ui) : ui(ui), model(new QStandardItemModel(
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTableViewClicked);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
+    connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, &RadioList::sliderMoved);
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
@@ -322,7 +323,7 @@ void RadioList::sliderMoved(int move)
     radioManager.setVolume(move);
     if (move == 0)
         ui->volume->setIcon(QIcon(":/images/img/audiostop.png"));
-    if (move == 1)
+    if (move > 0 && move < 5)
         ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
 }
 
