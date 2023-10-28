@@ -6,6 +6,8 @@ This is an open-source internet radio app that provides access to a wide range o
 
 **TuneScape** for now is being tested on the Windows platform.
 
+### TuneScape [download](https://sourceforge.net/projects/tunescape/)
+
 # License
 **TuneScape** is released under the GPLv3 license.
 
