@@ -17,7 +17,7 @@ public:
     void createMenu();
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow      *ui;
     QStandardItemModel  *itemModel;
     QStandardItem       *library;
     QStandardItem       *discover;

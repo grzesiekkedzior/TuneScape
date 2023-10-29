@@ -25,10 +25,9 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
-    if (radioExplorer) {
-        delete radioExplorer;
-        qDebug() << "radioExplorer";
-    }
+    delete radioExplorer;
+    delete radioList;
+    delete radioInfo;
 }
 
 void MainWindow::set_icon_btn()
@@ -45,11 +44,12 @@ void MainWindow::start()
 {
     radioExplorer = new RadioExplorer(ui);
     radioList     = new RadioList(ui);
+    radioInfo     = new RadioInfo(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
 
     // version beta
-    ui->tabWidget->removeTab(1);
+    //ui->tabWidget->removeTab(1);
     ui->tabRadioListWidget->removeTab(1);
 }
 

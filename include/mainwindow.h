@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 #include "include/radioexplorer.h"
 #include "include/radiolist.h"
+#include "include/radioinfo.h"
 #include <QMainWindow>
 #include <QResizeEvent>
 #include <QDialog>
@@ -21,13 +22,14 @@ private slots:
     void info();
 
 private:
-    Ui::MainWindow *ui;
-    RadioExplorer *radioExplorer;
-    RadioList     *radioList;
-    QDialog *licenseDialog;
-    QLabel *licenseLabel;
-    QLabel *aboutTuneScape;
-    QScrollArea *scrollArea;
+    Ui::MainWindow  *ui;
+    RadioExplorer   *radioExplorer;
+    RadioList       *radioList;
+    RadioInfo       *radioInfo;
+    QDialog         *licenseDialog;
+    QLabel          *licenseLabel;
+    QLabel          *aboutTuneScape;
+    QScrollArea     *scrollArea;
     void set_icon_btn();
     void start();
     void resizeEvent(QResizeEvent *event);
