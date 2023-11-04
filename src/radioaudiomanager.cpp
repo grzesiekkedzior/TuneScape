@@ -1,6 +1,5 @@
 #include "include/radioaudiomanager.h"
 
-
 RadioAudioManager::RadioAudioManager()
 {
     player = new QMediaPlayer;
@@ -24,7 +23,6 @@ void RadioAudioManager::loadStream(const QUrl &url)
     //player->stop();
     //player->deleteLater();
     //audioOutput->deleteLater();
-
 
     //player = new QMediaPlayer;
     //audioOutput = new QAudioOutput;

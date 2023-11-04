@@ -2,12 +2,11 @@
 #define RADIOSTATIONS_H
 
 #include <QObject>
-struct ServerAddress {
-    QStringList addresses = {
-        "http://de1.api.radio-browser.info/",
-        "https://fr1.api.radio-browser.info/",
-        "https://at1.api.radio-browser.info/"
-    };
+struct ServerAddress
+{
+    QStringList addresses = {"http://de1.api.radio-browser.info/",
+                             "https://fr1.api.radio-browser.info/",
+                             "https://at1.api.radio-browser.info/"};
 };
 
 class RadioStations : public QObject
@@ -20,8 +19,8 @@ public:
     QStringList getAddresses() const;
 
 private:
-    QStringList     fullServerAddresses;
-    ServerAddress   serverAddress;
+    QStringList fullServerAddresses;
+    ServerAddress serverAddress;
 
     QStringList generateFullAddresses(const QString &endpoint) const;
 };

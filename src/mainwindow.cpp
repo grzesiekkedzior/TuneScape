@@ -1,16 +1,15 @@
 #include "include/mainwindow.h"
 #include "../ui_mainwindow.h"
 
-#include <QIcon>
 #include <QDebug>
-#include <QMessageBox>
 #include <QFile>
+#include <QIcon>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-
     infoDialogApp();
 
     //******************************************************************
@@ -43,8 +42,8 @@ void MainWindow::set_icon_btn()
 void MainWindow::start()
 {
     radioExplorer = new RadioExplorer(ui);
-    radioList     = new RadioList(ui);
-    radioInfo     = new RadioInfo(ui);
+    radioList = new RadioList(ui);
+    radioInfo = new RadioInfo(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
 
@@ -96,11 +95,12 @@ void MainWindow::infoDialogApp()
     licenseLabel->setWordWrap(true);
 
     aboutTuneScape = new QLabel;
-    aboutTuneScape->setText("<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 0.0.1</p>"
-                            "This is a free and Open Source online radio player based on "
-                            "<a href=\"https://www.radio-browser.info\">radio-browser service.</a> "
-                            "This is the beta version. If you want help to develop this app, look at "
-                            "<a href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</u></a>");
+    aboutTuneScape->setText(
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 0.1.0</p>"
+        "This is a free and Open Source online radio player based on "
+        "<a href=\"https://www.radio-browser.info\">radio-browser service.</a> "
+        "This is the beta version. If you want help to develop this app, look at "
+        "<a href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</u></a>");
     aboutTuneScape->setOpenExternalLinks(true);
     aboutTuneScape->setWordWrap(true);
 

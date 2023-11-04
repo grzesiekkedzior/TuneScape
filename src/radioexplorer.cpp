@@ -2,9 +2,10 @@
 
 RadioExplorer::RadioExplorer(QWidget *parent) {}
 
-RadioExplorer::RadioExplorer(Ui::MainWindow *ui) : ui(ui)
+RadioExplorer::RadioExplorer(Ui::MainWindow *ui)
+    : ui(ui)
 {
-    itemModel= new QStandardItemModel;
+    itemModel = new QStandardItemModel;
     library = new QStandardItem(LIBRARY);
     //discover = new QStandardItem(DISCOVER);
     top = new QStandardItem(TOP);

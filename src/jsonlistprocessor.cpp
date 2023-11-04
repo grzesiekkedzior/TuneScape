@@ -1,14 +1,15 @@
 #include "include/jsonlistprocessor.h"
-#include "include/radiolist.h"
-#include <QJsonDocument>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkRequest>
 #include <QProgressBar>
-#include <QTimer>
 #include <QTcpSocket>
+#include <QTimer>
+#include "include/radiolist.h"
 
-JsonListProcessor::JsonListProcessor() {
+JsonListProcessor::JsonListProcessor()
+{
     connectionTimer = new QTimer(this);
     connectionTimer->setInterval(5000);
     connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkInternetConnection);
@@ -16,7 +17,10 @@ JsonListProcessor::JsonListProcessor() {
 
     internetConnectionChecker = new QTimer(this);
     internetConnectionChecker->setInterval(5000);
-    connect(internetConnectionChecker, &QTimer::timeout, this, &JsonListProcessor::retryInternetConnection);
+    connect(internetConnectionChecker,
+            &QTimer::timeout,
+            this,
+            &JsonListProcessor::retryInternetConnection);
 }
 
 void JsonListProcessor::loadEndpoint(QString endpoint)
@@ -123,9 +127,9 @@ JsonListProcessor::~JsonListProcessor()
     if (reply) {
         reply->deleteLater();
     }
-    if (radioList) {
-        delete radioList;
-    }
+    //    if (radioList) {
+    //        delete radioList;
+    //    }
 }
 
 void JsonListProcessor::processJsonQuery()
@@ -136,12 +140,10 @@ void JsonListProcessor::processJsonQuery()
     if (reply)
         doc = createJasonDocument(reply);
 
-    if (doc.isArray())
-    {
+    if (doc.isArray()) {
         QJsonArray stationsArray = doc.array();
 
-        for (const QJsonValue &value : stationsArray)
-        {
+        for (const QJsonValue &value : stationsArray) {
             QJsonObject stationObject = value.toObject();
             QString stationName = stationObject[NAME].toString();
             QString genre = stationObject[GENRE].toString();
@@ -149,9 +151,9 @@ void JsonListProcessor::processJsonQuery()
             QString stationUrl = stationObject[URL].toString();
 
             stationName = stationName.trimmed().replace(QRegularExpression("^[\\s?_.-]+"), "");
-            genre       = genre.left(genre.indexOf(',')).trimmed();
-            country     = country.trimmed();
-            stationUrl  = stationUrl.trimmed();
+            genre = genre.left(genre.indexOf(',')).trimmed();
+            country = country.trimmed();
+            stationUrl = stationUrl.trimmed();
 
             TableRow row;
             row.station = stationName;
@@ -162,7 +164,7 @@ void JsonListProcessor::processJsonQuery()
             tableRows.append(row);
 
             QString streamUrl = stationObject[URL_RESOLVED].toString();
-            QString iconUrl   = stationObject[FAVICON].toString();
+            QString iconUrl = stationObject[FAVICON].toString();
             this->streamAddresses.push_back(streamUrl);
             this->iconAddresses.push_back(iconUrl);
         }
@@ -174,7 +176,7 @@ QVector<TableRow> &JsonListProcessor::getTableRows()
     return tableRows;
 }
 
-QNetworkReply* JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
+QNetworkReply *JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
 {
     QEventLoop loop;
     int status;
@@ -186,7 +188,8 @@ QNetworkReply* JsonListProcessor::checkAvailability(const QStringList &radioAddr
         loop.exec();
         status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         qDebug() << "status " << status;
-        if (reply->error() == QNetworkReply::NoError) return reply;
+        if (reply->error() == QNetworkReply::NoError)
+            return reply;
     }
 
     return nullptr;

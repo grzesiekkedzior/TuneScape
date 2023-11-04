@@ -99,7 +99,7 @@
           <x>0</x>
           <y>0</y>
           <width>180</width>
-          <height>456</height>
+          <height>462</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -289,6 +289,12 @@
                  <height>150</height>
                 </size>
                </property>
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>150</height>
+                </size>
+               </property>
                <property name="text">
                 <string/>
                </property>
@@ -331,6 +337,15 @@
                  <width>152</width>
                  <height>0</height>
                 </size>
+               </property>
+               <property name="frameShadow">
+                <enum>QFrame::Sunken</enum>
+               </property>
+               <property name="lineWidth">
+                <number>1</number>
+               </property>
+               <property name="midLineWidth">
+                <number>0</number>
                </property>
                <property name="editTriggers">
                 <set>QAbstractItemView::AnyKeyPressed</set>
@@ -408,6 +423,11 @@
                  <string>8</string>
                 </property>
                </row>
+               <row>
+                <property name="text">
+                 <string>9</string>
+                </property>
+               </row>
                <column>
                 <property name="text">
                  <string>name</string>
@@ -432,6 +452,9 @@
                 <property name="text">
                  <string>station</string>
                 </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
+                </property>
                </item>
                <item row="0" column="1">
                 <property name="text">
@@ -442,38 +465,64 @@
                 <property name="text">
                  <string>country</string>
                 </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
+                </property>
                </item>
                <item row="2" column="0">
                 <property name="text">
                  <string>state</string>
                 </property>
                 <property name="flags">
-                 <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsDropEnabled|ItemIsUserCheckable|ItemIsEnabled</set>
+                 <set>ItemIsEnabled</set>
                 </property>
                </item>
                <item row="3" column="0">
                 <property name="text">
                  <string>language</string>
                 </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
+                </property>
                </item>
                <item row="4" column="0">
                 <property name="text">
                  <string>votes</string>
+                </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
                 </property>
                </item>
                <item row="5" column="0">
                 <property name="text">
                  <string>codec</string>
                 </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
+                </property>
                </item>
                <item row="6" column="0">
                 <property name="text">
                  <string>bitrate</string>
                 </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
+                </property>
                </item>
                <item row="7" column="0">
                 <property name="text">
                  <string>24h clickcount</string>
+                </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
+                </property>
+               </item>
+               <item row="8" column="0">
+                <property name="text">
+                 <string>clicktrend</string>
+                </property>
+                <property name="flags">
+                 <set>ItemIsEnabled</set>
                 </property>
                </item>
               </widget>
@@ -509,8 +558,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>703</width>
-          <height>456</height>
+          <width>709</width>
+          <height>462</height>
          </rect>
         </property>
         <property name="sizePolicy">

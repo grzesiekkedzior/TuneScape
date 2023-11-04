@@ -2,9 +2,7 @@
 
 RadioStations::RadioStations(QObject *parent)
     : QObject{parent}
-{
-
-}
+{}
 
 RadioStations::RadioStations(const QString &endpoint)
 {

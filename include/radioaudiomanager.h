@@ -2,9 +2,9 @@
 #define RADIOAUDIOMANAGER_H
 #include "include/StreamReader.h"
 
-#include <QObject>
-#include <QMediaPlayer>
 #include <QAudioOutput>
+#include <QMediaPlayer>
+#include <QObject>
 
 class RadioAudioManager : public QObject
 {
