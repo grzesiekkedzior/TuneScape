@@ -12,7 +12,7 @@
 #include <QStandardItemModel>
 #include <QStringList>
 
-enum Stations { TOP, /**DISCOVERY,*/ POPULAR, NEW, FAVORITE, SEARCH };
+enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH };
 
 class RadioList : public QObject
 {
@@ -76,7 +76,6 @@ private:
     const QString FAVORITE = "Favorite";
 
     const QString JSON_ENDPOINT_TOP = "json/stations/topvote/20";
-    //const QString JSON_ENDPOINT_DISCOVER    = "json/stations";
     const QString JSON_ENDPOINT_POPULAR = "json/stations/topclick/20";
     const QString JSON_ENDPOINT_NEW = "json/stations/lastchange/20";
     const QString JSON_ENDPOINT_SEARCH = "json/stations/search?name=";

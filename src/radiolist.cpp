@@ -242,19 +242,7 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
                 this->treeItem = "";
             setRadioListVectors(Stations::TOP);
             currentPlaylistIndex = Stations::TOP;
-        } /*else if (checkItem(item, "Discover")) {
-            int rowCount = model->rowCount();
-            qDebug() << "loadRadioList" << treeItem;
-            if (rowCount > 0) {
-                model->removeRows(0, rowCount);
-            }
-            this->treeItem = item;
-            jsonListProcesor.setTableRows(allTableRows[Stations::DISCOVERY]);
-            jsonListProcesor.setStreamAddresses(allStreamAddresses[Stations::DISCOVERY]);
-            jsonListProcesor.setIconAddresses(allIconsAddresses[Stations::DISCOVERY]);
-            currentPlaylistIndex = Stations::DISCOVERY;
-        } */
-        else if (checkItem(item, "Popular")) {
+        } else if (checkItem(item, "Popular")) {
             if (this->treeItem == "Search")
                 this->treeItem = "";
             setRadioListVectors(Stations::POPULAR);

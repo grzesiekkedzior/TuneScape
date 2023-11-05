@@ -45,7 +45,6 @@ void RadioInfo::processInfoJsonQuery()
             // I can do this in loop. This is more readible for long maintainance
             QJsonObject stationObject = value.toObject();
             infoData.favicon = stationObject[FAVICON].toString();
-            QString stationName = stationObject[STATION].toString();
             infoData.station = stationObject[STATION].toString().trimmed();
             infoData.country = stationObject[COUNTRY].toString().trimmed();
             infoData.state = stationObject[STATE].toString().trimmed();

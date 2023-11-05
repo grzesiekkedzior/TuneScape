@@ -7,7 +7,6 @@ RadioExplorer::RadioExplorer(Ui::MainWindow *ui)
 {
     itemModel = new QStandardItemModel;
     library = new QStandardItem(LIBRARY);
-    //discover = new QStandardItem(DISCOVER);
     top = new QStandardItem(TOP);
     popular = new QStandardItem(POPULAR);
     newRadios = new QStandardItem(NEW);
@@ -17,7 +16,6 @@ RadioExplorer::RadioExplorer(Ui::MainWindow *ui)
 void RadioExplorer::setNotEditableTree()
 {
     library->setEditable(false);
-    //discover->setEditable(false);
     top->setEditable(false);
     popular->setEditable(false);
     newRadios->setEditable(false);
@@ -28,7 +26,6 @@ void RadioExplorer::createTree()
 {
     itemModel->appendRow(library);
     library->appendRow(top);
-    //library->appendRow(discover);
     library->appendRow(popular);
     library->appendRow(newRadios);
     library->appendRow(favorite);
