@@ -49,7 +49,7 @@ void MainWindow::start()
 
     // version beta
     //ui->tabWidget->removeTab(1);
-    ui->tabRadioListWidget->removeTab(1);
+    //ui->tabRadioListWidget->removeTab(1);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

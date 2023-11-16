@@ -3,6 +3,7 @@
 
 #include "../ui_mainwindow.h"
 #include "StreamReader.h"
+#include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
@@ -29,6 +30,10 @@ public:
     void startSearchTimer();
     void onInternetConnectionRestored();
 
+    void handleNetworkReply(QNetworkReply *reply,
+                            QPushButton *button,
+                            QWidget *itemContainer,
+                            int dataSize);
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
@@ -56,6 +61,8 @@ private:
     StreamReader streamReader;
     QTimer searchTimer;
     RadioInfo *radioInfo;
+    FlowLayout *flowLayout = nullptr;
+    QVector<QWidget *> buttonCache;
 
     QString currentRadioPlayingAddress = "";
     QString item = "";
@@ -106,6 +113,25 @@ private:
 
     void checkIsRadioOnPlaylist();
     void setRadioListVectors(Stations s);
+    void clearFlowLayout();
+    void setImageButton(int row);
+    void loadAndSetImageForItem(const QString &imageUrl,
+                                QList<QStandardItem *> &rowItems,
+                                const QModelIndex &nameIndex,
+                                const QModelIndex &countryIndex);
+    void addIconButton(int row);
+    void populateRowItems(QList<QStandardItem *> rowItems, int row);
+    void createButton(int row,
+                      QWidget *itemContainer,
+                      QList<QStandardItem *> rowItems,
+                      QVBoxLayout *itemLayout);
+    QWidget *createItemContainer(QPushButton *button, int row);
+    QPushButton *createButton(int row);
+    void addToButtonCache();
+    void loadRadioIconList();
+    void clearAll();
+    QList<QNetworkReply *> networkReplies;
+    QNetworkAccessManager *networkManager = nullptr;
 };
 
 #endif // RADIOLIST_H

@@ -2,6 +2,7 @@
 #include <QFile>
 #include <QHeaderView>
 #include <QScrollBar>
+#include "qpainter.h"
 
 RadioList::RadioList(QObject *parent)
     : QObject{parent}
@@ -14,6 +15,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     jsonListProcesor.setUi(ui);
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
+    flowLayout = new FlowLayout(ui->iconTiles);
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     connect(ui->tableView->verticalScrollBar(),
             &QScrollBar::valueChanged,
@@ -40,6 +42,113 @@ RadioList::RadioList(Ui::MainWindow *ui)
     model->setHorizontalHeaderLabels(headers);
 }
 
+void RadioList::clearFlowLayout()
+{
+    // I think here must be better solution!!!
+    //    for (int i = 0; i < flowLayout->count(); i++) {
+    //        QLayoutItem *item = flowLayout->takeAt(i);
+    //        if (item) {
+    //            flowLayout->removeItem(item);
+    //            delete item->widget();
+    //            delete item;
+    //        }
+    //    }
+    QLayoutItem *item;
+    while ((item = flowLayout->takeAt(0)) != nullptr) {
+        while (QWidget *widget = item->widget()) {
+            delete widget;
+        }
+        delete item;
+    }
+}
+
+void RadioList::clearAll()
+{
+    clearFlowLayout();
+    networkReplies.clear();
+    buttonCache.clear();
+}
+void RadioList::loadRadioIconList()
+{
+    clearAll();
+    int dataSize = jsonListProcesor.getTableRows().size();
+    qDebug() << dataSize;
+
+    // Utworzenie QNetworkAccessManager tylko raz, jeśli nie istnieje
+    if (!networkManager) {
+        networkManager = new QNetworkAccessManager(this);
+    }
+
+    for (int row = 0; row < dataSize; ++row) {
+        // Without this condition app will crash?! Some check analizer suggest that is un...
+        if (dataSize > row) {
+            QWidget *itemContainer = new QWidget;
+            QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
+            QPushButton *button = new QPushButton; // Allocate on the heap
+            button->setFixedSize(120, 120);
+            qDebug() << row;
+            QString description = jsonListProcesor.getTableRows().at(row).station;
+            QLabel *label = new QLabel(description); // Allocate on the heap
+            label->setFixedWidth(120);
+            label->setWordWrap(true);
+            label->setAlignment(Qt::AlignCenter);
+
+            itemLayout->addWidget(button);
+            itemLayout->addWidget(label);
+
+            QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
+            QNetworkRequest request(imageUrl);
+            QNetworkReply *reply = networkManager->get(request);
+
+            networkReplies.append(reply);
+
+            connect(reply, &QNetworkReply::finished, [=]() {
+                handleNetworkReply(reply, button, itemContainer, dataSize);
+            });
+        }
+    }
+}
+
+void RadioList::handleNetworkReply(QNetworkReply *reply,
+                                   QPushButton *button,
+                                   QWidget *itemContainer,
+                                   int dataSize)
+{
+    if (reply->error() == QNetworkReply::NoError) {
+        QByteArray imageData = reply->readAll();
+        QPixmap pixmap;
+        pixmap.loadFromData(imageData);
+        QSize buttonSize = button->size();
+
+        pixmap = pixmap.scaled(buttonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        button->setIcon(QIcon(pixmap));
+        button->setIconSize(buttonSize);
+    } else {
+        QPixmap originalPixmap(":/images/img/radio-10-96.png");
+        QSize buttonSize(120, 120);
+        QPixmap pixmap(buttonSize);
+        pixmap.fill(Qt::transparent);
+
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawPixmap(10, 5, originalPixmap);
+
+        button->setIcon(QIcon(pixmap));
+        button->setIconSize(buttonSize);
+    }
+
+    buttonCache.append(itemContainer);
+
+    if (buttonCache.size() == dataSize) {
+        for (QWidget *button : buttonCache) {
+            flowLayout->addWidget(button);
+        }
+    }
+
+    reply->deleteLater();
+}
+
 void RadioList::loadRadioList()
 {
     int rowCount = model->rowCount();
@@ -47,7 +156,7 @@ void RadioList::loadRadioList()
     if (rowCount > 0 && treeItem != "Search") {
         model->removeRows(0, rowCount);
     }
-
+    model->setHorizontalHeaderLabels(headers);
     int dataSize = jsonListProcesor.getTableRows().size();
     int batchSize = 50;
 
@@ -152,7 +261,6 @@ void RadioList::setFavoriteStatons()
     QVector<TableRow> tableRows;
     QVector<QString> streamAddresses;
     QVector<QString> iconAddresses;
-
     // Read favorite radio from file
     QFile file("playlist.txt");
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -200,6 +308,7 @@ void RadioList::loadAllData()
 
     setTopListOnStart();
     setFavoriteStatons();
+    //loadRadioIconList();
 }
 
 void RadioList::setLoadedStationsCount(int num)
@@ -209,15 +318,28 @@ void RadioList::setLoadedStationsCount(int num)
 
 void RadioList::loadMoreStationsIfNeeded()
 {
-    QScrollBar *scrollBar = ui->tableView->verticalScrollBar();
-    int currentPosition = scrollBar->value();
-    int maximumPosition = scrollBar->maximum();
+    if (ui->tabRadioListWidget->currentIndex() == 0) {
+        QScrollBar *scrollBar = ui->tableView->verticalScrollBar();
+        int currentPosition = scrollBar->value();
+        int maximumPosition = scrollBar->maximum();
 
-    if (currentPosition >= maximumPosition * 0.8) {
-        loadRadioList();
-    }
-    if (currentPlayListPlaying == currentPlaylistIndex) {
-        setIndexColor();
+        if (currentPosition >= maximumPosition * 0.8) {
+            loadRadioList();
+        }
+        if (currentPlayListPlaying == currentPlaylistIndex) {
+            setIndexColor();
+        }
+    } else {
+        QScrollBar *scrollIconBar = ui->scrollArea->verticalScrollBar();
+        int currentIconPosition = scrollIconBar->value();
+        int maximumIconPosition = scrollIconBar->maximum();
+
+        if (currentIconPosition >= maximumIconPosition * 0.8) {
+            loadRadioIconList();
+        }
+        if (currentPlayListPlaying == currentPlaylistIndex) {
+            setIndexColor();
+        }
     }
 }
 
@@ -235,7 +357,6 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     isTreeClicked = true;
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item;
-
     if (!checkItem(item, LIBRARY_TREE)) {
         if (checkItem(item, "Top")) {
             if (this->treeItem == "Search")
@@ -261,7 +382,9 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         }
         if (jsonListProcesor.checkInternetConnection()) {
             loadedStationsCount = 0;
+            model->clear();
             loadRadioList();
+            loadRadioIconList();
         }
 
         if (currentPlayListPlaying == currentPlaylistIndex) {
@@ -585,6 +708,7 @@ void RadioList::searchStations()
     if (jsonListProcesor.checkInternetConnection()) {
         loadedStationsCount = 0;
         loadRadioList();
+        loadRadioIconList();
     }
 
     this->treeItem = "Search";
