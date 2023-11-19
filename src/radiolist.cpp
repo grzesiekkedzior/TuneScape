@@ -35,6 +35,10 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
+    connect(this,
+            &RadioList::playIconButtonClicked,
+            this,
+            &RadioList::handleIconPlayButtonDoubleClick);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -68,13 +72,46 @@ void RadioList::clearAll()
     networkReplies.clear();
     buttonCache.clear();
 }
+
+void RadioList::clearIconLabelColor()
+{
+    for (QWidget *buttonContainer : buttonCache) {
+        if (buttonContainer) {
+            QLabel *label = buttonContainer->findChild<QLabel *>();
+            if (label) {
+                // Reset to normal style here
+                label->setStyleSheet(""); // This will clear any existing style
+            }
+        }
+    }
+}
+
+void RadioList::markIconPlayingStation(int radioNumber)
+{
+    clearIconLabelColor();
+    QWidget *buttonContainer = buttonCache.at(radioNumber);
+    QLabel *label = buttonContainer->findChild<QLabel *>();
+    if (label) {
+        label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
+    } else {
+        // todo
+    }
+}
+
+void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
+{
+    QModelIndex index = model->index(radioNumber, 0);
+    setRadioImage(index);
+    onTableViewDoubleClicked(index);
+    markIconPlayingStation(radioNumber);
+}
+
 void RadioList::loadRadioIconList()
 {
     clearAll();
     int dataSize = jsonListProcesor.getTableRows().size();
     qDebug() << dataSize;
-
-    // Utworzenie QNetworkAccessManager tylko raz, jeśli nie istnieje
+    buttonCache.resize(dataSize, nullptr);
     if (!networkManager) {
         networkManager = new QNetworkAccessManager(this);
     }
@@ -96,6 +133,8 @@ void RadioList::loadRadioIconList()
             itemLayout->addWidget(button);
             itemLayout->addWidget(label);
 
+            connect(button, &QPushButton::clicked, this, [=]() { emit playIconButtonClicked(row); });
+
             QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
             QNetworkRequest request(imageUrl);
             QNetworkReply *reply = networkManager->get(request);
@@ -103,16 +142,14 @@ void RadioList::loadRadioIconList()
             networkReplies.append(reply);
 
             connect(reply, &QNetworkReply::finished, [=]() {
-                handleNetworkReply(reply, button, itemContainer, dataSize);
+                handleNetworkReply(reply, button, itemContainer, dataSize, row);
             });
         }
     }
 }
 
-void RadioList::handleNetworkReply(QNetworkReply *reply,
-                                   QPushButton *button,
-                                   QWidget *itemContainer,
-                                   int dataSize)
+void RadioList::handleNetworkReply(
+    QNetworkReply *reply, QPushButton *button, QWidget *itemContainer, int dataSize, int row)
 {
     if (reply->error() == QNetworkReply::NoError) {
         QByteArray imageData = reply->readAll();
@@ -138,9 +175,9 @@ void RadioList::handleNetworkReply(QNetworkReply *reply,
         button->setIconSize(buttonSize);
     }
 
-    buttonCache.append(itemContainer);
+    buttonCache[row] = itemContainer;
 
-    if (buttonCache.size() == dataSize) {
+    if (!buttonCache.contains(nullptr)) {
         for (QWidget *button : buttonCache) {
             flowLayout->addWidget(button);
         }
@@ -495,7 +532,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         playStream(radioIndexNumber);
         clearTableViewColor();
         setIndexColor();
-
+        markIconPlayingStation(index.row());
         if (radioManager.getMediaPlayer()->isPlaying())
             ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
 
@@ -524,6 +561,8 @@ void RadioList::onPlayPauseButtonCliced()
             playStream(radioIndexNumber);
             QModelIndex newIndex = ui->tableView->model()->index(0, 0);
             setRadioImage(newIndex);
+            ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
+            markIconPlayingStation(newIndex.row());
         } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == "") {
             clearTableViewColor();
             setIndexColor();
@@ -584,6 +623,7 @@ void RadioList::onStopButtonClicked()
             currentRadioPlayingAddress = "";
             radioIndexNumber = 0;
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             ui->infoLabel->show();
             ui->infoData->clear();
             QModelIndex newIndex = ui->tableView->model()->index(0, 0);
@@ -596,6 +636,7 @@ void RadioList::onStopButtonClicked()
             ui->tableView->setCurrentIndex(newIndex);
         }
         clearTableViewColor();
+        clearIconLabelColor();
     }
 }
 
@@ -664,7 +705,7 @@ void RadioList::handleDataReceived(const QString &data)
         ui->infoData->clear();
         ui->infoData->setText(title);
     }
-    metaData = "";
+    //metaData = "";
 }
 
 void RadioList::setVectorsOfStation(const QString endpoint)

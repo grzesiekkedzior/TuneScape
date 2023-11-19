@@ -30,10 +30,13 @@ public:
     void startSearchTimer();
     void onInternetConnectionRestored();
 
-    void handleNetworkReply(QNetworkReply *reply,
-                            QPushButton *button,
-                            QWidget *itemContainer,
-                            int dataSize);
+    void handleNetworkReply(
+        QNetworkReply *reply, QPushButton *button, QWidget *itemContainer, int dataSize, int row);
+
+    void clearIconLabelColor();
+
+signals:
+    void playIconButtonClicked(int radioNumber);
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
@@ -130,8 +133,10 @@ private:
     void addToButtonCache();
     void loadRadioIconList();
     void clearAll();
+    void handleIconPlayButtonDoubleClick(int radioNumber);
     QList<QNetworkReply *> networkReplies;
     QNetworkAccessManager *networkManager = nullptr;
+    void markIconPlayingStation(int radioNumber);
 };
 
 #endif // RADIOLIST_H
