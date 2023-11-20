@@ -37,6 +37,7 @@ public:
 
 signals:
     void playIconButtonClicked(int radioNumber);
+    void allIconsLoaded();
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
@@ -48,6 +49,7 @@ private slots:
     void onTableViewClicked(const QModelIndex &index);
     void tableViewActivated(const QModelIndex &index);
     void addRadioToFavorite();
+    void onAllIconsLoaded();
 
 private:
     int loadedStationsCount = -1;
@@ -77,6 +79,7 @@ private:
     bool isStopClicked = false;
     bool isTreeClicked = false;
     bool isSearching = false;
+    bool isIconFlowlayoutFull = false;
 
     const QString STATION = "Station";
     const QString GENRE = "Genre";

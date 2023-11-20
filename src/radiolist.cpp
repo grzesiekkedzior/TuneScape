@@ -39,6 +39,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
             &RadioList::playIconButtonClicked,
             this,
             &RadioList::handleIconPlayButtonDoubleClick);
+    connect(this, &RadioList::allIconsLoaded, this, &RadioList::onAllIconsLoaded);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -84,6 +85,7 @@ void RadioList::clearIconLabelColor()
             }
         }
     }
+    isIconFlowlayoutFull = false;
 }
 
 void RadioList::markIconPlayingStation(int radioNumber)
@@ -95,6 +97,22 @@ void RadioList::markIconPlayingStation(int radioNumber)
         label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
     } else {
         // todo
+    }
+}
+
+void RadioList::onAllIconsLoaded()
+{
+    if (currentPlayListPlaying == currentPlaylistIndex && isIconFlowlayoutFull) {
+        QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
+        if (buttonContainer) {
+            QLabel *label = buttonContainer->findChild<QLabel *>();
+            if (label) {
+                label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
+            } else {
+                // handle the case when label is not found
+                // todo
+            }
+        }
     }
 }
 
@@ -181,6 +199,8 @@ void RadioList::handleNetworkReply(
         for (QWidget *button : buttonCache) {
             flowLayout->addWidget(button);
         }
+        isIconFlowlayoutFull = true;
+        emit allIconsLoaded();
     }
 
     reply->deleteLater();
