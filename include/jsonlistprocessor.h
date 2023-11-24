@@ -28,6 +28,8 @@ public:
     JsonListProcessor();
     ~JsonListProcessor();
 
+    bool isConnected = false;
+
     void processJsonQuery();
     void loadEndpoint(QString endpoint);
     void setUi(Ui::MainWindow *ui);
@@ -46,6 +48,8 @@ public:
     void setIconAddresses(const QVector<QString> &icons);
     QNetworkReply *checkAvailability(const QStringList &radioAddresses);
     QJsonDocument createJasonDocument(QNetworkReply *reply);
+signals:
+    void connectionLost();
 
 private:
     const QString NAME = "name";

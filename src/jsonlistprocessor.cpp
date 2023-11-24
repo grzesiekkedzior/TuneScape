@@ -1,4 +1,5 @@
 #include "include/jsonlistprocessor.h"
+#include <QHostInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -11,9 +12,9 @@
 JsonListProcessor::JsonListProcessor()
 {
     connectionTimer = new QTimer(this);
-    connectionTimer->setInterval(5000);
+    connectionTimer->setInterval(12000);
     connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkInternetConnection);
-    connectionTimer->start();
+    //connectionTimer->start();
 
     internetConnectionChecker = new QTimer(this);
     internetConnectionChecker->setInterval(5000);
@@ -75,19 +76,19 @@ void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
 
 bool JsonListProcessor::checkInternetConnection()
 {
-    bool isConnected = false;
-    QTcpSocket checkConnectionSocket;
-    checkConnectionSocket.connectToHost("google.com", 443);
-    checkConnectionSocket.waitForConnected(2000);
+    isConnected = false;
+    QTimer timer;
 
-    if (checkConnectionSocket.state() == QTcpSocket::ConnectedState) {
+    // Connect to the DNS server and check if the name "google.com" resolves to an IP address.
+    QHostInfo hostInfo = QHostInfo::fromName("google.com");
+    if (!hostInfo.error()) {
         isConnected = true;
     } else {
         lostConnection();
+        qDebug() << "connection failed: " << hostInfo.errorString();
         internetConnectionChecker->start();
     }
 
-    checkConnectionSocket.close();
     return isConnected;
 }
 
@@ -105,6 +106,7 @@ void JsonListProcessor::retryInternetConnection()
         ui->statusbar->showMessage("Connected");
         ui->statusbar->setStyleSheet("color: green");
         internetConnectionChecker->stop();
+        connectionTimer->start();
         //loadEndpoint(endpoint);
         //radioList->setLoadedStationsCount(0);
         //processJsonQuery();

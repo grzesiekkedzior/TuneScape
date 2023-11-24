@@ -635,7 +635,7 @@ void RadioList::clearTableViewColor()
 
 void RadioList::onStopButtonClicked()
 {
-    if (radioManager.getMediaPlayer()->isPlaying()) {
+    if (radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected) {
         isStopClicked = true;
         if (radioManager.getMediaPlayer()->isPlaying()) {
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
