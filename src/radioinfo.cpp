@@ -73,6 +73,21 @@ void RadioInfo::setDataOnTable()
     ui->radioIcon->setPixmap(pixmapFromInfoLabel);
 }
 
+void RadioInfo::clearInfo()
+{
+    infoData.favicon = "";
+    infoData.station = "";
+    infoData.country = "";
+    infoData.state = "";
+    infoData.language = "";
+    infoData.votes = "";
+    infoData.codec = "";
+    infoData.bitrate = "";
+    infoData.clickcount = "";
+    infoData.clicktrend = "";
+    setDataOnTable();
+}
+
 RadioInfo::~RadioInfo()
 {
     if (reply) {

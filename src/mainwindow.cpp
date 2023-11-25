@@ -96,7 +96,7 @@ void MainWindow::infoDialogApp()
 
     aboutTuneScape = new QLabel;
     aboutTuneScape->setText(
-        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 1.1.1</p>"
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 1.1.2</p>"
         "This is a free and Open Source online radio player based on "
         "<a href=\"https://www.radio-browser.info\">radio-browser service.</a> "
         "This is the beta version. If you want help to develop this app, look at "

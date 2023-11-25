@@ -32,6 +32,7 @@ public:
     void loadEndpoint(const QString station);
     void processInfoJsonQuery();
     void setDataOnTable();
+    void clearInfo();
 
 private:
     Ui::MainWindow *ui;
@@ -41,6 +42,7 @@ private:
     QNetworkReply *reply = nullptr;
     QJsonDocument doc;
     Infodata infoData;
+    const int infoSize = 10;
 
     const QString ENDPOINT = "/json/stations/search?name=";
 

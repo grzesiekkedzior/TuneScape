@@ -126,42 +126,46 @@ void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
 
 void RadioList::loadRadioIconList()
 {
-    clearAll();
-    int dataSize = jsonListProcesor.getTableRows().size();
-    qDebug() << dataSize;
-    buttonCache.resize(dataSize, nullptr);
-    if (!networkManager) {
-        networkManager = new QNetworkAccessManager(this);
-    }
+    if (jsonListProcesor.isConnected) {
+        clearAll();
+        int dataSize = jsonListProcesor.getTableRows().size();
+        qDebug() << dataSize;
+        buttonCache.resize(dataSize, nullptr);
+        if (!networkManager) {
+            networkManager = new QNetworkAccessManager(this);
+        }
 
-    for (int row = 0; row < dataSize; ++row) {
-        // Without this condition app will crash?! Some check analizer suggest that is un...
-        if (dataSize > row) {
-            QWidget *itemContainer = new QWidget;
-            QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
-            QPushButton *button = new QPushButton; // Allocate on the heap
-            button->setFixedSize(120, 120);
-            qDebug() << row;
-            QString description = jsonListProcesor.getTableRows().at(row).station;
-            QLabel *label = new QLabel(description); // Allocate on the heap
-            label->setFixedWidth(120);
-            label->setWordWrap(true);
-            label->setAlignment(Qt::AlignCenter);
+        for (int row = 0; row < dataSize; ++row) {
+            // Without this condition app will crash?! Some check analizer suggest that is un...
+            if (dataSize > row) {
+                QWidget *itemContainer = new QWidget;
+                QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
+                QPushButton *button = new QPushButton; // Allocate on the heap
+                button->setFixedSize(120, 120);
+                qDebug() << row;
+                QString description = jsonListProcesor.getTableRows().at(row).station;
+                QLabel *label = new QLabel(description); // Allocate on the heap
+                label->setFixedWidth(120);
+                label->setWordWrap(true);
+                label->setAlignment(Qt::AlignCenter);
 
-            itemLayout->addWidget(button);
-            itemLayout->addWidget(label);
+                itemLayout->addWidget(button);
+                itemLayout->addWidget(label);
 
-            connect(button, &QPushButton::clicked, this, [=]() { emit playIconButtonClicked(row); });
+                connect(button, &QPushButton::clicked, this, [=]() {
+                    emit playIconButtonClicked(row);
+                });
 
-            QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
-            QNetworkRequest request(imageUrl);
-            QNetworkReply *reply = networkManager->get(request);
+                QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
+                QNetworkRequest request(imageUrl);
+                QNetworkReply *reply = networkManager->get(request);
 
-            networkReplies.append(reply);
+                networkReplies.append(reply);
 
-            connect(reply, &QNetworkReply::finished, [=]() {
-                handleNetworkReply(reply, button, itemContainer, dataSize, row);
-            });
+                connect(reply, &QNetworkReply::finished, [=]() {
+                    handleNetworkReply(reply, button, itemContainer, dataSize, row);
+                });
+            }
         }
     }
 }
@@ -192,8 +196,8 @@ void RadioList::handleNetworkReply(
         button->setIcon(QIcon(pixmap));
         button->setIconSize(buttonSize);
     }
-
-    buttonCache[row] = itemContainer;
+    if (row < buttonCache.size())
+        buttonCache[row] = itemContainer;
 
     if (!buttonCache.contains(nullptr)) {
         for (QWidget *button : buttonCache) {
@@ -564,39 +568,46 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
             radioInfo->setDataOnTable();
         }
     }
+    radioIndexNumber = index.row();
+    setIndexColor();
 }
 
 void RadioList::onPlayPauseButtonCliced()
 {
-    if (isTreeClicked && jsonListProcesor.checkInternetConnection()) {
-        if (radioManager.getMediaPlayer()->isPlaying()) {
-            radioManager.stopStream();
-        } else if (currentRadioPlayingAddress != ""
-                   && radioManager.getMediaPlayer()->isAvailable()) {
-            radioManager.playStream();
-        } else if (currentRadioPlayingAddress.isEmpty()
-                   && !jsonListProcesor.getTableRows().isEmpty()) {
-            clearTableViewColor();
-            setIndexColor();
-            playStream(radioIndexNumber);
-            QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-            setRadioImage(newIndex);
-            ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
-            markIconPlayingStation(newIndex.row());
-        } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == "") {
-            clearTableViewColor();
-            setIndexColor();
-            playStream(radioIndexNumber);
-        }
+    if (!isTreeClicked || !jsonListProcesor.checkInternetConnection()) {
+        return;
+    }
 
-        if (isStopClicked) {
-            setRadioImage(ui->tableView->currentIndex());
-            isStopClicked = false;
-        }
+    if (radioManager.getMediaPlayer()->isPlaying()) {
+        radioManager.stopStream();
+    } else if (currentRadioPlayingAddress != "" && radioManager.getMediaPlayer()->isAvailable()) {
+        radioManager.playStream();
 
-        ui->playPause->setIcon(QIcon(radioManager.getMediaPlayer()->isPlaying()
-                                         ? ":/images/img/pause30.png"
-                                         : ":/images/img/play30.png"));
+    } else if (currentRadioPlayingAddress.isEmpty() && !jsonListProcesor.getTableRows().isEmpty()) {
+        currentPlayListPlaying = currentPlaylistIndex;
+        playStream(radioIndexNumber);
+        radioInfo->loadEndpoint(jsonListProcesor.getTableRows().at(radioIndexNumber).station);
+        radioInfo->processInfoJsonQuery();
+        radioInfo->setDataOnTable();
+        QModelIndex newIndex = ui->tableView->model()->index(0, 0);
+        setRadioImage(newIndex);
+        ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
+        markIconPlayingStation(newIndex.row());
+    } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == "") {
+        playStream(radioIndexNumber);
+    }
+
+    if (isStopClicked) {
+        setRadioImage(model->index(0, 0));
+        isStopClicked = false;
+    }
+
+    ui->playPause->setIcon(QIcon(radioManager.getMediaPlayer()->isPlaying()
+                                     ? ":/images/img/pause30.png"
+                                     : ":/images/img/play30.png"));
+
+    if (currentPlayListPlaying == currentPlaylistIndex) {
+        setIndexColor();
     }
 }
 
@@ -635,13 +646,14 @@ void RadioList::clearTableViewColor()
 
 void RadioList::onStopButtonClicked()
 {
+    // TODO when internet connection is lost then stop button is unable to turn off music!!!
+    // It can irritate some users but it is very rare case
     if (radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected) {
         isStopClicked = true;
         if (radioManager.getMediaPlayer()->isPlaying()) {
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
             radioManager.stopStream();
             currentRadioPlayingAddress = "";
-            radioIndexNumber = 0;
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             ui->infoLabel->show();
@@ -651,12 +663,15 @@ void RadioList::onStopButtonClicked()
         } else {
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
             currentRadioPlayingAddress = "";
-            radioIndexNumber = 0;
             QModelIndex newIndex = ui->tableView->model()->index(0, 0);
             ui->tableView->setCurrentIndex(newIndex);
         }
+        radioIndexNumber = 0;
         clearTableViewColor();
         clearIconLabelColor();
+        radioInfo->clearInfo();
+    } else {
+        return;
     }
 }
 
