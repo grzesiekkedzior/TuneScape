@@ -38,6 +38,10 @@
         <file>img/iconmonstr-info-48.png</file>
         <file>img/bookmarkgold-33-240.png</file>
         <file>img/bookmarkgoldfull-33-240.png</file>
+        <file>img/favourite.png</file>
+        <file>img/new.png</file>
+        <file>img/popular.png</file>
+        <file>img/top.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>

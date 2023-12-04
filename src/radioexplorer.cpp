@@ -7,10 +7,10 @@ RadioExplorer::RadioExplorer(Ui::MainWindow *ui)
 {
     itemModel = new QStandardItemModel;
     library = new QStandardItem(LIBRARY);
-    top = new QStandardItem(TOP);
-    popular = new QStandardItem(POPULAR);
-    newRadios = new QStandardItem(NEW);
-    favorite = new QStandardItem(FAVORITE);
+    top = new QStandardItem(QIcon(":/images/img/top.png"), TOP);
+    popular = new QStandardItem(QIcon(":/images/img/popular.png"), POPULAR);
+    newRadios = new QStandardItem(QIcon(":/images/img/new.png"), NEW);
+    favorite = new QStandardItem(QIcon(":/images/img/favourite.png"), FAVORITE);
 }
 
 void RadioExplorer::setNotEditableTree()
