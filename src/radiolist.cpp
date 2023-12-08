@@ -17,10 +17,16 @@ RadioList::RadioList(Ui::MainWindow *ui)
     radioInfo = new RadioInfo(ui);
     flowLayout = new FlowLayout(ui->iconTiles);
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
-    connect(ui->tableView->verticalScrollBar(),
-            &QScrollBar::valueChanged,
-            this,
-            &RadioList::loadMoreStationsIfNeeded);
+    // for list
+    //    connect(ui->tableView->verticalScrollBar(),
+    //            &QScrollBar::valueChanged,
+    //            this,
+    //            &RadioList::loadMoreStationsIfNeeded);
+    //    // for icons
+    //    connect(ui->scrollArea->verticalScrollBar(),
+    //            &QScrollBar::valueChanged,
+    //            this,
+    //            &RadioList::loadMoreStationsIfNeeded);
     //connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::setRadioImage);
@@ -129,7 +135,7 @@ void RadioList::loadRadioIconList()
     if (jsonListProcesor.isConnected) {
         clearAll();
         int dataSize = jsonListProcesor.getTableRows().size();
-        qDebug() << dataSize;
+        qDebug() << "data size " << dataSize;
         buttonCache.resize(dataSize, nullptr);
         if (!networkManager) {
             networkManager = new QNetworkAccessManager(this);
@@ -219,10 +225,10 @@ void RadioList::loadRadioList()
     }
     model->setHorizontalHeaderLabels(headers);
     int dataSize = jsonListProcesor.getTableRows().size();
-    int batchSize = 50;
-
-    for (int row = loadedStationsCount; row < qMin(loadedStationsCount + batchSize, dataSize);
-         ++row) {
+    //int batchSize = 50;
+    //    for (int row = 0; row < qMin(loadedStationsCount + batchSize, dataSize);
+    //         ++row)
+    for (int row = 0; row < dataSize; ++row) {
         QList<QStandardItem *> rowItems;
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).country));
@@ -234,7 +240,7 @@ void RadioList::loadRadioList()
     ui->tableView->setModel(model);
     this->treeItem = "Search";
     ui->tableView->resizeRowsToContents();
-    loadedStationsCount += batchSize;
+    //loadedStationsCount += batchSize;
 }
 
 void RadioList::setTopListOnStart()
@@ -383,7 +389,7 @@ void RadioList::loadMoreStationsIfNeeded()
         QScrollBar *scrollBar = ui->tableView->verticalScrollBar();
         int currentPosition = scrollBar->value();
         int maximumPosition = scrollBar->maximum();
-
+        qDebug() << "Scrollup";
         if (currentPosition >= maximumPosition * 0.8) {
             loadRadioList();
         }
@@ -394,9 +400,9 @@ void RadioList::loadMoreStationsIfNeeded()
         QScrollBar *scrollIconBar = ui->scrollArea->verticalScrollBar();
         int currentIconPosition = scrollIconBar->value();
         int maximumIconPosition = scrollIconBar->maximum();
-
+        qDebug() << "Scrolldown";
         if (currentIconPosition >= maximumIconPosition * 0.8) {
-            loadRadioIconList();
+            loadRadioList();
         }
         if (currentPlayListPlaying == currentPlaylistIndex) {
             setIndexColor();
