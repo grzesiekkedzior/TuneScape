@@ -76,6 +76,7 @@ private:
     int radioEnterIndexNumber = 0;
     int radioIndexCurrentPlaying = 0;
     int radioPlaylistCurrentPlaying = 0;
+    int progressLoading = 1;
     bool isStopClicked = false;
     bool isTreeClicked = false;
     bool isSearching = false;

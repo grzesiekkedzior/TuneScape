@@ -676,6 +676,24 @@ selection-color: rgb(4, 4, 4);</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
                  <item>
+                  <widget class="QProgressBar" name="progressBar">
+                   <property name="styleSheet">
+                    <string notr="true">QProgressBar {
+    border: 2px solid #14D0FF;
+    border-radius: 5px;
+    text-align: center;    height: 6px;
+}
+QProgressBar::chunk {
+    background-color: qlineargradient(spread:reflect, x1:0, y1:0, x2:0.5, y2:0, stop:0 white, stop:1 #14D0FF);
+}
+</string>
+                   </property>
+                   <property name="value">
+                    <number>0</number>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QWidget" name="iconTiles" native="true"/>
                  </item>
                 </layout>

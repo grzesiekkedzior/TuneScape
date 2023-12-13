@@ -16,6 +16,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
     flowLayout = new FlowLayout(ui->iconTiles);
+
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     // for list
     //    connect(ui->tableView->verticalScrollBar(),
@@ -75,6 +76,7 @@ void RadioList::clearFlowLayout()
 
 void RadioList::clearAll()
 {
+    progressLoading = 1;
     clearFlowLayout();
     networkReplies.clear();
     buttonCache.clear();
@@ -135,6 +137,9 @@ void RadioList::loadRadioIconList()
     if (jsonListProcesor.isConnected) {
         clearAll();
         int dataSize = jsonListProcesor.getTableRows().size();
+        ui->progressBar->setRange(0, dataSize);
+        if (dataSize > 0)
+            ui->progressBar->show();
         qDebug() << "data size " << dataSize;
         buttonCache.resize(dataSize, nullptr);
         if (!networkManager) {
@@ -210,7 +215,11 @@ void RadioList::handleNetworkReply(
             flowLayout->addWidget(button);
         }
         isIconFlowlayoutFull = true;
+        ui->progressBar->hide();
         emit allIconsLoaded();
+    } else {
+        ++progressLoading;
+        ui->progressBar->setValue(progressLoading);
     }
 
     reply->deleteLater();
