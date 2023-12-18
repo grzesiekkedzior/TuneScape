@@ -434,6 +434,8 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item;
     if (!checkItem(item, LIBRARY_TREE)) {
+        if (!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2)
+            ui->tabRadioListWidget->setCurrentIndex(0);
         if (checkItem(item, "Top")) {
             if (this->treeItem == "Search")
                 this->treeItem = "";
@@ -455,6 +457,11 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             setRadioListVectors(Stations::FAVORITE);
             currentPlaylistIndex = Stations::FAVORITE;
             qDebug() << "HELLO";
+        } else if (checkItem(item, "Discover")) {
+            if (this->treeItem == "Search")
+                this->treeItem = "";
+            ui->tabRadioListWidget->setCurrentIndex(2);
+            qDebug() << "Discover";
         }
         if (jsonListProcesor.checkInternetConnection()) {
             loadedStationsCount = 0;

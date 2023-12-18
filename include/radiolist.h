@@ -13,7 +13,7 @@
 #include <QStandardItemModel>
 #include <QStringList>
 
-enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH };
+enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
 
 class RadioList : public QObject
 {

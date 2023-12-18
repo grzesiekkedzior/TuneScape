@@ -23,6 +23,7 @@ void RadioExplorer::setNotEditableTree()
     newRadios->setEditable(false);
     favorite->setEditable(false);
     icecast->setEditable(false);
+    discover->setEditable(false);
 }
 
 void RadioExplorer::createTree()
