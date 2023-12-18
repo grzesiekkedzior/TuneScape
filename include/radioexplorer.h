@@ -25,13 +25,15 @@ private:
     QStandardItem *popular;
     QStandardItem *newRadios;
     QStandardItem *favorite;
+    QStandardItem *icecast;
 
-    const QString LIBRARY = "Library";
+    const QString LIBRARY = "Radio-Browser";
+    const QString ICECAST = "Ice-Cast";
     const QString POPULAR = "Popular";
-    //const QString DISCOVER  = "Discover";
     const QString TOP = "Top";
     const QString NEW = "New";
     const QString FAVORITE = "Favorite";
+    const QString DISCOVER = "Discover";
 
     void setNotEditableTree();
     void createTree();

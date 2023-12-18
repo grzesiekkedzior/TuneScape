@@ -44,6 +44,7 @@ void MainWindow::start()
     radioExplorer = new RadioExplorer(ui);
     radioList = new RadioList(ui);
     radioInfo = new RadioInfo(ui);
+    iceCastXmlData = new IceCastXmlData(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
 
