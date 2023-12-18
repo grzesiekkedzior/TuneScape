@@ -597,7 +597,7 @@
 selection-color: rgb(4, 4, 4);</string>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="listTab">
             <attribute name="title">
@@ -709,6 +709,18 @@ QProgressBar::chunk {
             <layout class="QVBoxLayout" name="verticalLayout_7">
              <item>
               <widget class="QTableWidget" name="icecastTable">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">QTableWidget {
+    padding: 0px;
+    margin: 0px;
+}</string>
+               </property>
                <property name="editTriggers">
                 <set>QAbstractItemView::NoEditTriggers</set>
                </property>

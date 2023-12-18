@@ -1,15 +1,18 @@
 #include "include/IceCastXmlData.h"
+#include <QFuture>
+#include <QFutureWatcher>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QXmlStreamReader>
+#include <QtConcurrent>
 
 IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
 {
     this->ui = ui;
+    ui->icecastTable->verticalHeader()->setDefaultSectionSize(18);
     ui->icecastTable->setColumnCount(5);
     ui->icecastTable->setHorizontalHeaderLabels({"Station", "Genre", "Codec", "Bitrate", "Sample"});
-    loadXmlData();
-    loadXmlToTable();
+    loadXmlAsync();
 }
 
 void IceCastXmlData::loadXmlData()
@@ -50,6 +53,8 @@ void IceCastXmlData::loadXmlData()
                         icast.bitrate = xml.readElementText();
                     } else if (elementName == "samplerate") {
                         icast.sample = xml.readElementText();
+                    } else if (elementName == "listen_url") {
+                        icast.listen_url = xml.readElementText();
                     }
                 }
             }
@@ -77,4 +82,18 @@ void IceCastXmlData::addRowToTable(const IceCastTableRow &row)
     ui->icecastTable->setItem(rowPosition, 2, new QTableWidgetItem(row.codec));
     ui->icecastTable->setItem(rowPosition, 3, new QTableWidgetItem(row.bitrate));
     ui->icecastTable->setItem(rowPosition, 4, new QTableWidgetItem(row.sample));
+}
+
+void IceCastXmlData::loadXmlAsync()
+{
+    QFutureWatcher<void> *watcher = new QFutureWatcher<void>(this);
+
+    connect(watcher, &QFutureWatcher<void>::finished, [=]() {
+        watcher->deleteLater();
+        loadXmlToTable();
+    });
+
+    QFuture<void> future = QtConcurrent::run([this]() { loadXmlData(); });
+
+    watcher->setFuture(future);
 }

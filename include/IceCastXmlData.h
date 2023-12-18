@@ -10,6 +10,7 @@ struct IceCastTableRow
     QString codec = "";
     QString bitrate = "";
     QString sample = "";
+    QString listen_url = "";
 };
 
 struct DOM
@@ -19,6 +20,7 @@ struct DOM
     const QString CODEC = "server_type";
     const QString BITRATE = "bitrate";
     const QString SAMPLE = "samplerate";
+    const QString LISTEN = "listen_url";
 };
 
 class IceCastXmlData : public QObject
@@ -30,6 +32,7 @@ public:
     void loadXmlData();
     void loadXmlToTable();
     void addRowToTable(const IceCastTableRow &row);
+    void loadXmlAsync();
 
 private:
     Ui::MainWindow *ui;
