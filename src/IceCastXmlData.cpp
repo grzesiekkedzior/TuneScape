@@ -121,6 +121,11 @@ void IceCastXmlData::setRadioList(RadioList *radioList)
     this->radioList = radioList;
 }
 
+void IceCastXmlData::setRadioInfo(RadioInfo *radioInfo)
+{
+    this->radioInfo = radioInfo;
+}
+
 void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
 {
     if (jsonListProcesor->isConnected) {
@@ -131,6 +136,14 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         setIndexColor(index);
         radioList->clearTableViewColor();
         radioList->clearIconLabelColor();
+        ui->infoData->clear();
+        radioInfo->clearInfo();
+        ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        ui->playPause->setIcon(QIcon(radioAudioManager->getMediaPlayer()->isPlaying()
+                                         ? ":/images/img/pause30.png"
+                                         : ":/images/img/play30.png"));
+        isPlaying = true;
     }
 }
 
@@ -157,10 +170,26 @@ void IceCastXmlData::clearTableViewColor()
         }
     }
 }
+
+bool IceCastXmlData::getPlaying()
+{
+    return isPlaying;
+}
+
+void IceCastXmlData::playStreamOnStart(const QModelIndex &index)
+{
+    onDoubleListClicked(index);
+}
+
 IceCastXmlData::~IceCastXmlData()
 {
     if (radioAudioManager)
         delete radioAudioManager;
     if (jsonListProcesor)
         delete jsonListProcesor;
+}
+
+void IceCastXmlData::setPlaying(bool b)
+{
+    isPlaying = b;
 }

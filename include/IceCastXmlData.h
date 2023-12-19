@@ -4,6 +4,7 @@
 #include "../ui_mainwindow.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"
+#include "radioinfo.h"
 
 struct IceCastTableRow
 {
@@ -34,6 +35,7 @@ public:
     ~IceCastXmlData();
 
     void setUi();
+    void setPlaying(bool b);
     void loadXmlData();
     void loadXmlToTable();
     void addRowToTable(const IceCastTableRow &row);
@@ -41,8 +43,13 @@ public:
     void setJsonListProcessor(JsonListProcessor &jsonListProcesor);
     void setRadioAudioManager(RadioAudioManager &radioAudioManager);
     void setRadioList(RadioList *radioList);
+    void setRadioInfo(RadioInfo *radioInfo);
     void setTableProperty(Ui::MainWindow *ui);
     void clearTableViewColor();
+
+    void clearInfoData();
+    bool getPlaying();
+    void playStreamOnStart(const QModelIndex &index);
 
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
@@ -53,6 +60,8 @@ private:
     RadioAudioManager *radioAudioManager;
     JsonListProcessor *jsonListProcesor;
     RadioList *radioList = nullptr;
+    RadioInfo *radioInfo = nullptr;
+    bool isPlaying = false;
     const QString iceCastUrl = "https://dir.xiph.org/yp.xml";
     QVector<IceCastTableRow> iceCastTableRows;
 
