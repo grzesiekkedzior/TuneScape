@@ -5,6 +5,9 @@
 #include <QNetworkRequest>
 #include <QXmlStreamReader>
 #include <QtConcurrent>
+#include "include/radiolist.h"
+
+IceCastXmlData::IceCastXmlData() {}
 
 IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
 {
@@ -12,7 +15,10 @@ IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
     ui->icecastTable->verticalHeader()->setDefaultSectionSize(18);
     ui->icecastTable->setColumnCount(5);
     ui->icecastTable->setHorizontalHeaderLabels({"Station", "Genre", "Codec", "Bitrate", "Sample"});
-    loadXmlAsync();
+    QObject::connect(ui->icecastTable,
+                     &QTableWidget::doubleClicked,
+                     this,
+                     &IceCastXmlData::onDoubleListClicked);
 }
 
 void IceCastXmlData::loadXmlData()
@@ -28,6 +34,7 @@ void IceCastXmlData::loadXmlData()
 
     if (reply->error()) {
         reply->deleteLater();
+        qDebug() << "Error";
         return;
     }
 
@@ -67,6 +74,7 @@ void IceCastXmlData::loadXmlData()
 
 void IceCastXmlData::loadXmlToTable()
 {
+    ui->icecastTable->clearContents();
     for (const auto &row : iceCastTableRows) {
         addRowToTable(row);
     }
@@ -96,4 +104,63 @@ void IceCastXmlData::loadXmlAsync()
     QFuture<void> future = QtConcurrent::run([this]() { loadXmlData(); });
 
     watcher->setFuture(future);
+}
+
+void IceCastXmlData::setJsonListProcessor(JsonListProcessor &jsonListProcessor)
+{
+    this->jsonListProcesor = &jsonListProcessor;
+}
+
+void IceCastXmlData::setRadioAudioManager(RadioAudioManager &radioAudioManager)
+{
+    this->radioAudioManager = &radioAudioManager;
+}
+
+void IceCastXmlData::setRadioList(RadioList *radioList)
+{
+    this->radioList = radioList;
+}
+
+void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
+{
+    if (jsonListProcesor->isConnected) {
+        clearTableViewColor();
+        QString url = iceCastTableRows[index.row()].listen_url;
+        radioAudioManager->loadStream(url);
+        radioAudioManager->playStream();
+        setIndexColor(index);
+        radioList->clearTableViewColor();
+        radioList->clearIconLabelColor();
+    }
+}
+
+void IceCastXmlData::setIndexColor(const QModelIndex &index)
+{
+    for (int column = 0; column < ui->icecastTable->columnCount(); column++) {
+        QTableWidgetItem *item = ui->icecastTable->item(index.row(), column);
+        if (item)
+            item->setBackground(QColor(222, 255, 223));
+    }
+}
+
+void IceCastXmlData::clearTableViewColor()
+{
+    int rowCount = ui->icecastTable->rowCount();
+    int columnCount = ui->icecastTable->columnCount();
+
+    for (int row = 0; row < rowCount; ++row) {
+        for (int column = 0; column < columnCount; ++column) {
+            QTableWidgetItem *item = ui->icecastTable->item(row, column);
+            if (item) {
+                item->setBackground(QColor(Qt::white));
+            }
+        }
+    }
+}
+IceCastXmlData::~IceCastXmlData()
+{
+    if (radioAudioManager)
+        delete radioAudioManager;
+    if (jsonListProcesor)
+        delete jsonListProcesor;
 }

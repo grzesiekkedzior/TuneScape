@@ -2,6 +2,7 @@
 #define RADIOLIST_H
 
 #include "../ui_mainwindow.h"
+#include "IceCastXmlData.h"
 #include "StreamReader.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
@@ -34,6 +35,7 @@ public:
         QNetworkReply *reply, QPushButton *button, QWidget *itemContainer, int dataSize, int row);
 
     void clearIconLabelColor();
+    void clearTableViewColor();
 
 signals:
     void playIconButtonClicked(int radioNumber);
@@ -64,6 +66,7 @@ private:
     JsonListProcessor jsonListProcesor;
     RadioAudioManager radioManager;
     StreamReader streamReader;
+    IceCastXmlData *iceCastXmlData = nullptr;
     QTimer searchTimer;
     RadioInfo *radioInfo;
     FlowLayout *flowLayout = nullptr;
@@ -102,7 +105,6 @@ private:
     QVector<QVector<QString>> allIconsAddresses;
 
     void playStream(int radioNumber);
-    void clearTableViewColor();
     void setIndexColor();
     void sliderMoved(int move);
     void setRadioImage(const QModelIndex &index);

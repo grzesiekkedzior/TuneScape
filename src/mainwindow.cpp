@@ -27,6 +27,7 @@ MainWindow::~MainWindow()
     delete radioExplorer;
     delete radioList;
     delete radioInfo;
+    delete iceCastXmlData;
 }
 
 void MainWindow::set_icon_btn()
@@ -44,7 +45,7 @@ void MainWindow::start()
     radioExplorer = new RadioExplorer(ui);
     radioList = new RadioList(ui);
     radioInfo = new RadioInfo(ui);
-    iceCastXmlData = new IceCastXmlData(ui);
+    //iceCastXmlData = new IceCastXmlData(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
 

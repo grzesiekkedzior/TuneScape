@@ -16,6 +16,10 @@ RadioList::RadioList(Ui::MainWindow *ui)
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
     flowLayout = new FlowLayout(ui->iconTiles);
+    iceCastXmlData = new IceCastXmlData(ui);
+    iceCastXmlData->setJsonListProcessor(jsonListProcesor);
+    iceCastXmlData->setRadioAudioManager(radioManager);
+    iceCastXmlData->setRadioList(this);
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     // for list
@@ -384,6 +388,7 @@ void RadioList::loadAllData()
 
     setTopListOnStart();
     setFavoriteStatons();
+    iceCastXmlData->loadXmlAsync();
     //loadRadioIconList();
 }
 
@@ -577,6 +582,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         currentPlayListPlaying = currentPlaylistIndex;
         playStream(radioIndexNumber);
         clearTableViewColor();
+        iceCastXmlData->clearTableViewColor();
         setIndexColor();
         markIconPlayingStation(index.row());
         if (radioManager.getMediaPlayer()->isPlaying())
