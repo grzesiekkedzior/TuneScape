@@ -19,17 +19,43 @@ IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
                      &QTableWidget::doubleClicked,
                      this,
                      &IceCastXmlData::onDoubleListClicked);
+    ui->iceCastprogressBar->setFormat("Download. " + QString::number(0) + " bytes");
 }
 
 void IceCastXmlData::loadXmlData()
 {
+    iceCastTableRows.clear();
+    if (!jsonListProcesor->isConnected)
+        return;
+    qDebug() << "Hello Ice-Cast";
     QUrl url(iceCastUrl);
     QNetworkAccessManager manager;
     QNetworkRequest request(url);
     QNetworkReply *reply = manager.get(request);
 
     QEventLoop loop;
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    ui->iceCastprogressBar->show();
+    QObject::connect(reply,
+                     &QNetworkReply::downloadProgress,
+                     [=](qint64 bytesReceived, qint64 bytesTotal) {
+                         QMetaObject::invokeMethod(this,
+                                                   "updateProgressBar",
+                                                   Qt::QueuedConnection,
+                                                   Q_ARG(int, bytesReceived));
+                     });
+
+    QObject::connect(reply, &QNetworkReply::finished, [&loop, this]() {
+        qDebug() << "Download finished";
+        ui->iceCastprogressBar->hide();
+        loop.quit();
+    });
+
+    QObject::connect(reply, &QObject::destroyed, [&loop, this]() {
+        qDebug() << "Download destroyed";
+        ui->iceCastprogressBar->hide();
+        loop.quit();
+    });
+
     loop.exec();
 
     if (reply->error()) {
@@ -75,9 +101,14 @@ void IceCastXmlData::loadXmlData()
 void IceCastXmlData::loadXmlToTable()
 {
     ui->icecastTable->clearContents();
+    ui->icecastTable->setRowCount(0);
     for (const auto &row : iceCastTableRows) {
         addRowToTable(row);
     }
+
+    if (ui->iceCastprogressBar->isVisible())
+        ui->iceCastprogressBar->hide();
+    setIsStationsLoaded(true);
 }
 
 void IceCastXmlData::addRowToTable(const IceCastTableRow &row)
@@ -143,8 +174,28 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         ui->playPause->setIcon(QIcon(radioAudioManager->getMediaPlayer()->isPlaying()
                                          ? ":/images/img/pause30.png"
                                          : ":/images/img/play30.png"));
+        radioList->getSongTitle(url);
         isPlaying = true;
     }
+}
+
+void IceCastXmlData::updateProgressBar(int progress)
+{
+    ui->iceCastprogressBar->setMaximum(100);
+    ui->iceCastprogressBar->setMinimum(0);
+    ui->iceCastprogressBar->setValue(progress % 100);
+    ui->iceCastprogressBar->setFormat("Download. " + QString::number(progress) + " bytes");
+    ui->iceCastprogressBar->setAlignment(Qt::AlignCenter);
+}
+
+bool IceCastXmlData::getIsStationsLoaded() const
+{
+    return isStationsLoaded;
+}
+
+void IceCastXmlData::setIsStationsLoaded(bool newIsStationsLoaded)
+{
+    isStationsLoaded = newIsStationsLoaded;
 }
 
 void IceCastXmlData::setIndexColor(const QModelIndex &index)
@@ -154,6 +205,7 @@ void IceCastXmlData::setIndexColor(const QModelIndex &index)
         if (item)
             item->setBackground(QColor(222, 255, 223));
     }
+    ui->icecastTable->setAlternatingRowColors(true);
 }
 
 void IceCastXmlData::clearTableViewColor()
@@ -165,7 +217,11 @@ void IceCastXmlData::clearTableViewColor()
         for (int column = 0; column < columnCount; ++column) {
             QTableWidgetItem *item = ui->icecastTable->item(row, column);
             if (item) {
-                item->setBackground(QColor(Qt::white));
+                if (row % 2 == 0) {
+                    item->setBackground(QColor(Qt::white));
+                } else {
+                    item->setBackground(QColor(245, 245, 245));
+                }
             }
         }
     }

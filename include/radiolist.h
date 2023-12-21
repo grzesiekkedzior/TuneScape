@@ -26,6 +26,7 @@ public:
     void loadRadioList();
     void loadAllData();
     void setLoadedStationsCount(int num);
+    void getSongTitle(const QString &url);
 
     void setTypeMenu();
     void startSearchTimer();
@@ -108,7 +109,6 @@ private:
     void setIndexColor();
     void sliderMoved(int move);
     void setRadioImage(const QModelIndex &index);
-    void getSongTitle(const QString &url);
     void handleDataReceived(const QString &data);
     void searchStations();
 

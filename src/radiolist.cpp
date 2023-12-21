@@ -387,9 +387,12 @@ void RadioList::loadAllData()
         setVectorsOfStation(endpoint);
     }
 
-    setTopListOnStart();
+    if (!iceCastXmlData->getIsStationsLoaded()) {
+        setTopListOnStart();
+        iceCastXmlData->loadXmlAsync();
+    }
+
     setFavoriteStatons();
-    iceCastXmlData->loadXmlAsync();
     //loadRadioIconList();
 }
 
@@ -677,7 +680,12 @@ void RadioList::clearTableViewColor()
 {
     for (int row = 0; row < model->rowCount(); ++row) {
         for (int column = 0; column < model->columnCount(); ++column) {
-            model->setData(model->index(row, column), QColor(Qt::white), Qt::BackgroundRole);
+            QModelIndex index = model->index(row, column);
+            if (row % 2 == 0) {
+                model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
+            } else {
+                model->setData(index, QColor(245, 245, 245), Qt::BackgroundRole);
+            }
         }
     }
 }

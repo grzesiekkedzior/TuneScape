@@ -157,7 +157,7 @@
             <enum>QTabWidget::Rounded</enum>
            </property>
            <property name="currentIndex">
-            <number>1</number>
+            <number>0</number>
            </property>
            <property name="usesScrollButtons">
             <bool>true</bool>
@@ -597,7 +597,7 @@
 selection-color: rgb(4, 4, 4);</string>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="listTab">
             <attribute name="title">
@@ -707,6 +707,23 @@ QProgressBar::chunk {
              <string>Ice-Cast</string>
             </attribute>
             <layout class="QVBoxLayout" name="verticalLayout_7">
+             <item>
+              <widget class="QProgressBar" name="iceCastprogressBar">
+               <property name="styleSheet">
+                <string notr="true">QProgressBar {
+    border: 2px solid #14D0FF;
+    border-radius: 5px;
+    text-align: center;    height: 6px;
+}
+QProgressBar::chunk {
+    background-color: qlineargradient(spread:reflect, x1:0, y1:0, x2:0.5, y2:0, stop:0 white, stop:1 #14D0FF);
+}</string>
+               </property>
+               <property name="value">
+                <number>0</number>
+               </property>
+              </widget>
+             </item>
              <item>
               <widget class="QTableWidget" name="icecastTable">
                <property name="sizePolicy">

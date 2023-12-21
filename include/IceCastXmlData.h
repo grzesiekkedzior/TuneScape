@@ -51,8 +51,12 @@ public:
     bool getPlaying();
     void playStreamOnStart(const QModelIndex &index);
 
+    bool getIsStationsLoaded() const;
+    void setIsStationsLoaded(bool newIsStationsLoaded);
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
+    void updateProgressBar(int progress);
 
 private:
     Ui::MainWindow *ui;
@@ -62,6 +66,7 @@ private:
     RadioList *radioList = nullptr;
     RadioInfo *radioInfo = nullptr;
     bool isPlaying = false;
+    bool isStationsLoaded = false;
     const QString iceCastUrl = "https://dir.xiph.org/yp.xml";
     QVector<IceCastTableRow> iceCastTableRows;
 
