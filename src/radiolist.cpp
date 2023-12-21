@@ -739,40 +739,48 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 
 void RadioList::addRadioToFavorite()
 {
-    if (radioManager.getMediaPlayer()->isPlaying()) {
-        if (radioPlaylistCurrentPlaying < allTableRows.size()
-            && radioIndexCurrentPlaying < allTableRows[radioPlaylistCurrentPlaying].size()) {
-            QString data
-                = allIconsAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying) + ","
-                  + allStreamAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying)
-                  + ","
-                  + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).station
-                  + ","
-                  + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).country
-                  + ","
-                  + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).genre
-                  + ","
-                  + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).stationUrl;
-
-            if (isRadioAdded(data)) {
-                qDebug() << "remove";
-                removeRadio(data);
-                ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-            } else if (!data.isEmpty()) {
-                QFile file("playlist.txt");
-
-                if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-                    qDebug() << "Error";
-                    return;
-                }
-
-                QTextStream out(&file);
-                out << data << "\n";
-                file.close();
-                ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-            }
+    if (ui->tabRadioListWidget->currentIndex() == 2) {
+        if (radioManager.getMediaPlayer()->isPlaying()) {
         }
-        setFavoriteStatons();
+    } else {
+        if (radioManager.getMediaPlayer()->isPlaying()) {
+            if (radioPlaylistCurrentPlaying < allTableRows.size()
+                && radioIndexCurrentPlaying < allTableRows[radioPlaylistCurrentPlaying].size()) {
+                QString data
+                    = allIconsAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying)
+                      + ","
+                      + allStreamAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying)
+                      + ","
+                      + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).station
+                      + ","
+                      + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).country
+                      + ","
+                      + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).genre
+                      + ","
+                      + allTableRows[radioPlaylistCurrentPlaying]
+                            .at(radioIndexCurrentPlaying)
+                            .stationUrl;
+
+                if (isRadioAdded(data)) {
+                    qDebug() << "remove";
+                    removeRadio(data);
+                    ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+                } else if (!data.isEmpty()) {
+                    QFile file("playlist.txt");
+
+                    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+                        qDebug() << "Error";
+                        return;
+                    }
+
+                    QTextStream out(&file);
+                    out << data << "\n";
+                    file.close();
+                    ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+                }
+            }
+            setFavoriteStatons();
+        }
     }
 }
 

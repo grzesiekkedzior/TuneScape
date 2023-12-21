@@ -100,6 +100,7 @@ private:
     const QString JSON_ENDPOINT_EMPTY = "empty";
     const QString LIBRARY_TREE = "Library";
     const QString FAVORITE_TREE = "Favorite";
+    const QString FAVORITE_ICECAST = "IceCastFavorite";
 
     QVector<QVector<TableRow>> allTableRows;
     QVector<QVector<QString>> allStreamAddresses;

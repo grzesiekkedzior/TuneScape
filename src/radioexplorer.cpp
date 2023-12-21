@@ -13,6 +13,7 @@ RadioExplorer::RadioExplorer(Ui::MainWindow *ui)
     favorite = new QStandardItem(QIcon(":/images/img/favourite.png"), FAVORITE);
     icecast = new QStandardItem(ICECAST);
     discover = new QStandardItem(QIcon(":/images/img/icecast.png"), DISCOVER);
+    icecastFavorite = new QStandardItem(QIcon(":/images/img/favourite.png"), FAVORITE_ICECAST);
 }
 
 void RadioExplorer::setNotEditableTree()
@@ -24,6 +25,7 @@ void RadioExplorer::setNotEditableTree()
     favorite->setEditable(false);
     icecast->setEditable(false);
     discover->setEditable(false);
+    icecastFavorite->setEditable(false);
 }
 
 void RadioExplorer::createTree()
@@ -35,6 +37,7 @@ void RadioExplorer::createTree()
     library->appendRow(favorite);
     itemModel->appendRow(icecast);
     icecast->appendRow(discover);
+    icecast->appendRow(icecastFavorite);
 }
 
 void RadioExplorer::setBoldFont()

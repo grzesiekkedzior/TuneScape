@@ -69,6 +69,7 @@ private:
     bool isStationsLoaded = false;
     const QString iceCastUrl = "https://dir.xiph.org/yp.xml";
     QVector<IceCastTableRow> iceCastTableRows;
+    QVector<IceCastTableRow> favoriteStations;
 
     void setIndexColor(const QModelIndex &index);
 };

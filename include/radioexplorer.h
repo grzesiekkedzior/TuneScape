@@ -26,6 +26,7 @@ private:
     QStandardItem *newRadios;
     QStandardItem *favorite;
     QStandardItem *icecast;
+    QStandardItem *icecastFavorite;
 
     const QString LIBRARY = "Radio-Browser";
     const QString ICECAST = "Ice-Cast";
@@ -33,6 +34,7 @@ private:
     const QString TOP = "Top";
     const QString NEW = "New";
     const QString FAVORITE = "Favorite";
+    const QString FAVORITE_ICECAST = "Ice-Favorite";
     const QString DISCOVER = "Discover";
 
     void setNotEditableTree();
