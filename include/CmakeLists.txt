@@ -1,0 +1,11 @@
+set(${MYPROJ}_HEADERS
+include/flowlayout.h
+include/jsonlistprocessor.h
+include/mainwindow.h
+include/radioaudiomanager.h
+include/radioexplorer.h
+include/radioinfo.h
+include/radiolist.h
+include/radiostations.h
+include/StreamReader.h
+PARENT_SCOPE)
