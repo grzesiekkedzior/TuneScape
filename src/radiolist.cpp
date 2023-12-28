@@ -1,6 +1,8 @@
 #include "include/radiolist.h"
 #include <QFile>
 #include <QHeaderView>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QScrollBar>
 #include "qpainter.h"
 
@@ -145,7 +147,6 @@ void RadioList::loadRadioIconList()
         ui->progressBar->setRange(0, dataSize);
         if (dataSize > 0)
             ui->progressBar->show();
-        qDebug() << "data size " << dataSize;
         buttonCache.resize(dataSize, nullptr);
         if (!networkManager) {
             networkManager = new QNetworkAccessManager(this);
@@ -158,7 +159,6 @@ void RadioList::loadRadioIconList()
                 QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
                 QPushButton *button = new QPushButton; // Allocate on the heap
                 button->setFixedSize(120, 120);
-                qDebug() << row;
                 QString description = jsonListProcesor.getTableRows().at(row).station;
                 QLabel *label = new QLabel(description); // Allocate on the heap
                 label->setFixedWidth(120);
@@ -265,9 +265,9 @@ void RadioList::setTopListOnStart()
     ui->treeView->selectionModel()->select(topIndex, QItemSelectionModel::Select);
 }
 
-bool RadioList::isRadioAdded(const QString data)
+bool RadioList::isRadioAdded(const QString data, const QString playlist)
 {
-    QFile file("playlist.txt");
+    QFile file(playlist);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
 
@@ -281,9 +281,9 @@ bool RadioList::isRadioAdded(const QString data)
     return false;
 }
 
-void RadioList::removeRadio(const QString data)
+void RadioList::removeRadio(const QString data, const QString playlist)
 {
-    QFile inputFile("playlist.txt");
+    QFile inputFile(playlist);
     if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
 
@@ -307,16 +307,16 @@ void RadioList::removeRadio(const QString data)
     outputFile.close();
 
     // swap file
-    if (QFile::remove("playlist.txt") && QFile::rename("temp_playlist.txt", "playlist.txt")) {
+    if (QFile::remove(playlist) && QFile::rename("temp_playlist.txt", playlist)) {
         qDebug() << "Correct" << data;
     } else {
         qDebug() << "Error " << data;
     }
 }
 
-bool RadioList::isAddressExists(const QString address)
+bool RadioList::isAddressExists(const QString address, const QString playlist)
 {
-    QFile file("playlist.txt");
+    QFile file(playlist);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qDebug() << "Error opening the file: " << file.errorString();
         return false;
@@ -329,6 +329,7 @@ bool RadioList::isAddressExists(const QString address)
         QString line = in.readLine();
         if (line.toLower().contains(lowerCaseAddress)) {
             file.close();
+            qDebug() << "true";
             return true;
         }
     }
@@ -470,7 +471,18 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
             if (this->treeItem == "Search")
                 this->treeItem = "";
             ui->tabRadioListWidget->setCurrentIndex(2);
+            // TODO connection checker
+            iceCastXmlData->setIsFavoriteOnTreeCliced(false);
+            iceCastXmlData->loadDiscoveryStations();
             qDebug() << "Discover";
+        } else if (checkItem(item, "Ice-Favorite")) {
+            if (this->treeItem == "Search")
+                this->treeItem = "";
+            ui->tabRadioListWidget->setCurrentIndex(2);
+            qDebug() << "Ice-Cast favorite";
+            iceCastXmlData->setIsFavoriteOnTreeCliced(true);
+            iceCastXmlData->loadFavoriteIceCastStations();
+            //iceCastXmlData->setFavoriteList();
         }
         if (jsonListProcesor.checkInternetConnection()) {
             loadedStationsCount = 0;
@@ -492,7 +504,7 @@ void RadioList::getSongTitle(const QString &url)
 
 void RadioList::checkIsRadioOnPlaylist()
 {
-    if (isAddressExists(currentRadioPlayingAddress)) {
+    if (isAddressExists(currentRadioPlayingAddress, "playlist.txt")) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     } else {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
@@ -584,6 +596,8 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         radioIndexNumber = index.row();
         currentStationIndex = index.row();
         currentPlayListPlaying = currentPlaylistIndex;
+
+        // change bookmark
         playStream(radioIndexNumber);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
@@ -602,6 +616,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
     }
     radioIndexNumber = index.row();
     setIndexColor();
+    iceCastXmlData->setPlaying(false);
 }
 
 void RadioList::onPlayPauseButtonCliced()
@@ -613,8 +628,10 @@ void RadioList::onPlayPauseButtonCliced()
     if (ui->tabRadioListWidget->currentIndex() == 2 && !iceCastXmlData->getPlaying()) {
         QModelIndex newIndex = ui->tableView->model()->index(0, 0);
         iceCastXmlData->playStreamOnStart(newIndex);
+        iceCastXmlData->setPlaying(true);
     } else if (iceCastXmlData->getPlaying() && radioManager.getMediaPlayer()->isPlaying()) {
         radioManager.stopStream();
+        iceCastXmlData->setPlaying(false);
     } else if (iceCastXmlData->getPlaying()) {
         radioManager.playStream();
     } else {
@@ -739,9 +756,38 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 
 void RadioList::addRadioToFavorite()
 {
-    if (ui->tabRadioListWidget->currentIndex() == 2) {
-        if (radioManager.getMediaPlayer()->isPlaying()) {
+    if (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying()) {
+        if (radioManager.getMediaPlayer()->isPlaying()
+            && iceCastXmlData->getCurrentPlayingStation()
+                   < iceCastXmlData->getIceCastStationTableRows().size()) {
+            QString station = iceCastXmlData
+                                  ->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
+                                  .station;
+
+            if (isRadioAdded(station, ICECAST_PLAYLIST)) {
+                removeRadio(station, ICECAST_PLAYLIST);
+                ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+            } else if (!station.isEmpty()) {
+                QFile file(ICECAST_PLAYLIST);
+
+                if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+                    qDebug() << "Error";
+                    return;
+                }
+
+                QTextStream out(&file);
+                out << station << "\n";
+                file.close();
+                ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+                iceCastXmlData->addToFavoriteStations();
+            }
+            iceCastXmlData->setFavoriteStations();
+            iceCastXmlData->clearTableViewColor();
         }
+        if (iceCastXmlData->getIsFavoriteOnTreeCliced())
+            iceCastXmlData->loadFavoriteIceCastStations();
+        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
+
     } else {
         if (radioManager.getMediaPlayer()->isPlaying()) {
             if (radioPlaylistCurrentPlaying < allTableRows.size()
@@ -761,9 +807,9 @@ void RadioList::addRadioToFavorite()
                             .at(radioIndexCurrentPlaying)
                             .stationUrl;
 
-                if (isRadioAdded(data)) {
+                if (isRadioAdded(data, "playlist.txt")) {
                     qDebug() << "remove";
-                    removeRadio(data);
+                    removeRadio(data, "playlist.txt");
                     ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
                 } else if (!data.isEmpty()) {
                     QFile file("playlist.txt");
@@ -844,4 +890,5 @@ void RadioList::searchStations()
     }
 
     this->treeItem = "Search";
+    ui->tabRadioListWidget->setCurrentIndex(0);
 }

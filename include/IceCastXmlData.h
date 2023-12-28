@@ -54,9 +54,36 @@ public:
     bool getIsStationsLoaded() const;
     void setIsStationsLoaded(bool newIsStationsLoaded);
 
+    int getCurrentPlayingStation() const;
+    void setCurrentPlayingStation(int newCurrentPlayingStation);
+
+    QVector<IceCastTableRow> getIceCastStationTableRows() const;
+    void setIceCastStationTableRows(const QVector<IceCastTableRow> &newIceCastStationTableRows);
+
+    IceCastTableRow getIceCastTableRow(int index);
+    void addToFavoriteStations();
+    void loadFavoriteIceCastStations();
+    void loadDiscoveryStations();
+    void setFavoriteStations();
+
+    bool getIsFavoriteOnTreeCliced() const;
+    void setIsFavoriteOnTreeCliced(bool newIsFavoriteOnTreeCliced);
+
+    void setDiscoveryList();
+    void setFavoriteList();
+
+    bool getIsFavoritePlaying() const;
+    void setIsFavoritePlaying(bool newIsFavoritePlaying);
+    void setIndexColor(const QModelIndex &index);
+
+    QModelIndex getIndexPlayingStation() const;
+    void setIndexPlayingStation(const QModelIndex &newIndexPlayingStation);
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
     void updateProgressBar(int progress);
+    void showErrorMessageBox(const QString &errorMessage);
+    void tableViewActivated(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui;
@@ -67,11 +94,16 @@ private:
     RadioInfo *radioInfo = nullptr;
     bool isPlaying = false;
     bool isStationsLoaded = false;
+    bool isFavoriteOnTreeCliced = false;
+    bool isFavoritePlaying = false;
+    int currentPlayingStation = -1;
+    QModelIndex indexPlayingStation;
     const QString iceCastUrl = "https://dir.xiph.org/yp.xml";
-    QVector<IceCastTableRow> iceCastTableRows;
+    QVector<IceCastTableRow> iceCastStationTableRows;
     QVector<IceCastTableRow> favoriteStations;
+    QVector<IceCastTableRow> discoveryStations;
 
-    void setIndexColor(const QModelIndex &index);
+    void checkIsRadioOnPlaylist();
 };
 
 #endif // ICECASTXMLDATA_H

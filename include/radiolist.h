@@ -37,6 +37,8 @@ public:
 
     void clearIconLabelColor();
     void clearTableViewColor();
+    void checkIsRadioOnPlaylist();
+    bool isAddressExists(const QString address, const QString playlist);
 
 signals:
     void playIconButtonClicked(int radioNumber);
@@ -101,6 +103,7 @@ private:
     const QString LIBRARY_TREE = "Library";
     const QString FAVORITE_TREE = "Favorite";
     const QString FAVORITE_ICECAST = "IceCastFavorite";
+    const QString ICECAST_PLAYLIST = "icecast.txt";
 
     QVector<QVector<TableRow>> allTableRows;
     QVector<QVector<QString>> allStreamAddresses;
@@ -117,11 +120,11 @@ private:
     void setVectorsOfStation(const QString endpoint);
     void setFavoriteStatons();
     void setTopListOnStart();
-    bool isRadioAdded(const QString data);
-    void removeRadio(const QString data);
-    bool isAddressExists(const QString address);
 
-    void checkIsRadioOnPlaylist();
+    // Add and remove the playlists!!!
+    bool isRadioAdded(const QString data, const QString playlist);
+    void removeRadio(const QString data, const QString playlist);
+
     void setRadioListVectors(Stations s);
     void clearFlowLayout();
     void setImageButton(int row);

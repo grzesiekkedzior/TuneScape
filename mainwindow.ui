@@ -910,7 +910,7 @@ QProgressBar::chunk {
          <string notr="true">border: noborder;</string>
         </property>
         <property name="placeholderText">
-         <string>Search</string>
+         <string>Search Radio-Browser stations</string>
         </property>
        </widget>
       </item>

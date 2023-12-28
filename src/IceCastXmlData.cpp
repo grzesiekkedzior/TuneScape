@@ -1,6 +1,7 @@
 #include "include/IceCastXmlData.h"
 #include <QFuture>
 #include <QFutureWatcher>
+#include <QMessageBox>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QXmlStreamReader>
@@ -24,7 +25,7 @@ IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
 
 void IceCastXmlData::loadXmlData()
 {
-    iceCastTableRows.clear();
+    discoveryStations.clear();
     if (!jsonListProcesor->isConnected)
         return;
     qDebug() << "Hello Ice-Cast";
@@ -59,6 +60,10 @@ void IceCastXmlData::loadXmlData()
     loop.exec();
 
     if (reply->error()) {
+        QMetaObject::invokeMethod(this,
+                                  "showErrorMessageBox",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(QString, "Network error: " + reply->errorString()));
         reply->deleteLater();
         qDebug() << "Error";
         return;
@@ -91,24 +96,82 @@ void IceCastXmlData::loadXmlData()
                     }
                 }
             }
-            iceCastTableRows.push_back(icast);
+            discoveryStations.push_back(icast);
         }
     }
-
+    iceCastStationTableRows = discoveryStations;
     reply->deleteLater();
+}
+
+void IceCastXmlData::addToFavoriteStations()
+{
+    favoriteStations.push_back(getIceCastTableRow(getCurrentPlayingStation()));
+}
+
+void IceCastXmlData::loadFavoriteIceCastStations()
+{
+    ui->icecastTable->clearContents();
+    ui->icecastTable->setRowCount(0);
+    for (const auto &row : favoriteStations) {
+        addRowToTable(row);
+    }
+
+    if (ui->iceCastprogressBar->isVisible())
+        ui->iceCastprogressBar->hide();
+    if (getIsFavoritePlaying())
+        setIndexColor(this->indexPlayingStation);
+    setIsStationsLoaded(true);
+}
+
+void IceCastXmlData::loadDiscoveryStations()
+{
+    ui->icecastTable->clearContents();
+    ui->icecastTable->setRowCount(0);
+    for (const auto &row : discoveryStations) {
+        addRowToTable(row);
+    }
+
+    if (ui->iceCastprogressBar->isVisible())
+        ui->iceCastprogressBar->hide();
+    if (!getIsFavoritePlaying())
+        setIndexColor(this->indexPlayingStation);
+    setIsStationsLoaded(true);
 }
 
 void IceCastXmlData::loadXmlToTable()
 {
     ui->icecastTable->clearContents();
     ui->icecastTable->setRowCount(0);
-    for (const auto &row : iceCastTableRows) {
+    for (const auto &row : iceCastStationTableRows) {
         addRowToTable(row);
     }
 
     if (ui->iceCastprogressBar->isVisible())
         ui->iceCastprogressBar->hide();
     setIsStationsLoaded(true);
+}
+void IceCastXmlData::setFavoriteStations()
+{
+    favoriteStations.clear();
+    QFile file("icecast.txt");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            // divide line and add to vectors
+
+            auto it = std::find_if(iceCastStationTableRows.begin(),
+                                   iceCastStationTableRows.end(),
+                                   [line](const IceCastTableRow &row) {
+                                       return row.station == line;
+                                   });
+
+            if (it != iceCastStationTableRows.end()) {
+                favoriteStations.push_back(*it);
+            }
+        }
+        file.close();
+    }
 }
 
 void IceCastXmlData::addRowToTable(const IceCastTableRow &row)
@@ -130,6 +193,7 @@ void IceCastXmlData::loadXmlAsync()
     connect(watcher, &QFutureWatcher<void>::finished, [=]() {
         watcher->deleteLater();
         loadXmlToTable();
+        setFavoriteStations();
     });
 
     QFuture<void> future = QtConcurrent::run([this]() { loadXmlData(); });
@@ -160,8 +224,19 @@ void IceCastXmlData::setRadioInfo(RadioInfo *radioInfo)
 void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
 {
     if (jsonListProcesor->isConnected) {
+        if (getIsFavoriteOnTreeCliced()) {
+            setFavoriteList();
+            setIsFavoritePlaying(true);
+        } else {
+            setIsFavoritePlaying(false);
+            setDiscoveryList();
+        }
+
         clearTableViewColor();
-        QString url = iceCastTableRows[index.row()].listen_url;
+        QString url = iceCastStationTableRows[index.row()].listen_url;
+
+        setCurrentPlayingStation(index.row());
+        indexPlayingStation = index;
         radioAudioManager->loadStream(url);
         radioAudioManager->playStream();
         setIndexColor(index);
@@ -175,6 +250,7 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
                                          ? ":/images/img/pause30.png"
                                          : ":/images/img/play30.png"));
         radioList->getSongTitle(url);
+        checkIsRadioOnPlaylist();
         isPlaying = true;
     }
 }
@@ -186,6 +262,56 @@ void IceCastXmlData::updateProgressBar(int progress)
     ui->iceCastprogressBar->setValue(progress % 100);
     ui->iceCastprogressBar->setFormat("Download. " + QString::number(progress) + " bytes");
     ui->iceCastprogressBar->setAlignment(Qt::AlignCenter);
+}
+
+bool IceCastXmlData::getIsFavoriteOnTreeCliced() const
+{
+    return isFavoriteOnTreeCliced;
+}
+
+void IceCastXmlData::setIsFavoriteOnTreeCliced(bool newIsFavoriteOnTreeCliced)
+{
+    isFavoriteOnTreeCliced = newIsFavoriteOnTreeCliced;
+}
+
+void IceCastXmlData::setDiscoveryList()
+{
+    //iceCastStationTableRows.clear();
+    this->iceCastStationTableRows = discoveryStations;
+    this->loadXmlToTable();
+}
+
+void IceCastXmlData::setFavoriteList()
+{
+    //iceCastStationTableRows.clear();
+    this->iceCastStationTableRows = favoriteStations;
+    this->loadXmlToTable();
+}
+
+QVector<IceCastTableRow> IceCastXmlData::getIceCastStationTableRows() const
+{
+    return iceCastStationTableRows;
+}
+
+void IceCastXmlData::setIceCastStationTableRows(
+    const QVector<IceCastTableRow> &newIceCastStationTableRows)
+{
+    iceCastStationTableRows = newIceCastStationTableRows;
+}
+
+IceCastTableRow IceCastXmlData::getIceCastTableRow(int index)
+{
+    return this->iceCastStationTableRows[index];
+}
+
+int IceCastXmlData::getCurrentPlayingStation() const
+{
+    return currentPlayingStation;
+}
+
+void IceCastXmlData::setCurrentPlayingStation(int newCurrentPlayingStation)
+{
+    currentPlayingStation = newCurrentPlayingStation;
 }
 
 bool IceCastXmlData::getIsStationsLoaded() const
@@ -206,6 +332,47 @@ void IceCastXmlData::setIndexColor(const QModelIndex &index)
             item->setBackground(QColor(222, 255, 223));
     }
     ui->icecastTable->setAlternatingRowColors(true);
+}
+
+void IceCastXmlData::checkIsRadioOnPlaylist()
+{
+    qDebug() << "Playing station:" << getIceCastTableRow(getCurrentPlayingStation()).station;
+    if (radioList->isAddressExists(getIceCastTableRow(getCurrentPlayingStation()).station,
+                                   "icecast.txt")) {
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+    } else {
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+    }
+}
+
+void IceCastXmlData::showErrorMessageBox(const QString &errorMessage)
+{
+    QMessageBox::critical(qobject_cast<QWidget *>(this), "Ice-Cast server error!!!", errorMessage);
+}
+
+void IceCastXmlData::tableViewActivated(const QModelIndex &index)
+{
+    this->onDoubleListClicked(index);
+}
+
+QModelIndex IceCastXmlData::getIndexPlayingStation() const
+{
+    return indexPlayingStation;
+}
+
+void IceCastXmlData::setIndexPlayingStation(const QModelIndex &newIndexPlayingStation)
+{
+    indexPlayingStation = newIndexPlayingStation;
+}
+
+bool IceCastXmlData::getIsFavoritePlaying() const
+{
+    return isFavoritePlaying;
+}
+
+void IceCastXmlData::setIsFavoritePlaying(bool newIsFavoritePlaying)
+{
+    isFavoritePlaying = newIsFavoritePlaying;
 }
 
 void IceCastXmlData::clearTableViewColor()
