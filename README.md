@@ -1,5 +1,6 @@
 
 # TuneScape
+![IceCast](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/dfefa6e1-f60c-490f-a2ed-ba37e2cb8ca8)
 ![MainWindow](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/eabaf70c-dd07-48a6-b25c-4ffac9e22033)
 ![Metadata](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/6c890235-b6e7-4240-a506-63eea7b042d0)
 ![Icons](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/54248257-72fa-41aa-85f0-7eab52f9a84f)
