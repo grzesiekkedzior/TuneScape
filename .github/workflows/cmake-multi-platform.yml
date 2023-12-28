@@ -67,8 +67,13 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         choco install aqt
+        set save_dir=%cd%
+        mkdir c:\QT
+        cd c:\QT
+        dir
         aqt install-qt windows desktop 6.5.3 win64_mingw
         aqt install-qt windows desktop 6.5.3 win64_mingw -m qtmultimedia
+        cd %save_dir%
         dir
         
     - name: Configure CMake
