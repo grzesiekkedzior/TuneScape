@@ -60,6 +60,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install qt6-base-dev
         sudo apt-get install qt6-multimedia-dev
+        pwd
+        ls -la
 
     - name: Install Windows Libs
       if: runner.os == 'Windows'
@@ -67,6 +69,7 @@ jobs:
         choco install aqt
         aqt install-qt windows desktop 6.5.3 win64_mingw
         aqt install-qt windows desktop 6.5.3 win64_mingw -m qtmultimedia
+        dir
         
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
