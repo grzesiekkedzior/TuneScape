@@ -40,6 +40,9 @@ public:
     void checkIsRadioOnPlaylist();
     bool isAddressExists(const QString address, const QString playlist);
 
+    bool getIsPlaying() const;
+    void setIsPlaying(bool newIsPlaying);
+
 signals:
     void playIconButtonClicked(int radioNumber);
     void allIconsLoaded();
@@ -61,6 +64,7 @@ private:
     int currentPlaylistIndex = -1;
     int currentStationIndex = -1;
     int currentPlayListPlaying = -1;
+    bool isPlaying = false;
     Ui::MainWindow *ui = nullptr;
     QStandardItemModel *model = nullptr;
     QHeaderView *header = nullptr;
