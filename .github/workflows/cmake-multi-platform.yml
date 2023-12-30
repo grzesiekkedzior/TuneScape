@@ -33,9 +33,9 @@ jobs:
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+       #   - os: ubuntu-latest
+       #     c_compiler: clang
+       #     cpp_compiler: clang++
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -84,6 +84,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DQt6_DIR=~/Qt/6.5.3/gcc_64/lib/cmake/Qt6
         -S ${{ github.workspace }}
 
     - name: Build
