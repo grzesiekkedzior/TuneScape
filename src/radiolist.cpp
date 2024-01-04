@@ -502,7 +502,8 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         }
 
         if (currentPlayListPlaying == currentPlaylistIndex) {
-            setIndexColor();
+            if (getIsPlaying())
+                setIndexColor();
         }
     }
 }

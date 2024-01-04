@@ -118,7 +118,7 @@ void IceCastXmlData::loadFavoriteIceCastStations()
 
     if (ui->iceCastprogressBar->isVisible())
         ui->iceCastprogressBar->hide();
-    if (getIsFavoritePlaying())
+    if (getIsFavoritePlaying() && !radioList->getIsPlaying())
         setIndexColor(this->indexPlayingStation);
     setIsStationsLoaded(true);
 }
@@ -133,7 +133,8 @@ void IceCastXmlData::loadDiscoveryStations()
 
     if (ui->iceCastprogressBar->isVisible())
         ui->iceCastprogressBar->hide();
-    if (!getIsFavoritePlaying())
+    // clear color
+    if (!getIsFavoritePlaying() && !radioList->getIsPlaying())
         setIndexColor(this->indexPlayingStation);
     setIsStationsLoaded(true);
 }
