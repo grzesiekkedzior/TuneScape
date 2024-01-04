@@ -252,6 +252,7 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         radioList->getSongTitle(url);
         checkIsRadioOnPlaylist();
         isPlaying = true;
+        radioList->setIsPlaying(false);
     }
 }
 

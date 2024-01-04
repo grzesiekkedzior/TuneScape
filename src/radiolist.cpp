@@ -131,6 +131,16 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+bool RadioList::getIsPlaying() const
+{
+    return isPlaying;
+}
+
+void RadioList::setIsPlaying(bool newIsPlaying)
+{
+    isPlaying = newIsPlaying;
+}
+
 void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
 {
     QModelIndex index = model->index(radioNumber, 0);
@@ -613,6 +623,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
             radioInfo->processInfoJsonQuery();
             radioInfo->setDataOnTable();
         }
+        setIsPlaying(true);
     }
     radioIndexNumber = index.row();
     setIndexColor();
@@ -735,6 +746,7 @@ void RadioList::onStopButtonClicked()
         radioInfo->clearInfo();
         iceCastXmlData->clearTableViewColor();
         iceCastXmlData->setPlaying(false);
+        setIsPlaying(false);
     } else {
         return;
     }
@@ -756,7 +768,9 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 
 void RadioList::addRadioToFavorite()
 {
-    if (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying()) {
+    qDebug() << getIsPlaying();
+    if (getIsPlaying() == false
+        && (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying())) {
         if (radioManager.getMediaPlayer()->isPlaying()
             && iceCastXmlData->getCurrentPlayingStation()
                    < iceCastXmlData->getIceCastStationTableRows().size()) {
@@ -788,7 +802,7 @@ void RadioList::addRadioToFavorite()
             iceCastXmlData->loadFavoriteIceCastStations();
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
 
-    } else {
+    } else if (getIsPlaying()) {
         if (radioManager.getMediaPlayer()->isPlaying()) {
             if (radioPlaylistCurrentPlaying < allTableRows.size()
                 && radioIndexCurrentPlaying < allTableRows[radioPlaylistCurrentPlaying].size()) {
