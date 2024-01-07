@@ -1,0 +1,40 @@
+Windows:
+
+Install QT6
+f.e. using Choco:
+choco install qt6-base-dev
+
+Add QT6 Multimedia Package:
+
+Go to QT install dir and run:
+aqt install-qt windows desktop 6.5.3 win64_mingw -m qtmultimedia
+
+QT5 not supported!
+
+QT6 requires C++17 - VS2017 is too old
+
+https://aqtinstall.readthedocs.io/en/stable/getting_started.html#installing-modules
+https://aqtinstall.readthedocs.io/en/stable/getting_started.html#installing-modules
+https://github.com/miurahr/aqtinstall
+
+QT docs:
+https://doc.qt.io/qt-6.2/qmediaplayer.html
+
+Use VSCode:
+
+choco install vscode
+
+Install C++ Extension
+
+https://code.visualstudio.com/docs/cpp/CMake-linux
+
+https://doc.qt.io/qt-6/cmake-get-started.html#building-a-c-gui-application
+
+All headers and cpps must be added to qt_add_executable, otherwise moc may not execute correctly
+
+
+Create install files using:
+cmake --build c:/Code/TuneScape/build --config Debug --target install
+
+Set install path using:
+CMAKE_INSTALL_PREFIX

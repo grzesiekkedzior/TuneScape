@@ -1,0 +1,12 @@
+set(${MYPROJ}_SOURCES
+src/flowlayout.cpp
+src/jsonlistprocessor.cpp
+src/main.cpp
+src/mainwindow.cpp
+src/radioaudiomanager.cpp
+src/radioexplorer.cpp
+src/radioinfo.cpp
+src/radiolist.cpp
+src/radiostations.cpp
+src/StreamReader.cpp
+PARENT_SCOPE)
