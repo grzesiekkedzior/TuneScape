@@ -118,14 +118,17 @@ void RadioList::markIconPlayingStation(int radioNumber)
 void RadioList::onAllIconsLoaded()
 {
     if (currentPlayListPlaying == currentPlaylistIndex && isIconFlowlayoutFull) {
-        QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
-        if (buttonContainer) {
-            QLabel *label = buttonContainer->findChild<QLabel *>();
-            if (label) {
-                label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
-            } else {
-                // handle the case when label is not found
-                // todo
+        if (getIsPlaying()) {
+            qDebug() << "Color" << iceCastXmlData->getPlaying();
+            QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
+            if (buttonContainer) {
+                QLabel *label = buttonContainer->findChild<QLabel *>();
+                if (label) {
+                    label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
+                } else {
+                    // handle the case when label is not found
+                    // todo
+                }
             }
         }
     }
