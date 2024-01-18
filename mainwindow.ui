@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>911</width>
-    <height>552</height>
+    <width>1167</width>
+    <height>577</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -99,7 +99,7 @@
           <x>0</x>
           <y>0</y>
           <width>180</width>
-          <height>456</height>
+          <height>481</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -157,7 +157,7 @@
             <enum>QTabWidget::Rounded</enum>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="usesScrollButtons">
             <bool>true</bool>
@@ -558,8 +558,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>704</width>
-          <height>456</height>
+          <width>960</width>
+          <height>481</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -670,8 +670,8 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>676</width>
-                  <height>395</height>
+                  <width>932</width>
+                  <height>420</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -852,6 +852,25 @@ QProgressBar::chunk {
       </item>
       <item>
        <widget class="QPushButton" name="favorite">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="record">
         <property name="minimumSize">
          <size>
           <width>30</width>

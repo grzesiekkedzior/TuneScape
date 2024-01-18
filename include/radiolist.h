@@ -4,6 +4,7 @@
 #include "../ui_mainwindow.h"
 #include "IceCastXmlData.h"
 #include "StreamReader.h"
+#include "StreamRecorder.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
@@ -73,6 +74,7 @@ private:
     JsonListProcessor jsonListProcesor;
     RadioAudioManager radioManager;
     StreamReader streamReader;
+    StreamRecorder streamRecorder;
     IceCastXmlData *iceCastXmlData = nullptr;
     QTimer searchTimer;
     RadioInfo *radioInfo;
@@ -118,6 +120,8 @@ private:
     void sliderMoved(int move);
     void setRadioImage(const QModelIndex &index);
     void handleDataReceived(const QString &data);
+    void startStopRecord();
+    void setMp3FileName();
     void searchStations();
 
     void clearRadioInfoLabel();

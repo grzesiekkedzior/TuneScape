@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     src/IceCastXmlData.cpp \
+    src/StreamRecorder.cpp \
     src/flowlayout.cpp \
     src/radioinfo.cpp \
     src/streamReader.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 
 HEADERS += \
     include/IceCastXmlData.h \
+    include/StreamRecorder.h \
     include/flowlayout.h \
     include/radioinfo.h \
     include/streamReader.h \

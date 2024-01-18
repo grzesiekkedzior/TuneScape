@@ -43,6 +43,7 @@
         <file>img/popular.png</file>
         <file>img/top.png</file>
         <file>img/icecast.png</file>
+        <file>img/red-save-32.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>

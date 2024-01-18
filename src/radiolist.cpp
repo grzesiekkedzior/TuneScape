@@ -38,6 +38,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     //connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::setRadioImage);
+
     connect(ui->playPause, &QPushButton::clicked, this, &RadioList::onPlayPauseButtonCliced);
     connect(ui->next, &QPushButton::clicked, this, &RadioList::onNextButtonClicked);
     connect(ui->previous, &QPushButton::clicked, this, &RadioList::onPrevButtonClicked);
@@ -47,6 +48,8 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, &RadioList::sliderMoved);
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
+    connect(ui->record, &QPushButton::clicked, this, &RadioList::setMp3FileName);
+    connect(ui->record, &QPushButton::clicked, this, &RadioList::startStopRecord);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
     connect(this,
@@ -113,6 +116,12 @@ void RadioList::markIconPlayingStation(int radioNumber)
     } else {
         // todo
     }
+}
+
+void RadioList::setMp3FileName()
+{
+    QString title = ui->tableWidget->item(0, 1)->text();
+    streamRecorder.setFileName(title);
 }
 
 void RadioList::onAllIconsLoaded()
@@ -861,6 +870,20 @@ void RadioList::handleDataReceived(const QString &data)
         ui->infoData->setText(title);
     }
     //metaData = "";
+}
+
+void RadioList::startStopRecord()
+{
+    qDebug() << "Hello recording";
+    if (!streamRecorder.getIsRecording()) {
+        streamRecorder.loadCurrentAddress(currentRadioPlayingAddress);
+        streamRecorder.startRecording();
+        streamRecorder.setIsRecording(true);
+    } else {
+        qDebug() << "record false";
+        streamRecorder.stopRecording();
+        streamRecorder.setIsRecording(false);
+    }
 }
 
 void RadioList::setVectorsOfStation(const QString endpoint)
