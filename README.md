@@ -1,10 +1,10 @@
 
 # TuneScape
-![IceCast](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/dfefa6e1-f60c-490f-a2ed-ba37e2cb8ca8)
-![MainWindow](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/eabaf70c-dd07-48a6-b25c-4ffac9e22033)
-![Metadata](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/6c890235-b6e7-4240-a506-63eea7b042d0)
-![Icons](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/54248257-72fa-41aa-85f0-7eab52f9a84f)
-![Only icons](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/17d99dd5-7e9c-4a80-b65a-6c25217f9fa8)
+![main](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/ca3b005e-1b78-4cb5-adfe-00059cb70364)
+![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)
+![tiles](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/f85cc6d7-eab3-49ce-9667-ddbdc3ea1fe5)
+![onewindow](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/aaedf535-dd6e-4c01-963d-4fe56622d23e)
+
 
 
 This is an open-source internet radio app that provides access to a wide range of radio stations. It leverages a database of radio stations from the website https://www.radio-browser.info/ to offer a diverse selection of online radio channels for all users.
