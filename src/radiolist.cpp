@@ -18,6 +18,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
     flowLayout = new FlowLayout(ui->iconTiles);
+    streamRecorder->setUI(ui);
     iceCastXmlData = new IceCastXmlData(ui);
     iceCastXmlData->setJsonListProcessor(jsonListProcesor);
     iceCastXmlData->setRadioAudioManager(radioManager);

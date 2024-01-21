@@ -4,6 +4,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
+#include "ui_mainwindow.h"
 
 class StreamRecorder : public QObject
 {
@@ -17,15 +18,20 @@ public:
     void extracted();
     void startRecording();
     void stopRecording();
+    void clearLabelText();
+    void showStopOnLabel();
 
     bool getIsRecording() const;
     void setIsRecording(bool newIsRecording);
+    void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void setUI(Ui::MainWindow *ui);
 signals:
     void dataToRecord(QByteArray array);
 private slots:
     void recordFile();
 
 private:
+    Ui::MainWindow *ui;
     QFile file;
     QString downloadDir{};
     QString filePath{};
@@ -35,6 +41,7 @@ private:
     QNetworkAccessManager *manager = nullptr;
     QNetworkReply *reply = nullptr;
     void clearReply();
+    void clearRecordLabel();
 };
 
 #endif // STREAMRECORDER_H

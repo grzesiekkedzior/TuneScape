@@ -1,6 +1,7 @@
 #include "include/StreamRecorder.h"
 #include <QDIr>
 #include <QStandardPaths>
+#include <QTimer>
 
 // QTC_TEMP
 StreamRecorder::StreamRecorder(QObject *parent)
@@ -54,18 +55,36 @@ void StreamRecorder::clearReply()
         reply->deleteLater();
 }
 
+void StreamRecorder::clearRecordLabel()
+{
+    QTimer::singleShot(500, this, &StreamRecorder::showStopOnLabel);
+    QTimer::singleShot(2000, this, &StreamRecorder::clearLabelText);
+}
+
+void StreamRecorder::clearLabelText()
+{
+    ui->recordLabel->clear();
+}
+
+void StreamRecorder::showStopOnLabel()
+{
+    ui->recordLabel->setText("STOP RECORDING");
+}
+
 void StreamRecorder::startRecording()
 {
     // check url!!!
     QNetworkRequest request(url);
     reply = manager->get(request);
     connect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
+    connect(reply, &QNetworkReply::downloadProgress, this, &StreamRecorder::downloadProgress);
 }
 
 void StreamRecorder::stopRecording()
 {
     closeFile();
     clearReply();
+    clearRecordLabel();
 
     //This is not ... but in some cases help
     if (reply != nullptr) {
@@ -81,6 +100,18 @@ bool StreamRecorder::getIsRecording() const
 void StreamRecorder::setIsRecording(bool newIsRecording)
 {
     isRecording = newIsRecording;
+}
+
+void StreamRecorder::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+{
+    double megabytesReceived = static_cast<double>(bytesReceived) / (1024 * 1024);
+    QString text = QString("%1 MB").arg(QString::number(megabytesReceived, 'f', 2));
+    ui->recordLabel->setText(text);
+}
+
+void StreamRecorder::setUI(Ui::MainWindow *ui)
+{
+    this->ui = ui;
 }
 
 void StreamRecorder::recordFile()
