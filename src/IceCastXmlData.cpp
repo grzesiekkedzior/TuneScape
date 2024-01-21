@@ -254,6 +254,10 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         checkIsRadioOnPlaylist();
         isPlaying = true;
         radioList->setIsPlaying(false);
+        if (streamRecorder->getIsRecording()) {
+            streamRecorder->stopRecording();
+            streamRecorder->setIsRecording(false);
+        }
     }
 }
 
@@ -365,6 +369,11 @@ QModelIndex IceCastXmlData::getIndexPlayingStation() const
 void IceCastXmlData::setIndexPlayingStation(const QModelIndex &newIndexPlayingStation)
 {
     indexPlayingStation = newIndexPlayingStation;
+}
+
+void IceCastXmlData::makeShareStreamRecorder(QSharedPointer<StreamRecorder> streamRecorder)
+{
+    this->streamRecorder = streamRecorder;
 }
 
 bool IceCastXmlData::getIsFavoritePlaying() const

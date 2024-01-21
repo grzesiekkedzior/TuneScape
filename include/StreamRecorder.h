@@ -10,10 +10,9 @@ class StreamRecorder : public QObject
     Q_OBJECT
 public:
     StreamRecorder(QObject *parent = nullptr);
-
     void recordStream(const QByteArray &data);
     void closeFile();
-    void setFileName(const QString &title);
+    void setFileName(const QString &title, const QString extention);
     void loadCurrentAddress(QString address);
     void extracted();
     void startRecording();

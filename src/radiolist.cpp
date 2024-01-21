@@ -23,6 +23,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     iceCastXmlData->setRadioAudioManager(radioManager);
     iceCastXmlData->setRadioList(this);
     iceCastXmlData->setRadioInfo(radioInfo);
+    iceCastXmlData->makeShareStreamRecorder(streamRecorder);
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     // for list
@@ -48,7 +49,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, &RadioList::sliderMoved);
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
-    connect(ui->record, &QPushButton::clicked, this, &RadioList::setMp3FileName);
+    //connect(ui->record, &QPushButton::clicked, this, &RadioList::setMp3FileName);
     connect(ui->record, &QPushButton::clicked, this, &RadioList::startStopRecord);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
@@ -120,8 +121,27 @@ void RadioList::markIconPlayingStation(int radioNumber)
 
 void RadioList::setMp3FileName()
 {
-    QString title = ui->tableWidget->item(0, 1)->text();
-    streamRecorder.setFileName(title);
+    if (isPlaying) {
+        QString title = ui->tableWidget->item(0, 1)->text();
+        QString extention = ui->tableWidget->item(5, 1)->text().toLower();
+        extention.replace("+", "");
+
+        streamRecorder->setFileName(title, extention);
+
+    } else if (iceCastXmlData->getPlaying() || iceCastXmlData->getIsFavoritePlaying()) {
+        QString iceCastTitle = ui->icecastTable->item(iceCastXmlData->getCurrentPlayingStation(), 0)
+                                   ->text();
+        QString iceCastExtention = ui->icecastTable
+                                       ->item(iceCastXmlData->getCurrentPlayingStation(), 2)
+                                       ->text()
+                                       .toLower();
+        iceCastExtention.erase(iceCastExtention.constBegin(), iceCastExtention.constBegin() + 6);
+        iceCastExtention.replace("+", "");
+        qDebug() << iceCastExtention;
+        streamRecorder->setFileName(iceCastTitle, iceCastExtention);
+        qDebug() << "hello";
+    } else {
+    }
 }
 
 void RadioList::onAllIconsLoaded()
@@ -641,6 +661,11 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
     radioIndexNumber = index.row();
     setIndexColor();
     iceCastXmlData->setPlaying(false);
+
+    if (streamRecorder->getIsRecording()) {
+        streamRecorder->stopRecording();
+        streamRecorder->setIsRecording(false);
+    }
 }
 
 void RadioList::onPlayPauseButtonCliced()
@@ -760,6 +785,10 @@ void RadioList::onStopButtonClicked()
         iceCastXmlData->clearTableViewColor();
         iceCastXmlData->setPlaying(false);
         setIsPlaying(false);
+        if (streamRecorder->getIsRecording()) {
+            streamRecorder->stopRecording();
+            streamRecorder->setIsRecording(false);
+        }
     } else {
         return;
     }
@@ -874,15 +903,25 @@ void RadioList::handleDataReceived(const QString &data)
 
 void RadioList::startStopRecord()
 {
-    qDebug() << "Hello recording";
-    if (!streamRecorder.getIsRecording()) {
-        streamRecorder.loadCurrentAddress(currentRadioPlayingAddress);
-        streamRecorder.startRecording();
-        streamRecorder.setIsRecording(true);
-    } else {
-        qDebug() << "record false";
-        streamRecorder.stopRecording();
-        streamRecorder.setIsRecording(false);
+    if (radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected) {
+        qDebug() << "Hello recording";
+        if (!streamRecorder->getIsRecording()) {
+            setMp3FileName();
+
+            if (isPlaying)
+                streamRecorder->loadCurrentAddress(currentRadioPlayingAddress);
+            else
+                streamRecorder->loadCurrentAddress(
+                    iceCastXmlData->getIceCastStationTableRows()
+                        .at(iceCastXmlData->getCurrentPlayingStation())
+                        .listen_url);
+            streamRecorder->startRecording();
+            streamRecorder->setIsRecording(true);
+        } else {
+            qDebug() << "record false";
+            streamRecorder->stopRecording();
+            streamRecorder->setIsRecording(false);
+        }
     }
 }
 

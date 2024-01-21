@@ -1,7 +1,9 @@
 #ifndef ICECASTXMLDATA_H
 #define ICECASTXMLDATA_H
+#include <QSharedPointer>
 #include <QUrl>
 #include "../ui_mainwindow.h"
+#include "StreamRecorder.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"
 #include "radioinfo.h"
@@ -79,6 +81,8 @@ public:
     QModelIndex getIndexPlayingStation() const;
     void setIndexPlayingStation(const QModelIndex &newIndexPlayingStation);
 
+    void makeShareStreamRecorder(QSharedPointer<StreamRecorder> streamRecorder);
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
     void updateProgressBar(int progress);
@@ -92,6 +96,7 @@ private:
     JsonListProcessor *jsonListProcesor;
     RadioList *radioList = nullptr;
     RadioInfo *radioInfo = nullptr;
+    QSharedPointer<StreamRecorder> streamRecorder;
     bool isPlaying = false;
     bool isStationsLoaded = false;
     bool isFavoriteOnTreeCliced = false;

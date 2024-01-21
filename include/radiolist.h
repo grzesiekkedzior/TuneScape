@@ -74,7 +74,8 @@ private:
     JsonListProcessor jsonListProcesor;
     RadioAudioManager radioManager;
     StreamReader streamReader;
-    StreamRecorder streamRecorder;
+    QSharedPointer<StreamRecorder> streamRecorder = QSharedPointer<StreamRecorder>::create(
+        new StreamRecorder);
     IceCastXmlData *iceCastXmlData = nullptr;
     QTimer searchTimer;
     RadioInfo *radioInfo;

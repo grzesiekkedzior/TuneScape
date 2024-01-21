@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1167</width>
+    <width>891</width>
     <height>577</height>
    </rect>
   </property>
@@ -558,7 +558,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>960</width>
+          <width>684</width>
           <height>481</height>
          </rect>
         </property>
@@ -597,7 +597,7 @@
 selection-color: rgb(4, 4, 4);</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>2</number>
            </property>
            <widget class="QWidget" name="listTab">
             <attribute name="title">
@@ -670,7 +670,7 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>932</width>
+                  <width>656</width>
                   <height>420</height>
                  </rect>
                 </property>

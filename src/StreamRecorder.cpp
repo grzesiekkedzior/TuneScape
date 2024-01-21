@@ -23,10 +23,15 @@ void StreamRecorder::closeFile()
     }
 }
 
-void StreamRecorder::setFileName(const QString &title)
+void StreamRecorder::setFileName(const QString &title, const QString extention)
 {
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+
+    // Konwertuj datę i czas na string w określonym formacie
+    QString dateTimeString = currentDateTime.toString("[yyyy-hh-mm]");
+
     filePath = downloadDir + QDir::separator();
-    filePath += title + ".mp3";
+    filePath += dateTimeString + title + "." + extention;
     file.setFileName(filePath);
 }
 
@@ -51,7 +56,7 @@ void StreamRecorder::clearReply()
 
 void StreamRecorder::startRecording()
 {
-    // check url!
+    // check url!!!
     QNetworkRequest request(url);
     reply = manager->get(request);
     connect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
@@ -61,6 +66,8 @@ void StreamRecorder::stopRecording()
 {
     closeFile();
     clearReply();
+
+    //This is not ... but in some cases help
     if (reply != nullptr) {
         disconnect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
     }
