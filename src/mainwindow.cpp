@@ -83,6 +83,11 @@ void MainWindow::info()
     licenseDialog->show();
 }
 
+Ui::MainWindow *MainWindow::getUi() const
+{
+    return ui;
+}
+
 void MainWindow::infoDialogApp()
 {
     licenseDialog = new QDialog(this);
