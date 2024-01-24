@@ -64,6 +64,8 @@ RadioList::RadioList(Ui::MainWindow *ui)
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
     header->setSectionResizeMode(QHeaderView::Interactive);
     model->setHorizontalHeaderLabels(headers);
+    ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
+                                                           + 2);
 }
 
 void RadioList::clearFlowLayout()
@@ -296,7 +298,7 @@ void RadioList::loadRadioList()
 
     ui->tableView->setModel(model);
     this->treeItem = "Search";
-    ui->tableView->resizeRowsToContents();
+    //ui->tableView->resizeRowsToContents();
     //loadedStationsCount += batchSize;
 }
 
