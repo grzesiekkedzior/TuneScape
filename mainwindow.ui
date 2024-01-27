@@ -625,7 +625,7 @@ selection-color: rgb(4, 4, 4);</string>
                 <set>QAbstractItemView::NoEditTriggers</set>
                </property>
                <property name="alternatingRowColors">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::ContiguousSelection</enum>
@@ -742,7 +742,7 @@ QProgressBar::chunk {
                 <set>QAbstractItemView::NoEditTriggers</set>
                </property>
                <property name="alternatingRowColors">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::ContiguousSelection</enum>

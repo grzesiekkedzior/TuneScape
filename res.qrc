@@ -45,6 +45,7 @@
         <file>img/icecast.png</file>
         <file>img/red-save-32.png</file>
         <file>img/dark240.png</file>
+        <file>img/radiodark-10-96.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>
