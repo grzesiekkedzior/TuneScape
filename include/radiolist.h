@@ -44,6 +44,9 @@ public:
     bool getIsPlaying() const;
     void setIsPlaying(bool newIsPlaying);
 
+    bool getIsDarkMode() const;
+    void setIsDarkMode(bool newIsDarkMode);
+
 signals:
     void playIconButtonClicked(int radioNumber);
     void allIconsLoaded();
@@ -94,6 +97,7 @@ private:
     bool isTreeClicked = false;
     bool isSearching = false;
     bool isIconFlowlayoutFull = false;
+    bool isDarkMode = false;
 
     const QString STATION = "Station";
     const QString GENRE = "Genre";
@@ -157,6 +161,8 @@ private:
     QNetworkAccessManager *networkManager = nullptr;
     void markIconPlayingStation(int radioNumber);
     void clearInfoData(int stationIndex);
+    void setDarkMode();
+    void isDark();
 };
 
 #endif // RADIOLIST_H

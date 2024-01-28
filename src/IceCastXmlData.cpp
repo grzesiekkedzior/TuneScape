@@ -245,8 +245,14 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         radioList->clearIconLabelColor();
         ui->infoData->clear();
         radioInfo->clearInfo();
-        ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-        ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        if (radioList->getIsDarkMode()) {
+            ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+            ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+        } else {
+            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        }
+
         ui->playPause->setIcon(QIcon(radioAudioManager->getMediaPlayer()->isPlaying()
                                          ? ":/images/img/pause30.png"
                                          : ":/images/img/play30.png"));
@@ -332,12 +338,23 @@ void IceCastXmlData::setIsStationsLoaded(bool newIsStationsLoaded)
 
 void IceCastXmlData::setIndexColor(const QModelIndex &index)
 {
-    for (int column = 0; column < ui->icecastTable->columnCount(); column++) {
-        QTableWidgetItem *item = ui->icecastTable->item(index.row(), column);
-        if (item)
-            item->setBackground(QColor(222, 255, 223));
+    if (radioList->getIsDarkMode()) {
+        for (int column = 0; column < ui->icecastTable->columnCount(); column++) {
+            QTableWidgetItem *item = ui->icecastTable->item(index.row(), column);
+            if (item) {
+                item->setBackground(QColor(222, 255, 223));
+                item->setForeground(QBrush(QColor(Qt::black)));
+            }
+        }
+    } else {
+        for (int column = 0; column < ui->icecastTable->columnCount(); column++) {
+            QTableWidgetItem *item = ui->icecastTable->item(index.row(), column);
+            if (item)
+                item->setBackground(QColor(222, 255, 223));
+        }
     }
-    ui->icecastTable->setAlternatingRowColors(true);
+
+    //ui->icecastTable->setAlternatingRowColors(true);
 }
 
 void IceCastXmlData::checkIsRadioOnPlaylist()
@@ -390,16 +407,27 @@ void IceCastXmlData::clearTableViewColor()
 {
     int rowCount = ui->icecastTable->rowCount();
     int columnCount = ui->icecastTable->columnCount();
+    if (radioList->getIsDarkMode()) {
+        for (int row = 0; row < rowCount; ++row) {
+            for (int column = 0; column < columnCount; ++column) {
+                QTableWidgetItem *item = ui->icecastTable->item(row, column);
+                if (item) {
+                    item->setBackground(QColor(60, 60, 60));
+                    item->setForeground(QBrush(QColor(Qt::white)));
+                }
+            }
+        }
 
-    for (int row = 0; row < rowCount; ++row) {
-        for (int column = 0; column < columnCount; ++column) {
-            QTableWidgetItem *item = ui->icecastTable->item(row, column);
-            if (item) {
+    } else {
+        for (int row = 0; row < rowCount; ++row) {
+            for (int column = 0; column < columnCount; ++column) {
+                QTableWidgetItem *item = ui->icecastTable->item(row, column);
                 if (row % 2 == 0) {
                     item->setBackground(QColor(Qt::white));
                 } else {
                     item->setBackground(QColor(245, 245, 245));
                 }
+                item->setForeground(QBrush(QColor(Qt::black)));
             }
         }
     }

@@ -558,7 +558,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>683</width>
+          <width>684</width>
           <height>481</height>
          </rect>
         </property>
@@ -625,7 +625,7 @@ selection-color: rgb(4, 4, 4);</string>
                 <set>QAbstractItemView::NoEditTriggers</set>
                </property>
                <property name="alternatingRowColors">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::ContiguousSelection</enum>
@@ -670,8 +670,8 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>653</width>
-                  <height>424</height>
+                  <width>656</width>
+                  <height>420</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -742,7 +742,7 @@ QProgressBar::chunk {
                 <set>QAbstractItemView::NoEditTriggers</set>
                </property>
                <property name="alternatingRowColors">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
                <property name="selectionMode">
                 <enum>QAbstractItemView::ContiguousSelection</enum>
@@ -1011,6 +1011,29 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         <property name="icon">
          <iconset resource="res.qrc">
           <normaloff>:/images/img/iconmonstr-info-48.png</normaloff>:/images/img/iconmonstr-info-48.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="themeButton">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/images/img/dark240.png</normaloff>:/images/img/dark240.png</iconset>
         </property>
        </widget>
       </item>

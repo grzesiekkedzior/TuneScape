@@ -83,6 +83,11 @@ void MainWindow::info()
     licenseDialog->show();
 }
 
+Ui::MainWindow *MainWindow::getUi() const
+{
+    return ui;
+}
+
 void MainWindow::infoDialogApp()
 {
     licenseDialog = new QDialog(this);
@@ -99,7 +104,7 @@ void MainWindow::infoDialogApp()
 
     aboutTuneScape = new QLabel;
     aboutTuneScape->setText(
-        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 2.0.1</p>"
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 2.2.0</p>"
         "This is a free and Open Source online radio player based on "
         "<a href=\"https://www.radio-browser.info\">radio-browser service </a> "
         "and <a href=\"https://www.icecast.org/\">Ice-Cast service.</a>"

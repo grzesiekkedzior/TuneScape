@@ -59,11 +59,14 @@ RadioList::RadioList(Ui::MainWindow *ui)
             this,
             &RadioList::handleIconPlayButtonDoubleClick);
     connect(this, &RadioList::allIconsLoaded, this, &RadioList::onAllIconsLoaded);
+    connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
     header->setSectionResizeMode(QHeaderView::Interactive);
     model->setHorizontalHeaderLabels(headers);
+    ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
+                                                           + 2);
 }
 
 void RadioList::clearFlowLayout()
@@ -114,11 +117,48 @@ void RadioList::markIconPlayingStation(int radioNumber)
     QWidget *buttonContainer = buttonCache.at(radioNumber);
     QLabel *label = buttonContainer->findChild<QLabel *>();
     if (label) {
-        label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
+        //if (isDarkMode) {
+        label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
+        //} else {
+        //label->setStyleSheet("background-color: #deffdf; color: white; font-weight: bold;");
+        //}
     } else {
         // todo
     }
 }
+
+void RadioList::setDarkMode()
+{
+    isDarkMode = (isDarkMode) ? false : true;
+    if (isDarkMode) {
+        ui->tableView->setAlternatingRowColors(false);
+        ui->icecastTable->setAlternatingRowColors(false);
+        clearTableViewColor();
+        iceCastXmlData->clearTableViewColor();
+        setIndexColor();
+        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
+        if (radioIndexNumber != -1)
+            markIconPlayingStation(radioIndexNumber);
+
+        ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+        ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+
+    } else {
+        ui->tableView->setAlternatingRowColors(true);
+        ui->icecastTable->setAlternatingRowColors(true);
+        clearTableViewColor();
+        iceCastXmlData->clearTableViewColor();
+        setIndexColor();
+        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
+        if (radioIndexNumber != -1)
+            markIconPlayingStation(radioIndexNumber);
+        ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+    }
+    loadRadioIconList();
+}
+
+void RadioList::isDark() {}
 
 void RadioList::setMp3FileName()
 {
@@ -154,7 +194,8 @@ void RadioList::onAllIconsLoaded()
             if (buttonContainer) {
                 QLabel *label = buttonContainer->findChild<QLabel *>();
                 if (label) {
-                    label->setStyleSheet("background-color: #deffdf; font-weight: bold;");
+                    label->setStyleSheet(
+                        "background-color: #deffdf; color: black; font-weight: bold;");
                 } else {
                     // handle the case when label is not found
                     // todo
@@ -162,6 +203,16 @@ void RadioList::onAllIconsLoaded()
             }
         }
     }
+}
+
+bool RadioList::getIsDarkMode() const
+{
+    return isDarkMode;
+}
+
+void RadioList::setIsDarkMode(bool newIsDarkMode)
+{
+    isDarkMode = newIsDarkMode;
 }
 
 bool RadioList::getIsPlaying() const
@@ -242,7 +293,12 @@ void RadioList::handleNetworkReply(
         button->setIcon(QIcon(pixmap));
         button->setIconSize(buttonSize);
     } else {
-        QPixmap originalPixmap(":/images/img/radio-10-96.png");
+        QString radioIcon = "";
+        if (isDarkMode)
+            radioIcon = ":/images/img/radiodark-10-96.png";
+        else
+            radioIcon = ":/images/img/radio-10-96.png";
+        QPixmap originalPixmap(radioIcon);
         QSize buttonSize(120, 120);
         QPixmap pixmap(buttonSize);
         pixmap.fill(Qt::transparent);
@@ -296,7 +352,7 @@ void RadioList::loadRadioList()
 
     ui->tableView->setModel(model);
     this->treeItem = "Search";
-    ui->tableView->resizeRowsToContents();
+    //ui->tableView->resizeRowsToContents();
     //loadedStationsCount += batchSize;
 }
 
@@ -434,9 +490,13 @@ void RadioList::loadAllData()
     if (!iceCastXmlData->getIsStationsLoaded()) {
         setTopListOnStart();
         iceCastXmlData->loadXmlAsync();
+        clearTableViewColor();
+        iceCastXmlData->clearTableViewColor();
     }
 
     setFavoriteStatons();
+    ui->tableView->setAlternatingRowColors(true);
+    ui->icecastTable->setAlternatingRowColors(true);
     //loadRadioIconList();
 }
 
@@ -577,10 +637,17 @@ void RadioList::playStream(int radioNumber)
 
 void RadioList::setIndexColor()
 {
-    for (int column = 0; column < model->columnCount(); column++) {
-        model->setData(model->index(radioIndexNumber, column),
-                       QColor(222, 255, 223),
-                       Qt::BackgroundRole);
+    if (isDarkMode) {
+        for (int column = 0; column < model->columnCount(); column++) {
+            QModelIndex index = model->index(radioIndexNumber, column);
+            model->setData(index, QColor(222, 255, 223), Qt::BackgroundRole);
+            model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
+        }
+    } else {
+        for (int column = 0; column < model->columnCount(); column++) {
+            QModelIndex index = model->index(radioIndexNumber, column);
+            model->setData(index, QColor(222, 255, 223), Qt::BackgroundRole);
+        }
     }
 }
 
@@ -622,12 +689,18 @@ void RadioList::setRadioImage(const QModelIndex &index)
                 ui->infoLabel->show();
             }
         } else {
-            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            if (isDarkMode)
+                ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+            else
+                ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             ui->infoLabel->show();
         }
     } else {
         qDebug() << "Error:" << reply->errorString();
-        ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        if (isDarkMode)
+            ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+        else
+            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         ui->infoLabel->show();
     }
 
@@ -748,10 +821,22 @@ void RadioList::clearTableViewColor()
     for (int row = 0; row < model->rowCount(); ++row) {
         for (int column = 0; column < model->columnCount(); ++column) {
             QModelIndex index = model->index(row, column);
-            if (row % 2 == 0) {
-                model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
+            if (isDarkMode) {
+                model->setData(index,
+                               QColor(60, 60, 60),
+                               Qt::BackgroundRole); // Ustaw kolor tła na czarny
+                model->setData(index,
+                               QColor(Qt::white),
+                               Qt::ForegroundRole); // Ustaw kolor tekstu na biały
             } else {
-                model->setData(index, QColor(245, 245, 245), Qt::BackgroundRole);
+                if (row % 2 == 0) {
+                    model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
+                } else {
+                    model->setData(index, QColor(245, 245, 245), Qt::BackgroundRole);
+                }
+                model->setData(index,
+                               QColor(Qt::black),
+                               Qt::ForegroundRole); // Ustaw kolor tekstu na czarny
             }
         }
     }
@@ -767,8 +852,14 @@ void RadioList::onStopButtonClicked()
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
             radioManager.stopStream();
             currentRadioPlayingAddress = "";
-            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-            ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            if (isDarkMode) {
+                ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+                ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+            } else {
+                ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+                ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            }
+
             ui->infoLabel->show();
             ui->infoData->clear();
             QModelIndex newIndex = ui->tableView->model()->index(0, 0);
