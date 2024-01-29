@@ -17,6 +17,7 @@ This is an open-source internet radio app that provides access to a wide range o
 
 # License
 **TuneScape** is released under the GPLv3 license.
+**The dark theme** "Combinear" with modification is from [Qt Style Sheets Templates](https://qss-stock.devsecstudio.com/) and is under an MIT license.
 
 # How it works
 
