@@ -88,6 +88,11 @@ void RadioInfo::clearInfo()
     setDataOnTable();
 }
 
+Infodata RadioInfo::getInfoData() const
+{
+    return infoData;
+}
+
 RadioInfo::~RadioInfo()
 {
     if (reply) {

@@ -245,6 +245,7 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         radioList->clearIconLabelColor();
         ui->infoData->clear();
         radioInfo->clearInfo();
+        setIceCastInfo(index.row());
         if (radioList->getIsDarkMode()) {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
@@ -267,6 +268,12 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
     }
 }
 
+void IceCastXmlData::setIceCastInfo(int index)
+{
+    ui->tableWidget->setItem(0, 1, new QTableWidgetItem(iceCastStationTableRows[index].station));
+    ui->tableWidget->setItem(5, 1, new QTableWidgetItem(iceCastStationTableRows[index].codec));
+    ui->tableWidget->setItem(6, 1, new QTableWidgetItem(iceCastStationTableRows[index].bitrate));
+}
 void IceCastXmlData::updateProgressBar(int progress)
 {
     ui->iceCastprogressBar->setMaximum(100);
@@ -367,6 +374,7 @@ void IceCastXmlData::checkIsRadioOnPlaylist()
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
     }
 }
+
 
 void IceCastXmlData::showErrorMessageBox(const QString &errorMessage)
 {

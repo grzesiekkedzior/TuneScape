@@ -558,7 +558,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>684</width>
+          <width>683</width>
           <height>481</height>
          </rect>
         </property>
@@ -670,8 +670,8 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>656</width>
-                  <height>420</height>
+                  <width>653</width>
+                  <height>424</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">

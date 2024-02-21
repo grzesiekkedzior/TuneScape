@@ -34,6 +34,8 @@ public:
     void setDataOnTable();
     void clearInfo();
 
+    Infodata getInfoData() const;
+
 private:
     Ui::MainWindow *ui;
     JsonListProcessor jsonListProcessor;

@@ -109,6 +109,7 @@ private:
     QVector<IceCastTableRow> discoveryStations;
 
     void checkIsRadioOnPlaylist();
+    void setIceCastInfo(int index);
 };
 
 #endif // ICECASTXMLDATA_H
