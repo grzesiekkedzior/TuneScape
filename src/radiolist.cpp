@@ -215,6 +215,10 @@ void RadioList::setIsDarkMode(bool newIsDarkMode)
     isDarkMode = newIsDarkMode;
 }
 
+RadioAudioManager& RadioList::getRadioManager() {
+    return radioManager;
+}
+
 bool RadioList::getIsPlaying() const
 {
     return isPlaying;
@@ -989,6 +993,7 @@ void RadioList::handleDataReceived(const QString &data)
         qDebug() << title;
         ui->infoData->clear();
         ui->infoData->setText(title);
+        emit sendTitleToTray(title);
     }
     //metaData = "";
 }

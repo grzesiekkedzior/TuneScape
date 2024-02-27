@@ -7,6 +7,7 @@
 #include "include/radioexplorer.h"
 #include "include/radioinfo.h"
 #include "include/radiolist.h"
+#include "include/TrayIcon.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -36,6 +37,7 @@ private:
     QLabel *licenseLabel;
     QLabel *aboutTuneScape;
     QScrollArea *scrollArea;
+    TrayIcon *trayIcon;
     void set_icon_btn();
     void start();
     void resizeEvent(QResizeEvent *event);
