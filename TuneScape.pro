@@ -12,6 +12,7 @@ SOURCES += \
     src/IceCastXmlData.cpp \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
+    src/TrayIcon.cpp \
     src/flowlayout.cpp \
     src/radioinfo.cpp \
     src/streamReader.cpp \
@@ -27,6 +28,7 @@ HEADERS += \
     include/IceCastXmlData.h \
     include/StreamRecorder.h \
     include/Theme.h \
+    include/TrayIcon.h \
     include/flowlayout.h \
     include/radioinfo.h \
     include/streamReader.h \

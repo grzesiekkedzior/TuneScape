@@ -46,15 +46,18 @@ public:
 
     bool getIsDarkMode() const;
     void setIsDarkMode(bool newIsDarkMode);
+    void onPlayPauseButtonCliced();
+    RadioAudioManager &getRadioManager();
 
 signals:
     void playIconButtonClicked(int radioNumber);
     void allIconsLoaded();
+    void sendTitleToTray(QString title);
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
     void onTableViewDoubleClicked(const QModelIndex &index);
-    void onPlayPauseButtonCliced();
+
     void onNextButtonClicked();
     void onPrevButtonClicked();
     void onStopButtonClicked();

@@ -46,6 +46,10 @@
         <file>img/red-save-32.png</file>
         <file>img/dark240.png</file>
         <file>img/radiodark-10-96.png</file>
+        <file>img/tray64.png</file>
+        <file>img/exit64.png</file>
+        <file>img/playing32.png</file>
+        <file>img/playing48.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>

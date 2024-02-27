@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QIcon>
 #include <QMessageBox>
+#include <QSystemTrayIcon>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -28,6 +29,7 @@ MainWindow::~MainWindow()
     delete radioList;
     delete radioInfo;
     delete iceCastXmlData;
+    delete trayIcon;
 }
 
 void MainWindow::set_icon_btn()
@@ -49,6 +51,9 @@ void MainWindow::start()
     //iceCastXmlData = new IceCastXmlData(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
+    trayIcon = new TrayIcon(ui, *this);
+    trayIcon->setRadioAudioManager(&radioList->getRadioManager());
+    trayIcon->setRadioList(radioList);
 
     // version beta
     //ui->tabWidget->removeTab(1);
