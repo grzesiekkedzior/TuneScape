@@ -5,7 +5,7 @@
 ![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)
 ![darktiles](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/16e0fa4d-c84e-4320-a251-07c4986d3479)
 
-**A new release, 3.0.0, is coming with a system tray icon.**
+**A new release, 3.0.0, is coming with a system tray icon.**   
 ![tray1](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a5697f87-8b78-46a0-bdc7-20f93afb1f69)
 ![tray2](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/c05e2ca8-cc6c-4534-823c-99e06dbbff4a)
 
