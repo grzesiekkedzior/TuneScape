@@ -57,6 +57,7 @@ private:
     const QString COUNTRY = "country";
     const QString URL = "homepage";
     const QString URL_RESOLVED = "url_resolved";
+    const QString URL_STREAM = "url";
     const QString FAVICON = "favicon";
     QString endpoint = "";
 

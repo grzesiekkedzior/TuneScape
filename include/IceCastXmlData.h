@@ -103,7 +103,7 @@ private:
     bool isFavoritePlaying = false;
     int currentPlayingStation = -1;
     QModelIndex indexPlayingStation;
-    const QString iceCastUrl = "https://dir.xiph.org/yp.xml";
+    const QString iceCastUrl = "http://dir.xiph.org/yp.xml";
     QVector<IceCastTableRow> iceCastStationTableRows;
     QVector<IceCastTableRow> favoriteStations;
     QVector<IceCastTableRow> discoveryStations;
