@@ -15,7 +15,7 @@ This is an open-source internet radio app that provides access to a wide range o
 
 **TuneScape** for now is being tested on the Windows platform.
 
-### TuneScape [download](https://sourceforge.net/projects/tunescape/)
+[![Download TuneScape](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/tunescape/files/latest/download)
 
 # License
 **TuneScape** is released under the GPLv3 license.  
