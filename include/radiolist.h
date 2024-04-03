@@ -50,7 +50,7 @@ public:
     RadioAudioManager &getRadioManager();
 
 signals:
-    void playIconButtonClicked(int radioNumber);
+    void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
     void sendTitleToTray(QString title);
 private slots:

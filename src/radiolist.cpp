@@ -55,7 +55,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
     connect(this,
-            &RadioList::playIconButtonClicked,
+            &RadioList::playIconButtonDoubleClicked,
             this,
             &RadioList::handleIconPlayButtonDoubleClick);
     connect(this, &RadioList::allIconsLoaded, this, &RadioList::onAllIconsLoaded);
@@ -266,8 +266,25 @@ void RadioList::loadRadioIconList()
                 itemLayout->addWidget(button);
                 itemLayout->addWidget(label);
 
+                // For now double clicked solution
                 connect(button, &QPushButton::clicked, this, [=]() {
-                    emit playIconButtonClicked(row);
+                    // Static to prevent variable state loss!!!
+                    static QTimer timer;             // Timer to detect double-click
+                    static int lastClickedRow = -1;  // Track last clicked row
+                    static bool singleClick = false; // Track single click
+
+                    if (singleClick && lastClickedRow == row) {
+                        // Double-click detected
+                        emit playIconButtonDoubleClicked(row);
+                        singleClick = false;
+                        timer.stop(); // Stop the timer
+                    } else {
+                        singleClick = true;
+                        lastClickedRow = row;
+                        // Start the timer to detect double-click
+                        timer.singleShot(QApplication::doubleClickInterval(),
+                                         [=]() { singleClick = false; });
+                    }
                 });
 
                 QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
