@@ -1,5 +1,6 @@
 set(${MYPROJ}_HEADERS
 include/flowlayout.h
+include/icecastxmldata.h
 include/jsonlistprocessor.h
 include/mainwindow.h
 include/radioaudiomanager.h
@@ -7,5 +8,8 @@ include/radioexplorer.h
 include/radioinfo.h
 include/radiolist.h
 include/radiostations.h
-include/StreamReader.h
+include/streamreader.h
+include/streamrecorder.h
+include/theme.h
+include/trayicon.h
 PARENT_SCOPE)

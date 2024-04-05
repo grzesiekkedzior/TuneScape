@@ -5,8 +5,12 @@ RadioAudioManager::RadioAudioManager()
     player = new QMediaPlayer;
     audioOutput = new QAudioOutput;
     player->setAudioOutput(audioOutput);
+#ifdef __unix__
+    putenv("QT_MEDIA_BACKEND=gstreamer");
+#elif defined(_WIN32) || defined(WIN32)
     putenv("QT_MEDIA_BACKEND=windows");
     putenv("QT_MULTIMEDIA_PREFERRED_PLUGINS=directshow");
+#endif
 }
 
 RadioAudioManager::~RadioAudioManager()

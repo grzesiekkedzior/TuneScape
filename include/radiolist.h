@@ -2,9 +2,9 @@
 #define RADIOLIST_H
 
 #include "../ui_mainwindow.h"
-#include "IceCastXmlData.h"
-#include "StreamReader.h"
-#include "StreamRecorder.h"
+#include "icecastxmldata.h"
+#include "streamreader.h"
+#include "streamrecorder.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"

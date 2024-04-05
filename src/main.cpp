@@ -1,5 +1,5 @@
 #include <QApplication>
-#include "include/Theme.h"
+#include "include/theme.h"
 #include "include/mainwindow.h"
 
 int main(int argc, char *argv[])
