@@ -1,5 +1,5 @@
-#include "include/StreamRecorder.h"
-#include <QDIr>
+#include "include/streamrecorder.h"
+#include <QDir>
 #include <QStandardPaths>
 #include <QTimer>
 

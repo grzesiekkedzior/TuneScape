@@ -1,4 +1,4 @@
-#include "include/IceCastXmlData.h"
+#include "include/icecastxmldata.h"
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QMessageBox>

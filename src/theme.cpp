@@ -1,4 +1,4 @@
-#include "include/Theme.h"
+#include "include/theme.h"
 
 Theme::Theme()
     : filetheme(":/src/theme/Combinear.qss")

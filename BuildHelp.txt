@@ -38,3 +38,8 @@ cmake --build c:/Code/TuneScape/build --config Debug --target install
 
 Set install path using:
 CMAKE_INSTALL_PREFIX
+
+Linux:
+Some modifications to cmake script were required..
+To run install using platform X11  install following package:
+apt install libxcb-cursor0

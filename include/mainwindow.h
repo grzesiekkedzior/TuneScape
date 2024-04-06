@@ -3,11 +3,11 @@
 #include <QDialog>
 #include <QMainWindow>
 #include <QResizeEvent>
-#include "IceCastXmlData.h"
+#include "icecastxmldata.h"
 #include "include/radioexplorer.h"
 #include "include/radioinfo.h"
 #include "include/radiolist.h"
-#include "include/TrayIcon.h"
+#include "include/trayicon.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

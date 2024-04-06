@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 set(MYPROJ TuneScape )
 
-project(${MYPROJ} VERSION 1.1.6 LANGUAGES CXX)
+project(${MYPROJ} VERSION 3.3.2 LANGUAGES CXX)
 
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -21,7 +21,7 @@ if(WIN32)
 endif()
 
 # Find the QtWidgets library
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Concurrent OpenGL Multimedia)
 
 qt_standard_project_setup()
 
@@ -33,7 +33,9 @@ add_subdirectory(src)
 qt_add_executable(${MYPROJ} ${${MYPROJ}_SOURCES} ${${MYPROJ}_HEADERS} mainwindow.ui res.qrc)
 
 # Add the Qt5 Widgets for linking
-target_link_libraries(${MYPROJ} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Multimedia)
+target_link_libraries(${MYPROJ} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Concurrent Qt6::OpenGL Qt6::Multimedia)
+
+#qt_import_plugins(${MYPROJ} INCLUDE Qt6::QXcbIntegrationPlugin)
 
 install(TARGETS ${MYPROJ}
     BUNDLE  DESTINATION .

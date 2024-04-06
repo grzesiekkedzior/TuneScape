@@ -4,7 +4,7 @@
 #include <QApplication>
 #include <QFile>
 #include <QObject>
-#include "ui_mainwindow.h"
+#include "../ui_mainwindow.h"
 
 class Theme : public QObject
 {

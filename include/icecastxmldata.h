@@ -3,7 +3,7 @@
 #include <QSharedPointer>
 #include <QUrl>
 #include "../ui_mainwindow.h"
-#include "StreamRecorder.h"
+#include "streamrecorder.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"
 #include "radioinfo.h"

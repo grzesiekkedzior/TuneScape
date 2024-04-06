@@ -1,4 +1,4 @@
-#include "include/TrayIcon.h"
+#include "include/trayicon.h"
 #include <QMediaPlayer>
 #include <QMenu>
 

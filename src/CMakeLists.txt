@@ -1,5 +1,6 @@
 set(${MYPROJ}_SOURCES
 src/flowlayout.cpp
+src/icecastxmldata.cpp
 src/jsonlistprocessor.cpp
 src/main.cpp
 src/mainwindow.cpp
@@ -8,5 +9,8 @@ src/radioexplorer.cpp
 src/radioinfo.cpp
 src/radiolist.cpp
 src/radiostations.cpp
-src/StreamReader.cpp
+src/streamreader.cpp
+src/streamrecorder.cpp
+src/theme.cpp
+src/trayicon.cpp
 PARENT_SCOPE)

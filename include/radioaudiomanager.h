@@ -1,6 +1,6 @@
 #ifndef RADIOAUDIOMANAGER_H
 #define RADIOAUDIOMANAGER_H
-#include "include/StreamReader.h"
+#include "include/streamreader.h"
 
 #include <QAudioOutput>
 #include <QMediaPlayer>

@@ -1,4 +1,4 @@
-#include "include/Streamreader.h"
+#include "include/streamreader.h"
 #include <QByteArray>
 #include <QDebug>
 
