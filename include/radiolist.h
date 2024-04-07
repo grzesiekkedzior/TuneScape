@@ -3,12 +3,13 @@
 
 #include "../ui_mainwindow.h"
 #include "icecastxmldata.h"
-#include "streamreader.h"
-#include "streamrecorder.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
+#include "streamreader.h"
+#include "streamrecorder.h"
+#include <qmessagebox>
 
 #include <QHeaderView>
 #include <QObject>
@@ -48,6 +49,8 @@ public:
     void setIsDarkMode(bool newIsDarkMode);
     void onPlayPauseButtonCliced();
     RadioAudioManager &getRadioManager();
+
+    QSharedPointer<StreamRecorder> getStreamRecorder() const;
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -90,6 +93,8 @@ private:
 
     QString currentRadioPlayingAddress = "";
     QString item = "";
+
+    QMessageBox message;
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;

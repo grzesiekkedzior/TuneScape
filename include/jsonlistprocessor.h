@@ -6,6 +6,7 @@
 
 #include <QEventLoop>
 #include <QJsonDocument>
+#include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
@@ -48,6 +49,8 @@ public:
     void setIconAddresses(const QVector<QString> &icons);
     QNetworkReply *checkAvailability(const QStringList &radioAddresses);
     QJsonDocument createJasonDocument(QNetworkReply *reply);
+
+    QMessageBox messagebox;
 signals:
     void connectionLost();
 

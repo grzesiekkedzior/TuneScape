@@ -113,9 +113,15 @@ void RadioList::clearIconLabelColor()
 
 void RadioList::markIconPlayingStation(int radioNumber)
 {
+    QWidget *buttonContainer = nullptr;
+    QLabel *label = nullptr;
     clearIconLabelColor();
-    QWidget *buttonContainer = buttonCache.at(radioNumber);
-    QLabel *label = buttonContainer->findChild<QLabel *>();
+    qDebug() << "nullptr " << radioNumber;
+    if (buttonCache.size() >= radioNumber) {
+        buttonContainer = buttonCache.at(radioNumber);
+        label = buttonContainer->findChild<QLabel *>();
+    }
+
     if (label) {
         //if (isDarkMode) {
         label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
@@ -155,6 +161,7 @@ void RadioList::setDarkMode()
         ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
     }
+
     loadRadioIconList();
 }
 
@@ -203,6 +210,11 @@ void RadioList::onAllIconsLoaded()
             }
         }
     }
+}
+
+QSharedPointer<StreamRecorder> RadioList::getStreamRecorder() const
+{
+    return streamRecorder;
 }
 
 bool RadioList::getIsDarkMode() const
@@ -509,15 +521,18 @@ void RadioList::loadAllData()
     }
 
     if (!iceCastXmlData->getIsStationsLoaded()) {
-        setTopListOnStart();
         iceCastXmlData->loadXmlAsync();
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
     }
 
     setFavoriteStatons();
-    ui->tableView->setAlternatingRowColors(true);
-    ui->icecastTable->setAlternatingRowColors(true);
+    if (!isDarkMode) {
+        ui->tableView->setAlternatingRowColors(true);
+        ui->icecastTable->setAlternatingRowColors(true);
+    }
+
+    setTopListOnStart();
     //loadRadioIconList();
 }
 
@@ -641,7 +656,16 @@ void RadioList::onInternetConnectionRestored()
     allIconsAddresses.clear();
     allStreamAddresses.clear();
     allTableRows.clear();
+    //this->onStopButtonClicked();
+    message.setText("The connection has been restored. Select a station.");
+    message.setIcon(QMessageBox::Information);
+    message.setWindowIcon(QIcon(":/images/img/radio30.png"));
+    clearTableViewColor();
+    ui->treeView->clearSelection();
+    iceCastXmlData->clearTableViewColor();
+    setIndexColor();
     loadAllData();
+    message.show();
 }
 
 void RadioList::playStream(int radioNumber)
@@ -683,6 +707,8 @@ void RadioList::sliderMoved(int move)
 
 void RadioList::setRadioImage(const QModelIndex &index)
 {
+    if (!(jsonListProcesor.isConnected))
+        return;
     QEventLoop loop;
     QUrl imageUrl(jsonListProcesor.getIconAddresses(index.row()));
 
@@ -752,10 +778,10 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
             radioInfo->setDataOnTable();
         }
         setIsPlaying(true);
+        radioIndexNumber = index.row();
+        setIndexColor();
+        iceCastXmlData->setPlaying(false);
     }
-    radioIndexNumber = index.row();
-    setIndexColor();
-    iceCastXmlData->setPlaying(false);
 
     if (streamRecorder->getIsRecording()) {
         streamRecorder->stopRecording();
@@ -916,9 +942,7 @@ void RadioList::onTableViewClicked(const QModelIndex &index)
 
 void RadioList::tableViewActivated(const QModelIndex &index)
 {
-    clearTableViewColor();
     onTableViewDoubleClicked(index);
-    this->radioIndexNumber = index.row();
 }
 
 void RadioList::addRadioToFavorite()

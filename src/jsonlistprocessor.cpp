@@ -14,7 +14,6 @@ JsonListProcessor::JsonListProcessor()
     connectionTimer = new QTimer(this);
     connectionTimer->setInterval(12000);
     connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkInternetConnection);
-    //connectionTimer->start();
 
     internetConnectionChecker = new QTimer(this);
     internetConnectionChecker->setInterval(5000);
@@ -30,11 +29,13 @@ void JsonListProcessor::loadEndpoint(QString endpoint)
 
     RadioStations radioStations(endpoint);
     ui->statusbar->showMessage("Connecting...");
-
+    if (!connectionTimer->isActive())
+        connectionTimer->start();
     if (checkInternetConnection()) {
         reply = checkAvailability(radioStations.getAddresses());
         setConnection(reply);
     } else {
+        qDebug() << "Connection checker starts";
         internetConnectionChecker->start();
     }
 }
@@ -96,6 +97,14 @@ void JsonListProcessor::lostConnection()
 {
     ui->statusbar->showMessage("Connection lost");
     ui->statusbar->setStyleSheet("color: red");
+    messagebox.setText("Connection is lost!!!");
+    messagebox.setIcon(QMessageBox::Information);
+    messagebox.setWindowIcon(QIcon(":/images/img/radio30.png"));
+    messagebox.show();
+    if (radioList->getStreamRecorder()->getIsRecording()) {
+        radioList->getStreamRecorder()->stopRecording();
+        radioList->getStreamRecorder()->setIsRecording(false);
+    }
 }
 
 void JsonListProcessor::retryInternetConnection()
