@@ -116,8 +116,12 @@ void RadioList::markIconPlayingStation(int radioNumber)
     QWidget *buttonContainer = nullptr;
     QLabel *label = nullptr;
     clearIconLabelColor();
+
     qDebug() << "nullptr " << radioNumber;
-    if (buttonCache.size() >= radioNumber) {
+    qDebug() << "flowLayout->count() " << flowLayout->count();
+    qDebug() << "allIconsAddresses.size() " << jsonListProcesor.getIconAddresses().size();
+    if (buttonCache.size() >= radioNumber
+        && flowLayout->count() == jsonListProcesor.getIconAddresses().size()) {
         buttonContainer = buttonCache.at(radioNumber);
         label = buttonContainer->findChild<QLabel *>();
     }
@@ -129,7 +133,7 @@ void RadioList::markIconPlayingStation(int radioNumber)
         //label->setStyleSheet("background-color: #deffdf; color: white; font-weight: bold;");
         //}
     } else {
-        // todo
+        qDebug() << "All icons are not loaded";
     }
 }
 
@@ -197,6 +201,9 @@ void RadioList::onAllIconsLoaded()
     if (currentPlayListPlaying == currentPlaylistIndex && isIconFlowlayoutFull) {
         if (getIsPlaying()) {
             qDebug() << "Color" << iceCastXmlData->getPlaying();
+            qDebug() << "radioIndex: " << radioIndexNumber;
+            if (treeItem == "Search")
+                return;
             QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
             if (buttonContainer) {
                 QLabel *label = buttonContainer->findChild<QLabel *>();
@@ -254,6 +261,7 @@ void RadioList::loadRadioIconList()
     if (jsonListProcesor.isConnected) {
         clearAll();
         int dataSize = jsonListProcesor.getTableRows().size();
+        qDebug() << "datasize: " << dataSize;
         ui->progressBar->setRange(0, dataSize);
         if (dataSize > 0)
             ui->progressBar->show();
@@ -262,88 +270,81 @@ void RadioList::loadRadioIconList()
             networkManager = new QNetworkAccessManager(this);
         }
 
+        // Load buttons with empty icons first
         for (int row = 0; row < dataSize; ++row) {
-            // Without this condition app will crash?! Some check analizer suggest that is un...
+            // Without this condition app will crash?! Some check analyzer suggest that it's unnecessary
             if (dataSize > row) {
-                QWidget *itemContainer = new QWidget;
-                QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
-                QPushButton *button = new QPushButton; // Allocate on the heap
-                button->setFixedSize(120, 120);
-                QString description = jsonListProcesor.getTableRows().at(row).station;
-                QLabel *label = new QLabel(description); // Allocate on the heap
-                label->setFixedWidth(120);
-                label->setWordWrap(true);
-                label->setAlignment(Qt::AlignCenter);
+                addEmptyIconButton(row);
+            }
+        }
 
-                itemLayout->addWidget(button);
-                itemLayout->addWidget(label);
-
-                // For now double clicked solution
-                connect(button, &QPushButton::clicked, this, [=]() {
-                    // Static to prevent variable state loss!!!
-                    static QTimer timer;             // Timer to detect double-click
-                    static int lastClickedRow = -1;  // Track last clicked row
-                    static bool singleClick = false; // Track single click
-
-                    if (singleClick && lastClickedRow == row) {
-                        // Double-click detected
-                        emit playIconButtonDoubleClicked(row);
-                        singleClick = false;
-                        timer.stop(); // Stop the timer
-                    } else {
-                        singleClick = true;
-                        lastClickedRow = row;
-                        // Start the timer to detect double-click
-                        timer.singleShot(QApplication::doubleClickInterval(),
-                                         [=]() { singleClick = false; });
-                    }
-                });
-
+        // Load icons from the internet
+        for (int row = 0; row < dataSize; ++row) {
+            if (dataSize > row) {
                 QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
                 QNetworkRequest request(imageUrl);
                 QNetworkReply *reply = networkManager->get(request);
-
                 networkReplies.append(reply);
 
-                connect(reply, &QNetworkReply::finished, [=]() {
-                    handleNetworkReply(reply, button, itemContainer, dataSize, row);
-                });
+                connect(reply, &QNetworkReply::finished, [=]() { handleNetworkReply(reply, row); });
             }
         }
     }
 }
 
-void RadioList::handleNetworkReply(
-    QNetworkReply *reply, QPushButton *button, QWidget *itemContainer, int dataSize, int row)
+void RadioList::addEmptyIconButton(int row)
 {
-    if (reply->error() == QNetworkReply::NoError) {
-        QByteArray imageData = reply->readAll();
-        QPixmap pixmap;
-        pixmap.loadFromData(imageData);
-        QSize buttonSize = button->size();
+    QWidget *itemContainer = new QWidget;
+    QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
+    QPushButton *button = new QPushButton; // Allocate on the heap
+    button->setFixedSize(120, 120);
+    QString description = jsonListProcesor.getTableRows().at(row).station;
+    QLabel *label = new QLabel(description); // Allocate on the heap
+    label->setFixedWidth(120);
+    label->setWordWrap(true);
+    label->setAlignment(Qt::AlignCenter);
 
-        pixmap = pixmap.scaled(buttonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        button->setIcon(QIcon(pixmap));
-        button->setIconSize(buttonSize);
-    } else {
-        QString radioIcon = "";
-        if (isDarkMode)
-            radioIcon = ":/images/img/radiodark-10-96.png";
-        else
-            radioIcon = ":/images/img/radio-10-96.png";
-        QPixmap originalPixmap(radioIcon);
-        QSize buttonSize(120, 120);
-        QPixmap pixmap(buttonSize);
-        pixmap.fill(Qt::transparent);
+    itemLayout->addWidget(button);
+    itemLayout->addWidget(label);
 
-        QPainter painter(&pixmap);
-        painter.setRenderHint(QPainter::Antialiasing);
-        painter.setRenderHint(QPainter::SmoothPixmapTransform);
-        painter.drawPixmap(10, 5, originalPixmap);
+    // For now double clicked solution
+    connect(button, &QPushButton::clicked, this, [=]() {
+        // Static to prevent variable state loss!!!
+        static QTimer timer;             // Timer to detect double-click
+        static int lastClickedRow = -1;  // Track last clicked row
+        static bool singleClick = false; // Track single click
 
-        button->setIcon(QIcon(pixmap));
-        button->setIconSize(buttonSize);
-    }
+        if (singleClick && lastClickedRow == row) {
+            // Double-click detected
+            emit playIconButtonDoubleClicked(row);
+            singleClick = false;
+            timer.stop(); // Stop the timer
+        } else {
+            singleClick = true;
+            lastClickedRow = row;
+            // Start the timer to detect double-click
+            timer.singleShot(QApplication::doubleClickInterval(), [=]() { singleClick = false; });
+        }
+    });
+
+    QString radioIcon = "";
+    if (isDarkMode)
+        radioIcon = ":/images/img/radiodark-10-96.png";
+    else
+        radioIcon = ":/images/img/radio-10-96.png";
+    QPixmap originalPixmap(radioIcon);
+    QSize buttonSize(120, 120);
+    QPixmap pixmap(buttonSize);
+    pixmap.fill(Qt::transparent);
+
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
+    painter.drawPixmap(10, 5, originalPixmap);
+
+    button->setIcon(QIcon(pixmap));
+    button->setIconSize(buttonSize);
+
     if (row < buttonCache.size())
         buttonCache[row] = itemContainer;
 
@@ -357,6 +358,39 @@ void RadioList::handleNetworkReply(
     } else {
         ++progressLoading;
         ui->progressBar->setValue(progressLoading);
+    }
+}
+
+void RadioList::handleNetworkReply(QNetworkReply *reply, int row)
+{
+    if (row >= buttonCache.size()) {
+        reply->deleteLater();
+        return;
+    }
+
+    QWidget *itemContainer = buttonCache[row];
+    if (!itemContainer) {
+        reply->deleteLater();
+        return;
+    }
+
+    QPushButton *button = qobject_cast<QPushButton *>(itemContainer->layout()->itemAt(0)->widget());
+    if (!button) {
+        reply->deleteLater();
+        return;
+    }
+
+    if (reply->error() == QNetworkReply::NoError) {
+        QByteArray imageData = reply->readAll();
+        QPixmap pixmap;
+        pixmap.loadFromData(imageData);
+        QSize buttonSize = button->size();
+
+        pixmap = pixmap.scaled(buttonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        button->setIcon(QIcon(pixmap));
+        button->setIconSize(buttonSize);
+    } else {
+        // Handle error...
     }
 
     reply->deleteLater();
@@ -869,21 +903,15 @@ void RadioList::clearTableViewColor()
         for (int column = 0; column < model->columnCount(); ++column) {
             QModelIndex index = model->index(row, column);
             if (isDarkMode) {
-                model->setData(index,
-                               QColor(60, 60, 60),
-                               Qt::BackgroundRole); // Ustaw kolor tła na czarny
-                model->setData(index,
-                               QColor(Qt::white),
-                               Qt::ForegroundRole); // Ustaw kolor tekstu na biały
+                model->setData(index, QColor(60, 60, 60), Qt::BackgroundRole);
+                model->setData(index, QColor(Qt::white), Qt::ForegroundRole);
             } else {
                 if (row % 2 == 0) {
                     model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
                 } else {
                     model->setData(index, QColor(245, 245, 245), Qt::BackgroundRole);
                 }
-                model->setData(index,
-                               QColor(Qt::black),
-                               Qt::ForegroundRole); // Ustaw kolor tekstu na czarny
+                model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
             }
         }
     }
@@ -1081,6 +1109,7 @@ void RadioList::setVectorsOfStation(const QString endpoint)
 
 void RadioList::searchStations()
 {
+    qDebug() << "Size list: " << allTableRows.size();
     // This is ugly but I dont change it to don't complicate code
     //**********************************************************
     if (allTableRows.size() > 4 && allIconsAddresses.size() > 4 && allStreamAddresses.size() > 4) {
@@ -1109,4 +1138,5 @@ void RadioList::searchStations()
 
     this->treeItem = "Search";
     ui->tabRadioListWidget->setCurrentIndex(0);
+    this->clearIconLabelColor();
 }

@@ -34,8 +34,7 @@ public:
     void startSearchTimer();
     void onInternetConnectionRestored();
 
-    void handleNetworkReply(
-        QNetworkReply *reply, QPushButton *button, QWidget *itemContainer, int dataSize, int row);
+    void handleNetworkReply(QNetworkReply *reply, int row);
 
     void clearIconLabelColor();
     void clearTableViewColor();
@@ -49,6 +48,8 @@ public:
     void setIsDarkMode(bool newIsDarkMode);
     void onPlayPauseButtonCliced();
     RadioAudioManager &getRadioManager();
+
+    void addEmptyIconButton(int row);
 
     QSharedPointer<StreamRecorder> getStreamRecorder() const;
 
