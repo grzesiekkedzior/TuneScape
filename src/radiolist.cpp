@@ -137,6 +137,18 @@ void RadioList::markIconPlayingStation(int radioNumber)
     }
 }
 
+void RadioList::setRawDarkRadioImage()
+{
+    ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+    ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+}
+
+void RadioList::setRawRadioImage()
+{
+    ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+    ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+}
+
 void RadioList::setDarkMode()
 {
     isDarkMode = (isDarkMode) ? false : true;
@@ -149,9 +161,8 @@ void RadioList::setDarkMode()
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
         if (radioIndexNumber != -1)
             markIconPlayingStation(radioIndexNumber);
-
-        ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-        ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+        if (!radioManager.getMediaPlayer()->isPlaying())
+            setRawDarkRadioImage();
 
     } else {
         ui->tableView->setAlternatingRowColors(true);
@@ -162,8 +173,8 @@ void RadioList::setDarkMode()
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
         if (radioIndexNumber != -1)
             markIconPlayingStation(radioIndexNumber);
-        ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-        ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        if (!radioManager.getMediaPlayer()->isPlaying())
+            setRawRadioImage();
     }
 
     loadRadioIconList();
@@ -418,7 +429,7 @@ void RadioList::loadRadioList()
     }
 
     ui->tableView->setModel(model);
-    this->treeItem = "Search";
+    //this->treeItem = "Search";
     //ui->tableView->resizeRowsToContents();
     //loadedStationsCount += batchSize;
 }
@@ -617,8 +628,11 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item;
     if (!checkItem(item, LIBRARY_TREE)) {
-        if (!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2)
+        if (!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2) {
+            if (this->treeItem == "Search")
+                this->treeItem = "";
             ui->tabRadioListWidget->setCurrentIndex(0);
+        }
         if (checkItem(item, "Top")) {
             if (this->treeItem == "Search")
                 this->treeItem = "";

@@ -172,6 +172,8 @@ private:
     void clearInfoData(int stationIndex);
     void setDarkMode();
     void isDark();
+    void setRawRadioImage();
+    void setRawDarkRadioImage();
 };
 
 #endif // RADIOLIST_H
