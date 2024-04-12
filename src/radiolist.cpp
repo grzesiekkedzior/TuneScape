@@ -159,8 +159,6 @@ void RadioList::setDarkMode()
         iceCastXmlData->clearTableViewColor();
         setIndexColor();
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
-        if (radioIndexNumber != -1)
-            markIconPlayingStation(radioIndexNumber);
         if (!radioManager.getMediaPlayer()->isPlaying())
             setRawDarkRadioImage();
 
@@ -171,13 +169,14 @@ void RadioList::setDarkMode()
         iceCastXmlData->clearTableViewColor();
         setIndexColor();
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
-        if (radioIndexNumber != -1)
-            markIconPlayingStation(radioIndexNumber);
+
         if (!radioManager.getMediaPlayer()->isPlaying())
             setRawRadioImage();
     }
 
     loadRadioIconList();
+    if (radioIndexNumber != -1)
+        markIconPlayingStation(radioIndexNumber);
 }
 
 void RadioList::isDark() {}
@@ -202,7 +201,6 @@ void RadioList::setMp3FileName()
         iceCastExtention.replace("+", "");
         qDebug() << iceCastExtention;
         streamRecorder->setFileName(iceCastTitle, iceCastExtention);
-        qDebug() << "hello";
     } else {
     }
 }
@@ -1151,6 +1149,6 @@ void RadioList::searchStations()
     }
 
     this->treeItem = "Search";
-    ui->tabRadioListWidget->setCurrentIndex(0);
+    //ui->tabRadioListWidget->setCurrentIndex(0);
     this->clearIconLabelColor();
 }
