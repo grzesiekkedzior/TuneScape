@@ -9,7 +9,7 @@
 #include "include/radioinfo.h"
 #include "streamreader.h"
 #include "streamrecorder.h"
-#include <qmessagebox>
+#include <QMessageBox>
 
 #include <QHeaderView>
 #include <QObject>
