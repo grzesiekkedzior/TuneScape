@@ -728,18 +728,8 @@ void RadioList::playStream(int radioNumber)
 
 void RadioList::setIndexColor()
 {
-    if (isDarkMode) {
-        for (int column = 0; column < model->columnCount(); column++) {
-            QModelIndex index = model->index(radioIndexNumber, column);
-            model->setData(index, QColor(222, 255, 223), Qt::BackgroundRole);
-            model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
-        }
-    } else {
-        for (int column = 0; column < model->columnCount(); column++) {
-            QModelIndex index = model->index(radioIndexNumber, column);
-            model->setData(index, QColor(222, 255, 223), Qt::BackgroundRole);
-        }
-    }
+    customColor.reset(new CustomColorDelegate(radioIndexNumber, QColor(222, 255, 223), this));
+    ui->tableView->setItemDelegate(customColor.get());
 }
 
 void RadioList::sliderMoved(int move)

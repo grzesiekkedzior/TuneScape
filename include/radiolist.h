@@ -1,15 +1,16 @@
 #ifndef RADIOLIST_H
 #define RADIOLIST_H
 
+#include <QMessageBox>
 #include "../ui_mainwindow.h"
 #include "icecastxmldata.h"
+#include "include/customcolordelegate.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
 #include "streamreader.h"
 #include "streamrecorder.h"
-#include <QMessageBox>
 
 #include <QHeaderView>
 #include <QObject>
@@ -174,6 +175,8 @@ private:
     void isDark();
     void setRawRadioImage();
     void setRawDarkRadioImage();
+
+    QScopedPointer<CustomColorDelegate> customColor{nullptr};
 };
 
 #endif // RADIOLIST_H
