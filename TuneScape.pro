@@ -13,6 +13,7 @@ SOURCES += \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
     src/TrayIcon.cpp \
+    src/customcolordelegate.cpp \
     src/flowlayout.cpp \
     src/radioinfo.cpp \
     src/streamReader.cpp \
@@ -29,6 +30,7 @@ HEADERS += \
     include/StreamRecorder.h \
     include/Theme.h \
     include/TrayIcon.h \
+    include/customcolordelegate.h \
     include/flowlayout.h \
     include/radioinfo.h \
     include/streamReader.h \
