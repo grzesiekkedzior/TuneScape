@@ -908,13 +908,9 @@ void RadioList::clearTableViewColor()
                 model->setData(index, QColor(60, 60, 60), Qt::BackgroundRole);
                 model->setData(index, QColor(Qt::white), Qt::ForegroundRole);
             } else {
-                if (row % 2 == 0) {
-                    model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
-                } else {
-                    model->setData(index, QColor(245, 245, 245), Qt::BackgroundRole);
-                }
-                model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
+                model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
             }
+            //model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
         }
     }
 }

@@ -54,10 +54,6 @@ void MainWindow::start()
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioAudioManager(&radioList->getRadioManager());
     trayIcon->setRadioList(radioList);
-
-    // version beta
-    //ui->tabWidget->removeTab(1);
-    //ui->tabRadioListWidget->removeTab(1);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

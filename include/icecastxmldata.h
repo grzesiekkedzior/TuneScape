@@ -3,10 +3,11 @@
 #include <QSharedPointer>
 #include <QUrl>
 #include "../ui_mainwindow.h"
-#include "streamrecorder.h"
+#include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"
 #include "radioinfo.h"
+#include "streamrecorder.h"
 
 struct IceCastTableRow
 {
@@ -110,6 +111,8 @@ private:
 
     void checkIsRadioOnPlaylist();
     void setIceCastInfo(int index);
+
+    QSharedPointer<CustomColorDelegate> customColor{nullptr};
 };
 
 #endif // ICECASTXMLDATA_H
