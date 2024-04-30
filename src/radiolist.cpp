@@ -151,6 +151,8 @@ void RadioList::setRawRadioImage()
 
 void RadioList::setDarkMode()
 {
+    // if not play !radioManager.getMediaPlayer()->isPlaying()
+    // if play
     isDarkMode = (isDarkMode) ? false : true;
     if (isDarkMode) {
         ui->tableView->setAlternatingRowColors(false);
@@ -160,6 +162,8 @@ void RadioList::setDarkMode()
         setIndexColor();
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
         if (!radioManager.getMediaPlayer()->isPlaying())
+            setRawDarkRadioImage();
+        if (radioInfo->getInfoData().favicon == "")
             setRawDarkRadioImage();
 
     } else {
@@ -171,6 +175,8 @@ void RadioList::setDarkMode()
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
 
         if (!radioManager.getMediaPlayer()->isPlaying())
+            setRawRadioImage();
+        if (radioInfo->getInfoData().favicon == "")
             setRawRadioImage();
     }
 
