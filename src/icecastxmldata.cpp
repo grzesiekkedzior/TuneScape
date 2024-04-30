@@ -222,6 +222,14 @@ void IceCastXmlData::setRadioInfo(RadioInfo *radioInfo)
     this->radioInfo = radioInfo;
 }
 
+void IceCastXmlData::playPauseIcon()
+{
+    if (getPlaying())
+        ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
+    else
+        ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+}
+
 void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
 {
     if (jsonListProcesor->isConnected) {
@@ -254,17 +262,15 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         }
 
-        ui->playPause->setIcon(QIcon(radioAudioManager->getMediaPlayer()->isPlaying()
-                                         ? ":/images/img/pause30.png"
-                                         : ":/images/img/play30.png"));
         radioList->getSongTitle(url);
         checkIsRadioOnPlaylist();
-        isPlaying = true;
+        setPlaying(true);
         radioList->setIsPlaying(false);
         if (streamRecorder->getIsRecording()) {
             streamRecorder->stopRecording();
             streamRecorder->setIsRecording(false);
         }
+        playPauseIcon();
     }
 }
 

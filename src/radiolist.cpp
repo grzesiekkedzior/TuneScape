@@ -803,17 +803,18 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         iceCastXmlData->clearTableViewColor();
         setIndexColor();
         markIconPlayingStation(index.row());
-        if (radioManager.getMediaPlayer()->isPlaying())
+
+        setIsPlaying(true);
+        if (getIsPlaying())
             ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
 
         isStopClicked = false;
         ui->infoData->clear();
-        if (radioManager.getMediaPlayer()->isPlaying()) {
+        if (isPlaying) {
             radioInfo->loadEndpoint(jsonListProcesor.getTableRows().at(currentStationIndex).station);
             radioInfo->processInfoJsonQuery();
             radioInfo->setDataOnTable();
         }
-        setIsPlaying(true);
         radioIndexNumber = index.row();
         setIndexColor();
         iceCastXmlData->setPlaying(false);
@@ -831,21 +832,32 @@ void RadioList::onPlayPauseButtonCliced()
         return;
     }
 
-    if (ui->tabRadioListWidget->currentIndex() == 2 && !iceCastXmlData->getPlaying()) {
+    if (ui->tabRadioListWidget->currentIndex() == 2 && !iceCastXmlData->getPlaying()
+        && iceCastXmlData->getCurrentPlayingStation() == -1) {
+        qDebug() << "1";
         QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-        iceCastXmlData->playStreamOnStart(newIndex);
         iceCastXmlData->setPlaying(true);
-    } else if (iceCastXmlData->getPlaying() && radioManager.getMediaPlayer()->isPlaying()) {
-        radioManager.stopStream();
-        iceCastXmlData->setPlaying(false);
+        iceCastXmlData->playStreamOnStart(newIndex);
     } else if (iceCastXmlData->getPlaying()) {
+        qDebug() << "2";
+        iceCastXmlData->setPlaying(false);
+        iceCastXmlData->playPauseIcon();
+        radioManager.stopStream();
+    } else if (!iceCastXmlData->getPlaying() && iceCastXmlData->getCurrentPlayingStation() != -1) {
+        qDebug() << "3";
         radioManager.playStream();
+        iceCastXmlData->setPlaying(true);
+        iceCastXmlData->playPauseIcon();
+
+        //radio browser station below
     } else {
         if (radioManager.getMediaPlayer()->isPlaying()) {
             radioManager.stopStream();
+            setIsPlaying(false);
         } else if (currentRadioPlayingAddress != ""
                    && radioManager.getMediaPlayer()->isAvailable()) {
             radioManager.playStream();
+            setIsPlaying(true);
 
         } else if (currentRadioPlayingAddress.isEmpty()
                    && !jsonListProcesor.getTableRows().isEmpty()) {
@@ -858,21 +870,22 @@ void RadioList::onPlayPauseButtonCliced()
             setRadioImage(newIndex);
             ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
             markIconPlayingStation(newIndex.row());
+            setIsPlaying(true);
         } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == "") {
             playStream(radioIndexNumber);
+            setIsPlaying(true);
         }
 
         if (currentPlayListPlaying == currentPlaylistIndex) {
             setIndexColor();
         }
+        ui->playPause->setIcon(
+            QIcon(getIsPlaying() ? ":/images/img/pause30.png" : ":/images/img/play30.png"));
     }
     if (isStopClicked) {
         setRadioImage(model->index(0, 0));
         isStopClicked = false;
     }
-    ui->playPause->setIcon(QIcon(radioManager.getMediaPlayer()->isPlaying()
-                                     ? ":/images/img/pause30.png"
-                                     : ":/images/img/play30.png"));
 }
 
 // Not use for now
@@ -949,6 +962,7 @@ void RadioList::onStopButtonClicked()
         radioInfo->clearInfo();
         iceCastXmlData->clearTableViewColor();
         iceCastXmlData->setPlaying(false);
+        iceCastXmlData->setCurrentPlayingStation(-1);
         setIsPlaying(false);
         if (streamRecorder->getIsRecording()) {
             streamRecorder->stopRecording();

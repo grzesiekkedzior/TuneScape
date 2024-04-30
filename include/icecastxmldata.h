@@ -84,6 +84,8 @@ public:
 
     void makeShareStreamRecorder(QSharedPointer<StreamRecorder> streamRecorder);
 
+void playPauseIcon();
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
     void updateProgressBar(int progress);
