@@ -159,7 +159,8 @@ void RadioList::setDarkMode()
         ui->icecastTable->setAlternatingRowColors(false);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
-        setIndexColor();
+        if (!isStopClicked)
+            setIndexColor();
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
         if (!radioManager.getMediaPlayer()->isPlaying())
             setRawDarkRadioImage();
@@ -171,7 +172,8 @@ void RadioList::setDarkMode()
         ui->icecastTable->setAlternatingRowColors(true);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
-        setIndexColor();
+        if (!isStopClicked)
+            setIndexColor();
         iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
 
         if (!radioManager.getMediaPlayer()->isPlaying())
@@ -232,6 +234,26 @@ void RadioList::onAllIconsLoaded()
             }
         }
     }
+}
+
+bool RadioList::getIsBrowseStationLoaded() const
+{
+    return isBrowseStationLoaded;
+}
+
+void RadioList::setIsBrowseStationLoaded(bool newIsBrowseStationLoaded)
+{
+    isBrowseStationLoaded = newIsBrowseStationLoaded;
+}
+
+bool RadioList::getIsPause() const
+{
+    return isPause;
+}
+
+void RadioList::setIsPause(bool newIsPause)
+{
+    isPause = newIsPause;
 }
 
 QSharedPointer<StreamRecorder> RadioList::getStreamRecorder() const
@@ -685,6 +707,10 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         if (currentPlayListPlaying == currentPlaylistIndex) {
             if (getIsPlaying())
                 setIndexColor();
+        } else {
+            // Clear the color-marked station when changing tree items.
+            if (customColor)
+                customColor->clearRowColor();
         }
     }
 }
@@ -811,6 +837,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         markIconPlayingStation(index.row());
 
         setIsPlaying(true);
+        setIsBrowseStationLoaded(true);
         if (getIsPlaying())
             ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
 
@@ -837,19 +864,23 @@ void RadioList::onPlayPauseButtonCliced()
     if (!isTreeClicked || !jsonListProcesor.isConnected) {
         return;
     }
-
+    if (getIsPause())
+        setIsPause(false);
+    else
+        setIsPause(true);
     if (ui->tabRadioListWidget->currentIndex() == 2 && !iceCastXmlData->getPlaying()
-        && iceCastXmlData->getCurrentPlayingStation() == -1) {
+        && iceCastXmlData->getCurrentPlayingStation() == -1 && !getIsBrowseStationLoaded()) {
         qDebug() << "1";
         QModelIndex newIndex = ui->tableView->model()->index(0, 0);
         iceCastXmlData->setPlaying(true);
         iceCastXmlData->playStreamOnStart(newIndex);
-    } else if (iceCastXmlData->getPlaying()) {
+    } else if (iceCastXmlData->getPlaying() && !getIsBrowseStationLoaded()) {
         qDebug() << "2";
         iceCastXmlData->setPlaying(false);
         iceCastXmlData->playPauseIcon();
         radioManager.stopStream();
-    } else if (!iceCastXmlData->getPlaying() && iceCastXmlData->getCurrentPlayingStation() != -1) {
+    } else if (!iceCastXmlData->getPlaying() && iceCastXmlData->getCurrentPlayingStation() != -1
+               && !getIsBrowseStationLoaded()) {
         qDebug() << "3";
         radioManager.playStream();
         iceCastXmlData->setPlaying(true);
@@ -887,6 +918,7 @@ void RadioList::onPlayPauseButtonCliced()
         }
         ui->playPause->setIcon(
             QIcon(getIsPlaying() ? ":/images/img/pause30.png" : ":/images/img/play30.png"));
+        setIsBrowseStationLoaded(true);
     }
     if (isStopClicked) {
         setRadioImage(model->index(0, 0));
@@ -920,17 +952,21 @@ void RadioList::onPrevButtonClicked()
 
 void RadioList::clearTableViewColor()
 {
-    for (int row = 0; row < model->rowCount(); ++row) {
-        for (int column = 0; column < model->columnCount(); ++column) {
-            QModelIndex index = model->index(row, column);
-            if (isDarkMode) {
-                model->setData(index, QColor(60, 60, 60), Qt::BackgroundRole);
-                model->setData(index, QColor(Qt::white), Qt::ForegroundRole);
-            } else {
-                model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
-            }
-            //model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
-        }
+    // for (int row = 0; row < model->rowCount(); ++row) {
+    //     for (int column = 0; column < model->columnCount(); ++column) {
+    //         QModelIndex index = model->index(row, column);
+    //         if (isDarkMode) {
+    //             model->setData(index, QColor(60, 60, 60), Qt::BackgroundRole);
+    //             model->setData(index, QColor(Qt::white), Qt::ForegroundRole);
+    //         } else {
+    //             model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
+    //         }
+    //         //model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
+    //     }
+    // }
+    if (customColor) {
+        customColor->clearRowColor();
+        ui->tableView->update();
     }
 }
 
@@ -970,6 +1006,7 @@ void RadioList::onStopButtonClicked()
         iceCastXmlData->setPlaying(false);
         iceCastXmlData->setCurrentPlayingStation(-1);
         setIsPlaying(false);
+        setIsBrowseStationLoaded(false);
         if (streamRecorder->getIsRecording()) {
             streamRecorder->stopRecording();
             streamRecorder->setIsRecording(false);
@@ -1155,6 +1192,6 @@ void RadioList::searchStations()
     }
 
     this->treeItem = "Search";
-    //ui->tabRadioListWidget->setCurrentIndex(0);
+    ui->tabRadioListWidget->setCurrentIndex(0);
     this->clearIconLabelColor();
 }

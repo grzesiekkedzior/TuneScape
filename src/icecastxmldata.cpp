@@ -118,8 +118,14 @@ void IceCastXmlData::loadFavoriteIceCastStations()
 
     if (ui->iceCastprogressBar->isVisible())
         ui->iceCastprogressBar->hide();
-    if (getIsFavoritePlaying() && !radioList->getIsPlaying())
+    if (getIsFavoritePlaying() && !radioList->getIsPlaying()
+        && indexPlayingStation.row() < favoriteStations.size() && this->getIsFavoritePlaying())
         setIndexColor(this->indexPlayingStation);
+    else {
+        if (customColor) {
+            customColor->clearRowColor();
+        }
+    }
     setIsStationsLoaded(true);
 }
 
@@ -136,6 +142,11 @@ void IceCastXmlData::loadDiscoveryStations()
     // clear color
     if (!getIsFavoritePlaying() && !radioList->getIsPlaying())
         setIndexColor(this->indexPlayingStation);
+    else {
+        if (customColor) {
+            customColor->clearRowColor();
+        }
+    }
     setIsStationsLoaded(true);
 }
 
@@ -403,28 +414,31 @@ void IceCastXmlData::setIsFavoritePlaying(bool newIsFavoritePlaying)
 
 void IceCastXmlData::clearTableViewColor()
 {
-    int rowCount = ui->icecastTable->rowCount();
-    int columnCount = ui->icecastTable->columnCount();
-    if (radioList->getIsDarkMode()) {
-        for (int row = 0; row < rowCount; ++row) {
-            for (int column = 0; column < columnCount; ++column) {
-                QTableWidgetItem *item = ui->icecastTable->item(row, column);
-                if (item) {
-                    item->setBackground(QColor(60, 60, 60));
-                    item->setForeground(QBrush(QColor(Qt::white)));
-                }
-            }
-        }
+    // int rowCount = ui->icecastTable->rowCount();
+    // int columnCount = ui->icecastTable->columnCount();
+    // if (radioList->getIsDarkMode()) {
+    //     for (int row = 0; row < rowCount; ++row) {
+    //         for (int column = 0; column < columnCount; ++column) {
+    //             QTableWidgetItem *item = ui->icecastTable->item(row, column);
+    //             if (item) {
+    //                 item->setBackground(QColor(60, 60, 60));
+    //                 item->setForeground(QBrush(QColor(Qt::white)));
+    //             }
+    //         }
+    //     }
 
-    } else {
-        for (int row = 0; row < rowCount; ++row) {
-            for (int column = 0; column < columnCount; ++column) {
-                QTableWidgetItem *item = ui->icecastTable->item(row, column);
-                item->setBackground(QColor(Qt::white));
-                //item->setForeground(QBrush(QColor(Qt::black)));
-            }
-        }
-    }
+    // } else {
+    //     for (int row = 0; row < rowCount; ++row) {
+    //         for (int column = 0; column < columnCount; ++column) {
+    //             QTableWidgetItem *item = ui->icecastTable->item(row, column);
+    //             item->setBackground(QColor(Qt::white));
+    //             //item->setForeground(QBrush(QColor(Qt::black)));
+    //         }
+    //     }
+    // }
+    if (customColor)
+        customColor->clearRowColor();
+    ui->icecastTable->update();
 }
 
 bool IceCastXmlData::getPlaying()

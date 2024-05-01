@@ -54,6 +54,12 @@ public:
 
     QSharedPointer<StreamRecorder> getStreamRecorder() const;
 
+    bool getIsPause() const;
+    void setIsPause(bool newIsPause);
+
+    bool getIsBrowseStationLoaded() const;
+    void setIsBrowseStationLoaded(bool newIsBrowseStationLoaded);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -103,11 +109,13 @@ private:
     int radioIndexCurrentPlaying = 0;
     int radioPlaylistCurrentPlaying = 0;
     int progressLoading = 1;
-    bool isStopClicked = false;
+    bool isStopClicked = true;
     bool isTreeClicked = false;
     bool isSearching = false;
     bool isIconFlowlayoutFull = false;
     bool isDarkMode = false;
+    bool isPause = false;
+    bool isBrowseStationLoaded = false;
 
     const QString STATION = "Station";
     const QString GENRE = "Genre";
