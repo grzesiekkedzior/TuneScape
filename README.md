@@ -1,6 +1,6 @@
 
 # TuneScape
-![main](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/ca3b005e-1b78-4cb5-adfe-00059cb70364)
+![main](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a6074926-5540-401d-a4e3-a93594de6edf)
 ![darklist](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/cb29751d-19f5-4079-8aa6-76d2c89bcb91)
 ![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)
 ![darktiles](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/16e0fa4d-c84e-4320-a251-07c4986d3479)
