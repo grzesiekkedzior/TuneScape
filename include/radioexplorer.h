@@ -4,7 +4,7 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QString>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 class RadioExplorer : public QObject
 {

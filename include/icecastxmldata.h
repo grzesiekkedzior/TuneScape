@@ -2,7 +2,7 @@
 #define ICECASTXMLDATA_H
 #include <QSharedPointer>
 #include <QUrl>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"

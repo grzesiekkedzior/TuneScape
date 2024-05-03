@@ -2,7 +2,7 @@
 #define TRAYICON_H
 #include "radioaudiomanager.h"
 #include "radiolist.h"
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include <QSystemTrayIcon>
 #include <QWidget>
 

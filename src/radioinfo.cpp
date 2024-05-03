@@ -10,39 +10,37 @@
 
 RadioInfo::RadioInfo() {}
 
-RadioInfo::RadioInfo(Ui::MainWindow *ui)
-    : ui(ui)
-{}
+RadioInfo::RadioInfo(Ui::MainWindow *ui) : ui(ui) {}
 
-void RadioInfo::setInfo()
-{
+void RadioInfo::setInfo() {
     // load endpoint
     // process query
     // set data
 }
 
-void RadioInfo::loadEndpoint(const QString station)
-{
-    // ENDPOIN + station here is an adres of station "advance search" check dockumentation
+void RadioInfo::loadEndpoint(const QString station) {
+    // ENDPOIN + station here is an adres of station "advance search" check
+    // dockumentation
     qDebug() << ENDPOINT + station;
     RadioStations radioStations(ENDPOINT + station);
     if (jsonListProcessor.checkInternetConnection()) {
         // important load first available server!!!
         if (reply)
             reply->deleteLater();
-        reply = jsonListProcessor.checkAvailability(radioStations.getAddresses());
+        reply =
+            jsonListProcessor.checkAvailability(radioStations.getAddresses());
     }
 }
 
-void RadioInfo::processInfoJsonQuery()
-{
+void RadioInfo::processInfoJsonQuery() {
     if (reply)
         doc = jsonListProcessor.createJasonDocument(reply);
 
     if (doc.isArray()) {
         QJsonArray stationsArray = doc.array();
         for (const QJsonValue &value : stationsArray) {
-            // I can do this in loop. This is more readible for long maintainance
+            // I can do this in loop. This is more readible for long
+            // maintainance
             QJsonObject stationObject = value.toObject();
             infoData.favicon = stationObject[FAVICON].toString();
             infoData.station = stationObject[STATION].toString().trimmed();
@@ -52,14 +50,15 @@ void RadioInfo::processInfoJsonQuery()
             infoData.votes = QString::number(stationObject[VOTES].toInt());
             infoData.codec = stationObject[CODEC].toString().trimmed();
             infoData.bitrate = QString::number(stationObject[BITRATE].toInt());
-            infoData.clickcount = QString::number(stationObject[CLICKCOUNT].toInt());
-            infoData.clicktrend = QString::number(stationObject[CLICKTREND].toInt());
+            infoData.clickcount =
+                QString::number(stationObject[CLICKCOUNT].toInt());
+            infoData.clicktrend =
+                QString::number(stationObject[CLICKTREND].toInt());
         }
     }
 }
 
-void RadioInfo::setDataOnTable()
-{
+void RadioInfo::setDataOnTable() {
     ui->tableWidget->setItem(0, 1, new QTableWidgetItem(infoData.station));
     ui->tableWidget->setItem(1, 1, new QTableWidgetItem(infoData.country));
     ui->tableWidget->setItem(2, 1, new QTableWidgetItem(infoData.state));
@@ -73,8 +72,7 @@ void RadioInfo::setDataOnTable()
     ui->radioIcon->setPixmap(pixmapFromInfoLabel);
 }
 
-void RadioInfo::clearInfo()
-{
+void RadioInfo::clearInfo() {
     infoData.favicon = "";
     infoData.station = "";
     infoData.country = "";
@@ -88,13 +86,9 @@ void RadioInfo::clearInfo()
     setDataOnTable();
 }
 
-Infodata RadioInfo::getInfoData() const
-{
-    return infoData;
-}
+Infodata RadioInfo::getInfoData() const { return infoData; }
 
-RadioInfo::~RadioInfo()
-{
+RadioInfo::~RadioInfo() {
     if (reply) {
         reply->deleteLater();
     }

@@ -2,18 +2,16 @@
 #include <QByteArray>
 #include <QDebug>
 
-StreamReader::StreamReader(QObject *parent)
-    : QObject(parent)
-{
+StreamReader::StreamReader(QObject *parent) : QObject(parent) {
     manager = new QNetworkAccessManager(this);
 
-    connect(manager, &QNetworkAccessManager::finished, this, &StreamReader::onFinished);
-    //connect(&replyCleanupTimer, &QTimer::timeout, this, &StreamReader::cleanupReplies);
-    //replyCleanupTimer.start(60000);
+    connect(manager, &QNetworkAccessManager::finished, this,
+            &StreamReader::onFinished);
+    // connect(&replyCleanupTimer, &QTimer::timeout, this,
+    // &StreamReader::cleanupReplies); replyCleanupTimer.start(60000);
 }
 
-void StreamReader::startStreaming(const QUrl &url)
-{
+void StreamReader::startStreaming(const QUrl &url) {
     if (reply != nullptr)
         reply->deleteLater();
     QNetworkRequest request(url);
@@ -23,24 +21,21 @@ void StreamReader::startStreaming(const QUrl &url)
     connect(reply, &QNetworkReply::readyRead, this, &StreamReader::onReadyRead);
 }
 
-void StreamReader::cleanupReplies()
-{
+void StreamReader::cleanupReplies() {
     qDebug() << "FreeConnection";
     if (reply) {
         reply->deleteLater();
     }
 }
 
-void StreamReader::onFinished(QNetworkReply *reply)
-{
+void StreamReader::onFinished(QNetworkReply *reply) {
     if (reply->error() != QNetworkReply::NoError) {
         qDebug() << "Error:" << reply->errorString();
         return;
     }
 }
 
-void StreamReader::onReadyRead()
-{
+void StreamReader::onReadyRead() {
     while (reply->bytesAvailable()) {
         QByteArray data = reply->readAll();
         emit dataReceived(data);

@@ -98,8 +98,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>180</width>
-          <height>481</height>
+          <width>127</width>
+          <height>300</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -558,8 +558,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>684</width>
-          <height>481</height>
+          <width>127</width>
+          <height>146</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -670,8 +670,8 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>656</width>
-                  <height>420</height>
+                  <width>113</width>
+                  <height>53</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">

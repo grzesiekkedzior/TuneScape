@@ -1,9 +1,8 @@
-#include <QApplication>
-#include "include/theme.h"
 #include "include/mainwindow.h"
+#include "include/theme.h"
+#include <QApplication>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     MainWindow w;
     Theme theme;

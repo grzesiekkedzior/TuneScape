@@ -9,14 +9,14 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    src/IceCastXmlData.cpp \
-    src/StreamRecorder.cpp \
-    src/Theme.cpp \
-    src/TrayIcon.cpp \
+    src/icecastxmldata.cpp \
+    src/streamrecorder.cpp \
+    src/theme.cpp \
+    src/trayicon.cpp \
     src/customcolordelegate.cpp \
     src/flowlayout.cpp \
     src/radioinfo.cpp \
-    src/streamReader.cpp \
+    src/streamreader.cpp \
     src/jsonlistprocessor.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
@@ -26,14 +26,14 @@ SOURCES += \
     src/radiostations.cpp
 
 HEADERS += \
-    include/IceCastXmlData.h \
-    include/StreamRecorder.h \
-    include/Theme.h \
-    include/TrayIcon.h \
+    include/icecastxmldata.h \
+    include/streamrecorder.h \
+    include/theme.h \
+    include/trayicon.h \
     include/customcolordelegate.h \
     include/flowlayout.h \
     include/radioinfo.h \
-    include/streamReader.h \
+    include/streamreader.h \
     include/jsonlistprocessor.h \
     include/mainwindow.h \
     include/radioaudiomanager.h \

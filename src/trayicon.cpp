@@ -3,31 +3,32 @@
 #include <QMenu>
 
 TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
-    : ui(ui)
-    , mainWindow(&mainWindow)
-{
-    systemTrayIcon = new QSystemTrayIcon(QIcon(":/images/img/radio30.png"), &mainWindow);
+    : ui(ui), mainWindow(&mainWindow) {
+    systemTrayIcon =
+        new QSystemTrayIcon(QIcon(":/images/img/radio30.png"), &mainWindow);
     trayMenu = new QMenu(this);
     setClearTimer();
 
-    playPauseAction = trayMenu->addAction(QIcon(":/images/img/play32.png"), "Play");
+    playPauseAction =
+        trayMenu->addAction(QIcon(":/images/img/play32.png"), "Play");
     exitAction = trayMenu->addAction(QIcon(":/images/img/exit64.png"), "Exit");
     systemTrayIcon->setContextMenu(trayMenu);
-    connect(ui->tryIcon, &QPushButton::clicked, this, &TrayIcon::trayIconButtonClicked);
-    connect(systemTrayIcon, &QSystemTrayIcon::activated, this, &TrayIcon::iconActivated);
+    connect(ui->tryIcon, &QPushButton::clicked, this,
+            &TrayIcon::trayIconButtonClicked);
+    connect(systemTrayIcon, &QSystemTrayIcon::activated, this,
+            &TrayIcon::iconActivated);
     connect(trayMenu, &QMenu::triggered, this, &TrayIcon::trayMenuClicked);
 }
 
-void TrayIcon::setClearTimer()
-{
+void TrayIcon::setClearTimer() {
     clearRecentTitlesTimer = new QTimer(this);
     clearRecentTitlesTimer->setInterval(240000);
-    connect(clearRecentTitlesTimer, &QTimer::timeout, this, &TrayIcon::clearRecentTitles);
+    connect(clearRecentTitlesTimer, &QTimer::timeout, this,
+            &TrayIcon::clearRecentTitles);
     clearRecentTitlesTimer->start();
 }
 
-void TrayIcon::trayIconButtonClicked()
-{
+void TrayIcon::trayIconButtonClicked() {
     if (!systemTrayIcon->isVisible())
         systemTrayIcon->show();
     mainWindow->hide();
@@ -40,28 +41,27 @@ void TrayIcon::trayIconButtonClicked()
     }
 }
 
-void TrayIcon::trayMenuClicked(QAction *action)
-{
+void TrayIcon::trayMenuClicked(QAction *action) {
     if (action == exitAction)
         QApplication::quit();
     if (action == playPauseAction) {
         if (radioAudioManager->getMediaPlayer()->isPlaying()) {
             trayMenu->actions().at(0)->setText("Pause");
-            trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/pause30.png"));
+            trayMenu->actions().at(0)->setIcon(
+                QIcon(":/images/img/pause30.png"));
         } else {
             trayMenu->actions().at(0)->setText("Play");
-            trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/play30.png"));
+            trayMenu->actions().at(0)->setIcon(
+                QIcon(":/images/img/play30.png"));
         }
     }
     radioList->onPlayPauseButtonCliced();
 }
 
-void TrayIcon::handleTitleFromRadioList(const QString &data)
-{
+void TrayIcon::handleTitleFromRadioList(const QString &data) {
     if (recentTitles.isEmpty() || !recentTitles.contains(data)) {
         if (!mainWindow->isVisible()) {
-            systemTrayIcon->showMessage("Currently playing ",
-                                        data,
+            systemTrayIcon->showMessage("Currently playing ", data,
                                         QIcon(":/images/img/playing32.png"),
                                         TRAY_TIME_MESSAGE);
         }
@@ -70,29 +70,21 @@ void TrayIcon::handleTitleFromRadioList(const QString &data)
     }
 }
 
-void TrayIcon::clearRecentTitles()
-{
-    recentTitles.clear();
-}
+void TrayIcon::clearRecentTitles() { recentTitles.clear(); }
 
-QSystemTrayIcon *TrayIcon::getSystemTrayIcon() const
-{
-    return systemTrayIcon;
-}
+QSystemTrayIcon *TrayIcon::getSystemTrayIcon() const { return systemTrayIcon; }
 
-void TrayIcon::setRadioList(RadioList *newRadioList)
-{
+void TrayIcon::setRadioList(RadioList *newRadioList) {
     radioList = newRadioList;
-    connect(radioList, &RadioList::sendTitleToTray, this, &TrayIcon::handleTitleFromRadioList);
+    connect(radioList, &RadioList::sendTitleToTray, this,
+            &TrayIcon::handleTitleFromRadioList);
 }
 
-void TrayIcon::setRadioAudioManager(RadioAudioManager *newRadioAudioManager)
-{
+void TrayIcon::setRadioAudioManager(RadioAudioManager *newRadioAudioManager) {
     radioAudioManager = newRadioAudioManager;
 }
 
-void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
-{
+void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason) {
     if (radioAudioManager->getMediaPlayer()->isPlaying()) {
         trayMenu->actions().at(0)->setText("Pause");
         trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/pause30.png"));
@@ -119,8 +111,7 @@ void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
     }
 }
 
-TrayIcon::~TrayIcon()
-{
+TrayIcon::~TrayIcon() {
     delete systemTrayIcon;
     delete trayMenu;
     delete playPauseAction;

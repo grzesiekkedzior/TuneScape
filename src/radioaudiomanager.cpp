@@ -1,7 +1,6 @@
 #include "include/radioaudiomanager.h"
 
-RadioAudioManager::RadioAudioManager()
-{
+RadioAudioManager::RadioAudioManager() {
     player = new QMediaPlayer;
     audioOutput = new QAudioOutput;
     player->setAudioOutput(audioOutput);
@@ -18,50 +17,37 @@ RadioAudioManager::RadioAudioManager()
 #endif
 }
 
-RadioAudioManager::~RadioAudioManager()
-{
+RadioAudioManager::~RadioAudioManager() {
     if (player)
         delete player;
     if (audioOutput)
         delete audioOutput;
 }
 
-void RadioAudioManager::loadStream(const QUrl &url)
-{
+void RadioAudioManager::loadStream(const QUrl &url) {
     streamReader.cleanupReplies();
-    //player->stop();
-    //player->deleteLater();
-    //audioOutput->deleteLater();
+    // player->stop();
+    // player->deleteLater();
+    // audioOutput->deleteLater();
 
-    //player = new QMediaPlayer;
-    //audioOutput = new QAudioOutput;
-    //player->setAudioOutput(audioOutput);
+    // player = new QMediaPlayer;
+    // audioOutput = new QAudioOutput;
+    // player->setAudioOutput(audioOutput);
 
     player->setSource(url);
 }
 
-void RadioAudioManager::playStream()
-{
-    player->play();
-}
+void RadioAudioManager::playStream() { player->play(); }
 
-void RadioAudioManager::stopStream()
-{
-    player->stop();
-}
+void RadioAudioManager::stopStream() { player->stop(); }
 
-QMediaPlayer *RadioAudioManager::getMediaPlayer() const
-{
-    return this->player;
-}
+QMediaPlayer *RadioAudioManager::getMediaPlayer() const { return this->player; }
 
-QAudioOutput *RadioAudioManager::getAudioAutput() const
-{
+QAudioOutput *RadioAudioManager::getAudioAutput() const {
     return this->audioOutput;
 }
 
-void RadioAudioManager::setVolume(int value)
-{
+void RadioAudioManager::setVolume(int value) {
     float volume = (value * 0.01);
     this->audioOutput->setVolume(volume);
 }

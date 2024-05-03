@@ -2,7 +2,7 @@
 #define RADIOLIST_H
 
 #include <QMessageBox>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "icecastxmldata.h"
 #include "include/customcolordelegate.h"
 #include "include/flowlayout.h"

@@ -1,4 +1,5 @@
 #include "include/jsonlistprocessor.h"
+#include "include/radiolist.h"
 #include <QHostInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -7,24 +8,20 @@
 #include <QProgressBar>
 #include <QTcpSocket>
 #include <QTimer>
-#include "include/radiolist.h"
 
-JsonListProcessor::JsonListProcessor()
-{
+JsonListProcessor::JsonListProcessor() {
     connectionTimer = new QTimer(this);
     connectionTimer->setInterval(12000);
-    connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkInternetConnection);
+    connect(connectionTimer, &QTimer::timeout, this,
+            &JsonListProcessor::checkInternetConnection);
 
     internetConnectionChecker = new QTimer(this);
     internetConnectionChecker->setInterval(5000);
-    connect(internetConnectionChecker,
-            &QTimer::timeout,
-            this,
+    connect(internetConnectionChecker, &QTimer::timeout, this,
             &JsonListProcessor::retryInternetConnection);
 }
 
-void JsonListProcessor::loadEndpoint(QString endpoint)
-{
+void JsonListProcessor::loadEndpoint(QString endpoint) {
     this->endpoint = endpoint;
 
     RadioStations radioStations(endpoint);
@@ -40,34 +37,28 @@ void JsonListProcessor::loadEndpoint(QString endpoint)
     }
 }
 
-void JsonListProcessor::connected()
-{
+void JsonListProcessor::connected() {
     ui->statusbar->showMessage("Connected");
     ui->statusbar->setStyleSheet("color: green");
 }
 
-QVector<QString> &JsonListProcessor::getStreamAddresses()
-{
+QVector<QString> &JsonListProcessor::getStreamAddresses() {
     return this->streamAddresses;
 }
 
-QString JsonListProcessor::getStreamAddresses(int index) const
-{
+QString JsonListProcessor::getStreamAddresses(int index) const {
     return this->streamAddresses[index];
 }
 
-QString JsonListProcessor::getIconAddresses(int index) const
-{
+QString JsonListProcessor::getIconAddresses(int index) const {
     return this->iconAddresses[index];
 }
 
-QVector<QString> &JsonListProcessor::getIconAddresses()
-{
+QVector<QString> &JsonListProcessor::getIconAddresses() {
     return this->iconAddresses;
 }
 
-void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
-{
+void JsonListProcessor::setConnection(QNetworkReply *connectionReply) {
     if (connectionReply == nullptr) {
         lostConnection();
     } else {
@@ -75,12 +66,12 @@ void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
     }
 }
 
-bool JsonListProcessor::checkInternetConnection()
-{
+bool JsonListProcessor::checkInternetConnection() {
     isConnected = false;
     QTimer timer;
 
-    // Connect to the DNS server and check if the name "google.com" resolves to an IP address.
+    // Connect to the DNS server and check if the name "google.com" resolves to
+    // an IP address.
     QHostInfo hostInfo = QHostInfo::fromName("google.com");
     if (!hostInfo.error()) {
         isConnected = true;
@@ -93,8 +84,7 @@ bool JsonListProcessor::checkInternetConnection()
     return isConnected;
 }
 
-void JsonListProcessor::lostConnection()
-{
+void JsonListProcessor::lostConnection() {
     ui->statusbar->showMessage("Connection lost");
     ui->statusbar->setStyleSheet("color: red");
     messagebox.setText("Connection is lost!!!");
@@ -107,8 +97,7 @@ void JsonListProcessor::lostConnection()
     }
 }
 
-void JsonListProcessor::retryInternetConnection()
-{
+void JsonListProcessor::retryInternetConnection() {
     if (!checkInternetConnection()) {
         lostConnection();
     } else {
@@ -116,25 +105,20 @@ void JsonListProcessor::retryInternetConnection()
         ui->statusbar->setStyleSheet("color: green");
         internetConnectionChecker->stop();
         connectionTimer->start();
-        //loadEndpoint(endpoint);
-        //radioList->setLoadedStationsCount(0);
-        //processJsonQuery();
+        // loadEndpoint(endpoint);
+        // radioList->setLoadedStationsCount(0);
+        // processJsonQuery();
         radioList->onInternetConnectionRestored();
     }
 }
 
-void JsonListProcessor::setUi(Ui::MainWindow *ui)
-{
-    this->ui = ui;
-}
+void JsonListProcessor::setUi(Ui::MainWindow *ui) { this->ui = ui; }
 
-void JsonListProcessor::setRadioList(RadioList *radioList)
-{
+void JsonListProcessor::setRadioList(RadioList *radioList) {
     this->radioList = radioList;
 }
 
-JsonListProcessor::~JsonListProcessor()
-{
+JsonListProcessor::~JsonListProcessor() {
     if (reply) {
         reply->deleteLater();
     }
@@ -143,8 +127,7 @@ JsonListProcessor::~JsonListProcessor()
     //    }
 }
 
-void JsonListProcessor::processJsonQuery()
-{
+void JsonListProcessor::processJsonQuery() {
     tableRows.clear();
     streamAddresses.clear();
     iconAddresses.clear();
@@ -161,7 +144,8 @@ void JsonListProcessor::processJsonQuery()
             QString country = stationObject[COUNTRY].toString();
             QString stationUrl = stationObject[URL].toString();
 
-            stationName = stationName.trimmed().replace(QRegularExpression("^[\\s?_.-]+"), "");
+            stationName = stationName.trimmed().replace(
+                QRegularExpression("^[\\s?_.-]+"), "");
             genre = genre.left(genre.indexOf(',')).trimmed();
             country = country.trimmed();
             stationUrl = stationUrl.trimmed();
@@ -182,22 +166,21 @@ void JsonListProcessor::processJsonQuery()
     }
 }
 
-QVector<TableRow> &JsonListProcessor::getTableRows()
-{
-    return tableRows;
-}
+QVector<TableRow> &JsonListProcessor::getTableRows() { return tableRows; }
 
-QNetworkReply *JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
-{
+QNetworkReply *
+JsonListProcessor::checkAvailability(const QStringList &radioAddresses) {
     QEventLoop loop;
     int status;
 
     for (const QString &address : radioAddresses) {
         QNetworkRequest request((QUrl(address)));
         reply = manager.get(request);
-        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        QObject::connect(reply, &QNetworkReply::finished, &loop,
+                         &QEventLoop::quit);
         loop.exec();
-        status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        status =
+            reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         qDebug() << "status " << status;
         if (reply->error() == QNetworkReply::NoError)
             return reply;
@@ -206,24 +189,20 @@ QNetworkReply *JsonListProcessor::checkAvailability(const QStringList &radioAddr
     return nullptr;
 }
 
-QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply)
-{
+QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply) {
     QByteArray data = reply->readAll();
     doc = QJsonDocument::fromJson(data);
     return doc;
 }
 
-void JsonListProcessor::setTableRows(const QVector<TableRow> &rows)
-{
+void JsonListProcessor::setTableRows(const QVector<TableRow> &rows) {
     tableRows = rows;
 }
 
-void JsonListProcessor::setStreamAddresses(const QVector<QString> &addresses)
-{
+void JsonListProcessor::setStreamAddresses(const QVector<QString> &addresses) {
     streamAddresses = addresses;
 }
 
-void JsonListProcessor::setIconAddresses(const QVector<QString> &icons)
-{
+void JsonListProcessor::setIconAddresses(const QVector<QString> &icons) {
     iconAddresses = icons;
 }

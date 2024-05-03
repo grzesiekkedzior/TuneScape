@@ -5,27 +5,22 @@
 
 // QTC_TEMP
 StreamRecorder::StreamRecorder(QObject *parent)
-    : QObject(parent)
-    , manager(new QNetworkAccessManager(this))
-{
-    downloadDir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    : QObject(parent), manager(new QNetworkAccessManager(this)) {
+    downloadDir =
+        QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
 }
 
-void StreamRecorder::recordStream(const QByteArray &data)
-{
-    file.write(data);
-}
+void StreamRecorder::recordStream(const QByteArray &data) { file.write(data); }
 
-void StreamRecorder::closeFile()
-{
+void StreamRecorder::closeFile() {
     if (file.isOpen()) {
         file.close();
         qDebug() << "File closed";
     }
 }
 
-void StreamRecorder::setFileName(const QString &title, const QString extention)
-{
+void StreamRecorder::setFileName(const QString &title,
+                                 const QString extention) {
     QDateTime currentDateTime = QDateTime::currentDateTime();
 
     // Konwertuj datę i czas na string w określonym formacie
@@ -36,8 +31,7 @@ void StreamRecorder::setFileName(const QString &title, const QString extention)
     file.setFileName(filePath);
 }
 
-void StreamRecorder::loadCurrentAddress(QString address)
-{
+void StreamRecorder::loadCurrentAddress(QString address) {
     url.setUrl(address);
     if (!file.isOpen()) {
         if (file.open(QIODevice::WriteOnly)) {
@@ -49,73 +43,61 @@ void StreamRecorder::loadCurrentAddress(QString address)
     }
 }
 
-void StreamRecorder::clearReply()
-{
+void StreamRecorder::clearReply() {
     if (reply != nullptr)
         reply->deleteLater();
 }
 
-void StreamRecorder::clearRecordLabel()
-{
+void StreamRecorder::clearRecordLabel() {
     QTimer::singleShot(500, this, &StreamRecorder::showStopOnLabel);
     QTimer::singleShot(2000, this, &StreamRecorder::clearLabelText);
 }
 
-void StreamRecorder::clearLabelText()
-{
-    ui->recordLabel->clear();
-}
+void StreamRecorder::clearLabelText() { ui->recordLabel->clear(); }
 
-void StreamRecorder::showStopOnLabel()
-{
+void StreamRecorder::showStopOnLabel() {
     ui->recordLabel->setText("STOP RECORDING");
 }
 
-void StreamRecorder::startRecording()
-{
+void StreamRecorder::startRecording() {
     // check url!!!
     QNetworkRequest request(url);
     reply = manager->get(request);
-    connect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
-    connect(reply, &QNetworkReply::downloadProgress, this, &StreamRecorder::downloadProgress);
+    connect(reply, &QNetworkReply::readyRead, this,
+            &StreamRecorder::recordFile);
+    connect(reply, &QNetworkReply::downloadProgress, this,
+            &StreamRecorder::downloadProgress);
 }
 
-void StreamRecorder::stopRecording()
-{
+void StreamRecorder::stopRecording() {
     closeFile();
     clearReply();
     clearRecordLabel();
 
-    //This is not ... but in some cases help
+    // This is not ... but in some cases help
     if (reply != nullptr) {
-        disconnect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
+        disconnect(reply, &QNetworkReply::readyRead, this,
+                   &StreamRecorder::recordFile);
     }
 }
 
-bool StreamRecorder::getIsRecording() const
-{
-    return isRecording;
-}
+bool StreamRecorder::getIsRecording() const { return isRecording; }
 
-void StreamRecorder::setIsRecording(bool newIsRecording)
-{
+void StreamRecorder::setIsRecording(bool newIsRecording) {
     isRecording = newIsRecording;
 }
 
-void StreamRecorder::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
-{
-    double megabytesReceived = static_cast<double>(bytesReceived) / (1024 * 1024);
-    QString text = QString("%1 MB").arg(QString::number(megabytesReceived, 'f', 2));
+void StreamRecorder::downloadProgress(qint64 bytesReceived, qint64 bytesTotal) {
+    double megabytesReceived =
+        static_cast<double>(bytesReceived) / (1024 * 1024);
+    QString text =
+        QString("%1 MB").arg(QString::number(megabytesReceived, 'f', 2));
     ui->recordLabel->setText(text);
 }
 
-void StreamRecorder::setUI(Ui::MainWindow *ui)
-{
-    this->ui = ui;
-}
+void StreamRecorder::setUI(Ui::MainWindow *ui) { this->ui = ui; }
 
-void StreamRecorder::recordFile()
-{
+void StreamRecorder::recordFile() {
     while (reply->bytesAvailable()) {
         QByteArray data = reply->readAll();
         file.write(data);

@@ -1,5 +1,5 @@
 #include "include/mainwindow.h"
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 
 #include <QDebug>
 #include <QFile>
@@ -8,9 +8,7 @@
 #include <QSystemTrayIcon>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-{
+    : QMainWindow(parent), ui(new Ui::MainWindow) {
     infoDialogApp();
 
     //******************************************************************
@@ -22,8 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->infoApp, &QPushButton::clicked, this, &MainWindow::info);
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     delete ui;
     delete radioExplorer;
     delete radioList;
@@ -32,8 +29,7 @@ MainWindow::~MainWindow()
     delete trayIcon;
 }
 
-void MainWindow::set_icon_btn()
-{
+void MainWindow::set_icon_btn() {
     ui->stop->setIcon(QIcon(":/images/img/stop30.png"));
     ui->previous->setIcon(QIcon(":/images/img/prev30.png"));
     ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
@@ -43,12 +39,11 @@ void MainWindow::set_icon_btn()
     ui->record->setIcon(QIcon(":/images/img/red-save-32.png"));
 }
 
-void MainWindow::start()
-{
+void MainWindow::start() {
     radioExplorer = new RadioExplorer(ui);
     radioList = new RadioList(ui);
     radioInfo = new RadioInfo(ui);
-    //iceCastXmlData = new IceCastXmlData(ui);
+    // iceCastXmlData = new IceCastXmlData(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
     trayIcon = new TrayIcon(ui, *this);
@@ -56,8 +51,7 @@ void MainWindow::start()
     trayIcon->setRadioList(radioList);
 }
 
-void MainWindow::resizeEvent(QResizeEvent *event)
-{
+void MainWindow::resizeEvent(QResizeEvent *event) {
     QMainWindow::resizeEvent(event);
 
     if (height() < 140 && ui->splitter->isVisible()) {
@@ -71,8 +65,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     qDebug() << ui->centralwidget->geometry().height();
 }
 
-void MainWindow::info()
-{
+void MainWindow::info() {
     QFile file(":/src/files/license.txt");
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
@@ -84,13 +77,9 @@ void MainWindow::info()
     licenseDialog->show();
 }
 
-Ui::MainWindow *MainWindow::getUi() const
-{
-    return ui;
-}
+Ui::MainWindow *MainWindow::getUi() const { return ui; }
 
-void MainWindow::infoDialogApp()
-{
+void MainWindow::infoDialogApp() {
     licenseDialog = new QDialog(this);
     licenseDialog->setWindowTitle("About");
 
@@ -109,8 +98,11 @@ void MainWindow::infoDialogApp()
         "This is a free and Open Source online radio player based on "
         "<a href=\"https://www.radio-browser.info\">radio-browser service </a> "
         "and <a href=\"https://www.icecast.org/\">Ice-Cast service.</a>"
-        "This is the beta version. If you want help to develop this app, look at "
-        "<a href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</u></a>");
+        "This is the beta version. If you want help to develop this app, look "
+        "at "
+        "<a "
+        "href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</"
+        "u></a>");
     aboutTuneScape->setOpenExternalLinks(true);
     aboutTuneScape->setWordWrap(true);
 
