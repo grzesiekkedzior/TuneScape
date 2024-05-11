@@ -1,6 +1,5 @@
 #include <QCoreApplication>
 #include <QtTest>
-
 // add necessary includes here
 
 class TuneScapeTests : public QObject

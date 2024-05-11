@@ -1,7 +1,6 @@
 #ifndef THEME_H
 #define THEME_H
 
-#include <QApplication>
 #include <QFile>
 #include <QObject>
 #include "../ui_mainwindow.h"

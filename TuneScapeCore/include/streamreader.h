@@ -1,7 +1,6 @@
 #ifndef STREAMREADER_H
 #define STREAMREADER_H
 
-#include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
 #include <QTimer>
