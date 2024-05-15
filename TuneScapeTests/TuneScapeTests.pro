@@ -5,6 +5,7 @@ QT += multimedia
 QT += concurrent
 QT += gui
 CONFIG += qt warn_on depend_includepath testcase
+CONFIG += no_testcase_installs
 include(../common.pri)
 TEMPLATE = app
 

@@ -110,9 +110,7 @@ int FlowLayout::doLayout(const QRect &rect, bool testOnly) const
     int x = effectiveRect.x();
     int y = effectiveRect.y();
     int lineHeight = 0;
-    //! [9]
 
-    //! [10]
     for (QLayoutItem *item : std::as_const(itemList)) {
         const QWidget *wid = item->widget();
         int spaceX = horizontalSpacing();
@@ -125,8 +123,7 @@ int FlowLayout::doLayout(const QRect &rect, bool testOnly) const
             spaceY = wid->style()->layoutSpacing(QSizePolicy::PushButton,
                                                  QSizePolicy::PushButton,
                                                  Qt::Vertical);
-        //! [10]
-        //! [11]
+
         int nextX = x + item->sizeHint().width() + spaceX;
         if (nextX - spaceX > effectiveRect.right() && lineHeight > 0) {
             x = effectiveRect.x();
