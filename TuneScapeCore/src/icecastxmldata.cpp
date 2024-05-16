@@ -101,6 +101,7 @@ void IceCastXmlData::loadXmlData()
     }
     iceCastStationTableRows = discoveryStations;
     reply->deleteLater();
+    setIsDownloadFinish(true);
 }
 
 void IceCastXmlData::addToFavoriteStations()
@@ -385,6 +386,16 @@ void IceCastXmlData::showErrorMessageBox(const QString &errorMessage)
 void IceCastXmlData::tableViewActivated(const QModelIndex &index)
 {
     this->onDoubleListClicked(index);
+}
+
+bool IceCastXmlData::getIsDownloadFinish() const
+{
+    return isDownloadFinish;
+}
+
+void IceCastXmlData::setIsDownloadFinish(bool newIsDownloadFinish)
+{
+    isDownloadFinish = newIsDownloadFinish;
 }
 
 QModelIndex IceCastXmlData::getIndexPlayingStation() const

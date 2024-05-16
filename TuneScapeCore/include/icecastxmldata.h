@@ -2,12 +2,12 @@
 #define ICECASTXMLDATA_H
 #include <QSharedPointer>
 #include <QUrl>
-#include "../ui_mainwindow.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"
 #include "radioinfo.h"
 #include "streamrecorder.h"
+#include "ui_mainwindow.h"
 
 struct IceCastTableRow
 {
@@ -83,8 +83,9 @@ public:
     void setIndexPlayingStation(const QModelIndex &newIndexPlayingStation);
 
     void makeShareStreamRecorder(QSharedPointer<StreamRecorder> streamRecorder);
-
-void playPauseIcon();
+    void playPauseIcon();
+    bool getIsDownloadFinish() const;
+    void setIsDownloadFinish(bool newIsDownloadFinish);
 
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
@@ -100,6 +101,7 @@ private:
     RadioList *radioList = nullptr;
     RadioInfo *radioInfo = nullptr;
     QSharedPointer<StreamRecorder> streamRecorder;
+    bool isDownloadFinish = false;
     bool isPlaying = false;
     bool isStationsLoaded = false;
     bool isFavoriteOnTreeCliced = false;

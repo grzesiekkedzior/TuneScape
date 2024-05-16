@@ -869,7 +869,8 @@ void RadioList::onPlayPauseButtonCliced()
     else
         setIsPause(true);
     if (ui->tabRadioListWidget->currentIndex() == 2 && !iceCastXmlData->getPlaying()
-        && iceCastXmlData->getCurrentPlayingStation() == -1 && !getIsBrowseStationLoaded()) {
+        && iceCastXmlData->getCurrentPlayingStation() == -1 && !getIsBrowseStationLoaded()
+        && iceCastXmlData->getIsDownloadFinish()) {
         qDebug() << "1";
         QModelIndex newIndex = ui->tableView->model()->index(0, 0);
         iceCastXmlData->setPlaying(true);
