@@ -174,7 +174,7 @@ void JsonListProcessor::processJsonQuery()
 
             tableRows.append(row);
 
-            QString streamUrl = stationObject[URL_STREAM].toString();
+            QString streamUrl = stationObject[URL_RESOLVED].toString();
             QString iconUrl = stationObject[FAVICON].toString();
             this->streamAddresses.push_back(streamUrl);
             this->iconAddresses.push_back(iconUrl);
