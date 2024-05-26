@@ -20,6 +20,9 @@ public:
 
     void setClearTimer();
 
+    bool getIsNotificationEnable() const;
+    void setIsNotificationEnable(bool newIsNotificationEnable);
+
 private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
     void trayIconButtonClicked();
@@ -36,6 +39,8 @@ private:
     RadioList *radioList = nullptr;
     QAction *playPauseAction = nullptr;
     QAction *exitAction = nullptr;
+    QAction *turnOnOffNotification = nullptr;
+    bool isNotificationEnabled = true;
 
     QSet<QString> recentTitles;
     QTimer *clearRecentTitlesTimer = nullptr;

@@ -12,6 +12,8 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
 
     playPauseAction = trayMenu->addAction(QIcon(":/images/img/play32.png"), "Play");
     exitAction = trayMenu->addAction(QIcon(":/images/img/exit64.png"), "Exit");
+    turnOnOffNotification = trayMenu->addAction(QIcon(":/images/img/notification-64.png"), "ON");
+
     systemTrayIcon->setContextMenu(trayMenu);
     connect(ui->tryIcon, &QPushButton::clicked, this, &TrayIcon::trayIconButtonClicked);
     connect(systemTrayIcon, &QSystemTrayIcon::activated, this, &TrayIcon::iconActivated);
@@ -52,14 +54,34 @@ void TrayIcon::trayMenuClicked(QAction *action)
             trayMenu->actions().at(0)->setText("Play");
             trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/play30.png"));
         }
+        radioList->onPlayPauseButtonCliced();
     }
-    radioList->onPlayPauseButtonCliced();
+
+    if (action == turnOnOffNotification) {
+        qDebug() << "Hello Notification";
+        if (isNotificationEnabled) {
+            setIsNotificationEnable(false);
+            disconnect(radioList,
+                       &RadioList::sendTitleToTray,
+                       this,
+                       &TrayIcon::handleTitleFromRadioList);
+            trayMenu->actions().at(2)->setText("Off");
+        } else {
+            connect(radioList,
+                    &RadioList::sendTitleToTray,
+                    this,
+                    &TrayIcon::handleTitleFromRadioList);
+            setIsNotificationEnable(true);
+            trayMenu->actions().at(2)->setText("On");
+        }
+    }
 }
 
 void TrayIcon::handleTitleFromRadioList(const QString &data)
 {
     if (recentTitles.isEmpty() || !recentTitles.contains(data)) {
         if (!mainWindow->isVisible()) {
+            qDebug() << "Try message";
             systemTrayIcon->showMessage("Currently playing ",
                                         data,
                                         QIcon(":/images/img/playing32.png"),
@@ -73,6 +95,16 @@ void TrayIcon::handleTitleFromRadioList(const QString &data)
 void TrayIcon::clearRecentTitles()
 {
     recentTitles.clear();
+}
+
+bool TrayIcon::getIsNotificationEnable() const
+{
+    return isNotificationEnabled;
+}
+
+void TrayIcon::setIsNotificationEnable(bool newIsNotificationEnable)
+{
+    isNotificationEnabled = newIsNotificationEnable;
 }
 
 QSystemTrayIcon *TrayIcon::getSystemTrayIcon() const

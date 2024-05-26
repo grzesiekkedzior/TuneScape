@@ -50,6 +50,7 @@
         <file>img/exit64.png</file>
         <file>img/playing32.png</file>
         <file>img/playing48.png</file>
+        <file>img/notification-64.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>
