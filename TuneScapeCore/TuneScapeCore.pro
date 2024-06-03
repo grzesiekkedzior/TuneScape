@@ -9,6 +9,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    src/AppConfig.cpp \
     src/IceCastXmlData.cpp \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
@@ -26,6 +27,7 @@ SOURCES += \
     src/radiostations.cpp
 
 HEADERS += \
+    include/AppConfig.h \
     include/IceCastXmlData.h \
     include/StreamRecorder.h \
     include/Theme.h \

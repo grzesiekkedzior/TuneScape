@@ -6,12 +6,15 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     : ui(ui)
     , mainWindow(&mainWindow)
 {
+    appConfig = new AppConfig("application.properties");
     systemTrayIcon = new QSystemTrayIcon(QIcon(":/images/img/radio30.png"), &mainWindow);
     trayMenu = new QMenu(this);
     setClearTimer();
 
     playPauseAction = trayMenu->addAction(QIcon(":/images/img/play32.png"), "Play");
     exitAction = trayMenu->addAction(QIcon(":/images/img/exit64.png"), "Exit");
+
+    // load settings from application.properties file
     turnOnOffNotification = trayMenu->addAction(QIcon(":/images/img/notification-64.png"), "ON");
 
     systemTrayIcon->setContextMenu(trayMenu);

@@ -1,10 +1,11 @@
 #ifndef TRAYICON_H
 #define TRAYICON_H
-#include "radioaudiomanager.h"
-#include "radiolist.h"
-#include "../ui_mainwindow.h"
 #include <QSystemTrayIcon>
 #include <QWidget>
+#include "../ui_mainwindow.h"
+#include "AppConfig.h"
+#include "radioaudiomanager.h"
+#include "radiolist.h"
 
 class TrayIcon : public QWidget {
     Q_OBJECT
@@ -40,6 +41,7 @@ private:
     QAction *playPauseAction = nullptr;
     QAction *exitAction = nullptr;
     QAction *turnOnOffNotification = nullptr;
+    AppConfig *appConfig = nullptr;
     bool isNotificationEnabled = true;
 
     QSet<QString> recentTitles;

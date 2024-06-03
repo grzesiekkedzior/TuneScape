@@ -10,3 +10,6 @@ include(../common.pri)
 TEMPLATE = app
 
 SOURCES +=  tst_tunescapetests.cpp
+
+DISTFILES += \
+    application.properties

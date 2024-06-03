@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QtTest>
+#include "include/AppConfig.h"
 #include "include/radiolist.h"
 // add necessary includes here
 
@@ -18,6 +19,9 @@ private slots:
     void testJsonListProcesorConnection();
     void testJsonListProcesorStationLoaded();
     void testRadioStationsGenerateFullAddress();
+    void testAppConfigCheckFileIsExists();
+    void testAppConfigCheckBoolState();
+    void testAppConfigChangeBoolState();
 };
 
 TuneScapeTests::TuneScapeTests() {}
@@ -55,6 +59,30 @@ void TuneScapeTests::testRadioStationsGenerateFullAddress()
     const QString FULL_ADDRESS = SERVER + JSON_ENDPOINT_TOP;
     RadioStations radioStations(JSON_ENDPOINT_TOP);
     QCOMPARE(radioStations.getAddresses().at(0), FULL_ADDRESS);
+}
+
+void TuneScapeTests::testAppConfigCheckFileIsExists()
+{
+    AppConfig appConfig{"C:\\QtProjects\\TuneScape\\TuneScapeTests\\application.properties"};
+    bool status = appConfig.checkFile();
+    QCOMPARE(status, true);
+}
+
+void TuneScapeTests::testAppConfigCheckBoolState()
+{
+    AppConfig appConfig{"C:\\QtProjects\\TuneScape\\TuneScapeTests\\application.properties"};
+    // file is false for now
+    appConfig.changeBoolState(false);
+    bool state = appConfig.checkBoolState();
+    QCOMPARE(state, false);
+}
+
+void TuneScapeTests::testAppConfigChangeBoolState()
+{
+    AppConfig appConfig{"C:\\QtProjects\\TuneScape\\TuneScapeTests\\application.properties"};
+    // file is false for now
+    bool state = appConfig.changeBoolState(false);
+    QCOMPARE(state, true);
 }
 
 QTEST_MAIN(TuneScapeTests)
