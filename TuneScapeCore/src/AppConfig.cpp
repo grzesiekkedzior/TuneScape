@@ -1,6 +1,7 @@
 #include "include/AppConfig.h"
+#include <QDebug>
 #include <QFile>
-#include "qdebug.h"
+#include <QTextStream>
 
 AppConfig::AppConfig(QString path)
 {
@@ -13,7 +14,14 @@ AppConfig::AppConfig(QString path)
         } else {
             qDebug() << "Can't create file: " << file->errorString();
         }
+    } else {
+        qDebug() << "File already exists, not modifying: " << path;
     }
+}
+
+AppConfig::~AppConfig()
+{
+    delete file;
 }
 
 bool AppConfig::checkFile()
@@ -26,18 +34,19 @@ bool AppConfig::checkBoolState()
     if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
 
+    bool result = false;
     while (!file->atEnd()) {
         QByteArray line = file->readLine().trimmed();
         if (line.contains("notifications")) {
             QList<QByteArray> parts = line.split('=');
             if (parts.size() == 2 && parts[1].trimmed() == "true") {
-                file->close();
-                return true;
+                result = true;
+                break;
             }
         }
     }
     file->close();
-    return false;
+    return result;
 }
 
 bool AppConfig::changeBoolState(bool state)
@@ -46,13 +55,11 @@ bool AppConfig::changeBoolState(bool state)
         return false;
 
     QVector<QByteArray> lines;
-
     if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
 
     while (!file->atEnd()) {
-        QByteArray line = file->readLine();
-        lines.append(line);
+        lines.append(file->readLine());
     }
     file->close();
 
@@ -78,7 +85,6 @@ bool AppConfig::changeBoolState(bool state)
     for (const QByteArray &line : lines) {
         file->write(line);
     }
-
     file->close();
     return true;
 }

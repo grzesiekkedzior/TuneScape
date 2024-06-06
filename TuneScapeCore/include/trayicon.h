@@ -7,7 +7,14 @@
 #include "radioaudiomanager.h"
 #include "radiolist.h"
 
-class TrayIcon : public QWidget {
+struct Notifications
+{
+    const QString NO = "OFF";
+    const QString YES = "ON";
+};
+
+class TrayIcon : public QWidget
+{
     Q_OBJECT
 public:
     TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow);
@@ -49,6 +56,7 @@ private:
     const int MAX_RECENT_TITLES = 2;
     const int DELAY_BETWEEN_NOTIFICATIONS = 5 * 60 * 1000;
     const int TRAY_TIME_MESSAGE = 5000;
+    void setNotifications(bool isNotificationEnabled);
 };
 
 #endif // TRAYICON_H

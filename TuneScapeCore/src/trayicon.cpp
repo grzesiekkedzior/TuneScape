@@ -2,6 +2,8 @@
 #include <QMediaPlayer>
 #include <QMenu>
 
+Notifications NOTIFICATIONS;
+
 TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     : ui(ui)
     , mainWindow(&mainWindow)
@@ -15,7 +17,9 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     exitAction = trayMenu->addAction(QIcon(":/images/img/exit64.png"), "Exit");
 
     // load settings from application.properties file
-    turnOnOffNotification = trayMenu->addAction(QIcon(":/images/img/notification-64.png"), "ON");
+    QString action = appConfig->checkBoolState() ? NOTIFICATIONS.YES : NOTIFICATIONS.NO;
+    turnOnOffNotification = trayMenu->addAction(QIcon(":/images/img/notification-64.png"), action);
+    isNotificationEnabled = appConfig->checkBoolState();
 
     systemTrayIcon->setContextMenu(trayMenu);
     connect(ui->tryIcon, &QPushButton::clicked, this, &TrayIcon::trayIconButtonClicked);
@@ -45,6 +49,26 @@ void TrayIcon::trayIconButtonClicked()
     }
 }
 
+void TrayIcon::setNotifications(bool isNotificationEnabled)
+{
+    if (isNotificationEnabled) {
+        setIsNotificationEnable(false);
+        qDebug() << "disconnect";
+        disconnect(radioList,
+                   &RadioList::sendTitleToTray,
+                   this,
+                   &TrayIcon::handleTitleFromRadioList);
+        trayMenu->actions().at(2)->setText(NOTIFICATIONS.NO);
+        appConfig->changeBoolState(false);
+    } else {
+        qDebug() << "connect";
+        connect(radioList, &RadioList::sendTitleToTray, this, &TrayIcon::handleTitleFromRadioList);
+        setIsNotificationEnable(true);
+        trayMenu->actions().at(2)->setText(NOTIFICATIONS.YES);
+        appConfig->changeBoolState(true);
+    }
+}
+
 void TrayIcon::trayMenuClicked(QAction *action)
 {
     if (action == exitAction)
@@ -62,21 +86,7 @@ void TrayIcon::trayMenuClicked(QAction *action)
 
     if (action == turnOnOffNotification) {
         qDebug() << "Hello Notification";
-        if (isNotificationEnabled) {
-            setIsNotificationEnable(false);
-            disconnect(radioList,
-                       &RadioList::sendTitleToTray,
-                       this,
-                       &TrayIcon::handleTitleFromRadioList);
-            trayMenu->actions().at(2)->setText("Off");
-        } else {
-            connect(radioList,
-                    &RadioList::sendTitleToTray,
-                    this,
-                    &TrayIcon::handleTitleFromRadioList);
-            setIsNotificationEnable(true);
-            trayMenu->actions().at(2)->setText("On");
-        }
+        setNotifications(isNotificationEnabled);
     }
 }
 
@@ -119,6 +129,10 @@ void TrayIcon::setRadioList(RadioList *newRadioList)
 {
     radioList = newRadioList;
     connect(radioList, &RadioList::sendTitleToTray, this, &TrayIcon::handleTitleFromRadioList);
+    if (getIsNotificationEnable())
+        setNotifications(false);
+    else
+        setNotifications(true);
 }
 
 void TrayIcon::setRadioAudioManager(RadioAudioManager *newRadioAudioManager)

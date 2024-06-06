@@ -10,6 +10,7 @@ class AppConfig : public QObject
     Q_OBJECT
 public:
     explicit AppConfig(QString path);
+    ~AppConfig();
     bool checkFile();
     bool checkBoolState();
     bool changeBoolState(bool state);
