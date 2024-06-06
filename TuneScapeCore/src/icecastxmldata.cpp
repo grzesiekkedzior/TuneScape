@@ -102,6 +102,7 @@ void IceCastXmlData::loadXmlData()
     iceCastStationTableRows = discoveryStations;
     reply->deleteLater();
     setIsDownloadFinish(true);
+    ui->iceCastprogressBar->hide();
 }
 
 void IceCastXmlData::addToFavoriteStations()
@@ -117,8 +118,8 @@ void IceCastXmlData::loadFavoriteIceCastStations()
         addRowToTable(row);
     }
 
-    if (ui->iceCastprogressBar->isVisible())
-        ui->iceCastprogressBar->hide();
+    // if (ui->iceCastprogressBar->isVisible())
+    //     ui->iceCastprogressBar->hide();
     if (getIsFavoritePlaying() && !radioList->getIsPlaying()
         && indexPlayingStation.row() < favoriteStations.size() && this->getIsFavoritePlaying())
         setIndexColor(this->indexPlayingStation);
@@ -138,14 +139,13 @@ void IceCastXmlData::loadDiscoveryStations()
         addRowToTable(row);
     }
 
-    if (ui->iceCastprogressBar->isVisible())
-        ui->iceCastprogressBar->hide();
-    // clear color
-    if (!getIsFavoritePlaying() && !radioList->getIsPlaying())
-        setIndexColor(this->indexPlayingStation);
-    else {
-        if (customColor) {
-            customColor->clearRowColor();
+    if (ui->iceCastprogressBar->isVisible()) {
+        if (!getIsFavoritePlaying() && !radioList->getIsPlaying())
+            setIndexColor(this->indexPlayingStation);
+        else {
+            if (customColor) {
+                customColor->clearRowColor();
+            }
         }
     }
     setIsStationsLoaded(true);
@@ -159,8 +159,8 @@ void IceCastXmlData::loadXmlToTable()
         addRowToTable(row);
     }
 
-    if (ui->iceCastprogressBar->isVisible())
-        ui->iceCastprogressBar->hide();
+    // if (ui->iceCastprogressBar->isVisible())
+    //     ui->iceCastprogressBar->hide();
     setIsStationsLoaded(true);
 }
 void IceCastXmlData::setFavoriteStations()
