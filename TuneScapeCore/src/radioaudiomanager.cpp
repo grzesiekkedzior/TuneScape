@@ -1,4 +1,6 @@
 #include "include/radioaudiomanager.h"
+#include <QApplication>
+#include <windows.h>
 
 RadioAudioManager::RadioAudioManager()
     : logLineCount(0)
@@ -18,6 +20,8 @@ RadioAudioManager::RadioAudioManager()
     if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
         qDebug() << "Cannot open log file!";
     }
+
+    qApp->installNativeEventFilter(new SystemEventFilter(this));
 #ifdef __unix__
     qputenv("QT_MEDIA_BACKEND", "gstreamer");
     // setenv("QT_MEDIA_BACKEND", "gstreamer", 1);
@@ -52,11 +56,13 @@ void RadioAudioManager::loadStream(const QUrl &url)
 void RadioAudioManager::playStream()
 {
     player->play();
+    setIsPlaying(true);
 }
 
 void RadioAudioManager::stopStream()
 {
     player->stop();
+    setIsPlaying(false);
 }
 
 QMediaPlayer *RadioAudioManager::getMediaPlayer() const
@@ -127,4 +133,48 @@ void RadioAudioManager::logError(QMediaPlayer::Error error)
         qDebug() << "Log file is not open!";
     }
     qDebug() << "Player error occurred:" << errorMsg;
+}
+
+bool RadioAudioManager::getIsPlaying() const
+{
+    return isPlaying;
+}
+
+void RadioAudioManager::setIsPlaying(bool newIsPlaying)
+{
+    isPlaying = newIsPlaying;
+}
+
+bool SystemEventFilter::nativeEventFilter(const QByteArray &eventType,
+                                          void *message,
+                                          qintptr *result)
+{
+    if (eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") {
+        MSG *msg = static_cast<MSG *>(message);
+        if (msg->message == WM_POWERBROADCAST) {
+            if (msg->wParam == PBT_APMSUSPEND) {
+                manager->handleSystemSleep();
+                return true;
+            } else if (msg->wParam == PBT_APMRESUMEAUTOMATIC
+                       || msg->wParam == PBT_APMRESUMECRITICAL) {
+                manager->handleSystemWake();
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void RadioAudioManager::handleSystemSleep()
+{
+    qDebug() << "System is going to sleep. Stopping the player.";
+    if (getIsPlaying())
+        player->stop();
+}
+
+void RadioAudioManager::handleSystemWake()
+{
+    qDebug() << "System woke up. Restarting the player.";
+    if (getIsPlaying())
+        player->play();
 }
