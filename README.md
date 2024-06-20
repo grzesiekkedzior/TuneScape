@@ -1,6 +1,9 @@
 
 # TuneScape   
 ### **A new release, 4.0.0, is now available. Qt 6.7.0**   
+### Expansion of features:    
+- Add a record icon to the tray menu.
+- Add a menu for a radio-browser station to tray the menu.   
 ### **The new branch for Linux development's name is "linux".**   
 ![main](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a6074926-5540-401d-a4e3-a93594de6edf)
 ![darklist](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/cb29751d-19f5-4079-8aa6-76d2c89bcb91)
