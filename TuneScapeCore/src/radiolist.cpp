@@ -236,6 +236,40 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+void RadioList::setIsTreeClicked(bool newIsTreeClicked)
+{
+    isTreeClicked = newIsTreeClicked;
+}
+
+QVector<QVector<TableRow> > RadioList::getAllTableRows() const
+{
+    return allTableRows;
+}
+
+void RadioList::onTrayViewItemClicked(const QModelIndex &index)
+{
+    if (index.isValid()) {
+        onTreeViewItemClicked(index);
+    } else {
+        qDebug() << "Wrong index.";
+    }
+}
+
+void RadioList::onTrayClickedandPlay(const QModelIndex &index)
+{
+    onTableViewDoubleClicked(index);
+}
+
+void RadioList::setTrayRadioImage(const QModelIndex &index)
+{
+    setRadioImage(index);
+}
+
+JsonListProcessor *RadioList::getJsonListProcessor()
+{
+    return &jsonListProcesor;
+}
+
 bool RadioList::getIsBrowseStationLoaded() const
 {
     return isBrowseStationLoaded;
@@ -652,7 +686,7 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
     isTreeClicked = true;
     item = index.data().toString();
-    qDebug() << "onTreeViewItemClicked " << item;
+    qDebug() << "onTreeViewItemClicked " << item << " ROW " << index.row();
     if (!checkItem(item, LIBRARY_TREE)) {
         if (!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2) {
             if (this->treeItem == "Search")

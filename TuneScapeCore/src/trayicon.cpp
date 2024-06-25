@@ -10,11 +10,27 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
 {
     appConfig = new AppConfig("application.properties");
     systemTrayIcon = new QSystemTrayIcon(QIcon(":/images/img/radio30.png"), &mainWindow);
+
     trayMenu = new QMenu(this);
+    //Top
+    top = new QMenu("Top", trayMenu);
+    top->setIcon(QIcon(":/images/img/top.png"));
+
+    //Popular
+    popular = new QMenu("Popular", trayMenu);
+    popular->setIcon(QIcon(":/images/img/popular.png"));
+
+    // NewStations
+    newRadio = new QMenu("New", trayMenu);
+    newRadio->setIcon(QIcon(":/images/img/new.png"));
+
     setClearTimer();
 
     playPauseAction = trayMenu->addAction(QIcon(":/images/img/play32.png"), "Play");
     exitAction = trayMenu->addAction(QIcon(":/images/img/exit64.png"), "Exit");
+    trayMenu->addMenu(top);
+    trayMenu->addMenu(popular);
+    trayMenu->addMenu(newRadio);
 
     // load settings from application.properties file
     QString action = appConfig->checkBoolState() ? NOTIFICATIONS.YES : NOTIFICATIONS.NO;
@@ -58,15 +74,89 @@ void TrayIcon::setNotifications(bool isNotificationEnabled)
                    &RadioList::sendTitleToTray,
                    this,
                    &TrayIcon::handleTitleFromRadioList);
-        trayMenu->actions().at(2)->setText(NOTIFICATIONS.NO);
+        trayMenu->actions().at(5)->setText(NOTIFICATIONS.NO);
         appConfig->changeBoolState(false);
     } else {
         qDebug() << "connect";
         connect(radioList, &RadioList::sendTitleToTray, this, &TrayIcon::handleTitleFromRadioList);
         setIsNotificationEnable(true);
-        trayMenu->actions().at(2)->setText(NOTIFICATIONS.YES);
+        trayMenu->actions().at(5)->setText(NOTIFICATIONS.YES);
         appConfig->changeBoolState(true);
     }
+}
+
+void TrayIcon::loadTrayLists()
+{
+    int size = radioList->getJsonListProcessor()->getTableRows().size();
+
+    topVector.resize(size);
+    popularVector.resize(size);
+    newRadioVector.resize(size);
+
+    for (int i = 0; i < size; i++) {
+        QString topStation = radioList->getAllTableRows().at(radioTable.TOP).at(i).station;
+        QString popularStation = radioList->getAllTableRows().at(radioTable.POPULAR).at(i).station;
+        QString newStation = radioList->getAllTableRows().at(radioTable.NEWRADIO).at(i).station;
+        topVector[i] = top->addAction(topStation);
+        popularVector[i] = popular->addAction(popularStation);
+        newRadioVector[i] = newRadio->addAction(newStation);
+    }
+}
+
+QModelIndex TrayIcon::createTrayRadioLists(QAction *action)
+{
+    auto topIt = std::find_if(topVector.begin(), topVector.end(), [action](QAction *topAction) {
+        return action == topAction;
+    });
+    auto popIt = std::find_if(popularVector.begin(),
+                              popularVector.end(),
+                              [action](QAction *popularAction) { return action == popularAction; });
+    auto newIt = std::find_if(newRadioVector.begin(),
+                              newRadioVector.end(),
+                              [action](QAction *newAction) { return action == newAction; });
+    int treeNumber = -1;
+
+    if (topIt != topVector.end()) {
+        treeNumber = radioTable.TOP;
+    } else if (popIt != popularVector.end()) {
+        treeNumber = radioTable.POPULAR;
+    } else if (newIt != newRadioVector.end()) {
+        treeNumber = radioTable.NEWRADIO;
+    }
+
+    if (treeNumber != -1) {
+        QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
+        QModelIndex treeIndex = ui->treeView->model()->index(treeNumber, 0, libraryIndex);
+        ui->treeView->selectionModel()->clearSelection();
+        ui->treeView->selectionModel()->select(treeIndex, QItemSelectionModel::Select);
+
+        if (treeIndex.isValid()) {
+            radioList->setIsTreeClicked(true);
+            radioList->onTrayViewItemClicked(treeIndex);
+        } else {
+            qDebug() << "Wrong index for treeView.";
+        }
+    } else {
+        qDebug() << "Element not found.";
+    }
+
+    QModelIndex treeIndex = ui->treeView->model()->index(treeNumber, 0);
+
+    radioList->onTrayViewItemClicked(treeIndex);
+
+    int dis = 0;
+    if (topIt != topVector.end()) {
+        dis = std::distance(topVector.begin(), topIt);
+    }
+    if (popIt != popularVector.end()) {
+        dis = std::distance(popularVector.begin(), popIt);
+    }
+    if (newIt != newRadioVector.end()) {
+        dis = std::distance(newRadioVector.begin(), newIt);
+    }
+    QModelIndex radioIndex = ui->tableView->model()->index(dis, 0);
+
+    return radioIndex;
 }
 
 void TrayIcon::trayMenuClicked(QAction *action)
@@ -82,11 +172,14 @@ void TrayIcon::trayMenuClicked(QAction *action)
             trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/play30.png"));
         }
         radioList->onPlayPauseButtonCliced();
-    }
-
-    if (action == turnOnOffNotification) {
+    } else if (action == turnOnOffNotification) {
         qDebug() << "Hello Notification";
         setNotifications(isNotificationEnabled);
+    } else {
+        QModelIndex radioIndex = createTrayRadioLists(action);
+
+        radioList->onTrayClickedandPlay(radioIndex);
+        radioList->setTrayRadioImage(radioIndex);
     }
 }
 

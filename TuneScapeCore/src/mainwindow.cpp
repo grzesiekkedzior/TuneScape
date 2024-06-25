@@ -55,6 +55,7 @@ void MainWindow::start()
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioAudioManager(&radioList->getRadioManager());
     trayIcon->setRadioList(radioList);
+    trayIcon->loadTrayLists();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -106,7 +107,7 @@ void MainWindow::infoDialogApp()
 
     aboutTuneScape = new QLabel;
     aboutTuneScape->setText(
-        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 4.0.3</p>"
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 4.0.4</p>"
         "This is a free and Open Source online radio player based on "
         "<a href=\"https://www.radio-browser.info\">radio-browser service </a> "
         "and <a href=\"https://www.icecast.org/\">Ice-Cast service.</a>"

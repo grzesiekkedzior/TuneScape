@@ -13,6 +13,13 @@ struct Notifications
     const QString YES = "ON";
 };
 
+struct RadioTable
+{
+    const int TOP = 0;
+    const int POPULAR = 1;
+    const int NEWRADIO = 2;
+};
+
 class TrayIcon : public QWidget
 {
     Q_OBJECT
@@ -30,6 +37,7 @@ public:
 
     bool getIsNotificationEnable() const;
     void setIsNotificationEnable(bool newIsNotificationEnable);
+    void loadTrayLists();
 
 private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -40,14 +48,27 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QSystemTrayIcon *systemTrayIcon;
-    QMainWindow *mainWindow;
-    QMenu *trayMenu;
+    QSystemTrayIcon *systemTrayIcon = nullptr;
+    QMainWindow *mainWindow = nullptr;
+    // Tray menu
+    QMenu *trayMenu = nullptr;
+    QMenu *top = nullptr;
+    QMenu *popular = nullptr;
+    QMenu *newRadio = nullptr;
+
+    RadioTable radioTable;
+
     RadioAudioManager *radioAudioManager = nullptr;
     RadioList *radioList = nullptr;
     QAction *playPauseAction = nullptr;
     QAction *exitAction = nullptr;
     QAction *turnOnOffNotification = nullptr;
+    QAction *topStations = nullptr;
+
+    QVector<QAction *> topVector;
+    QVector<QAction *> popularVector;
+    QVector<QAction *> newRadioVector;
+
     AppConfig *appConfig = nullptr;
     bool isNotificationEnabled = true;
 
@@ -57,6 +78,7 @@ private:
     const int DELAY_BETWEEN_NOTIFICATIONS = 5 * 60 * 1000;
     const int TRAY_TIME_MESSAGE = 5000;
     void setNotifications(bool isNotificationEnabled);
+    QModelIndex createTrayRadioLists(QAction *action);
 };
 
 #endif // TRAYICON_H

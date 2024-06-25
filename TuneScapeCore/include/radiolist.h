@@ -60,6 +60,16 @@ public:
     bool getIsBrowseStationLoaded() const;
     void setIsBrowseStationLoaded(bool newIsBrowseStationLoaded);
 
+    JsonListProcessor *getJsonListProcessor();
+
+    QVector<QVector<TableRow>> getAllTableRows() const;
+
+    void onTrayViewItemClicked(const QModelIndex &index);
+    void onTrayClickedandPlay(const QModelIndex &index);
+    void setTrayRadioImage(const QModelIndex &index);
+
+    void setIsTreeClicked(bool newIsTreeClicked);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
