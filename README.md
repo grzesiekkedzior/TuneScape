@@ -1,6 +1,9 @@
 
 # TuneScape   
 ### **A new release, 4.0.0, is now available. Qt 6.7.0**   
+### **You can test the new beta version 4.1.0 with the tray radio lists.**   
+![radiolist](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/3dec5f97-6efc-47bc-9e4e-2bda6a7cdc85)   
+
 ### Expansion of features:    
 - Add a record icon to the tray menu.
 - Add a menu for a radio-browser station to tray the menu.   
