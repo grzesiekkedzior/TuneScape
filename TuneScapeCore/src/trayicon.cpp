@@ -145,14 +145,26 @@ QModelIndex TrayIcon::createTrayRadioLists(QAction *action)
     radioList->onTrayViewItemClicked(treeIndex);
 
     int dis = 0;
+
+    // Must rebuild...
+    for (QAction *a : topVector)
+        a->setIcon(QIcon());
+    for (QAction *a : popularVector)
+        a->setIcon(QIcon());
+    for (QAction *a : newRadioVector)
+        a->setIcon(QIcon());
+
     if (topIt != topVector.end()) {
         dis = std::distance(topVector.begin(), topIt);
+        topVector[dis]->setIcon(QIcon(":/images/img/playing32.png"));
     }
     if (popIt != popularVector.end()) {
         dis = std::distance(popularVector.begin(), popIt);
+        popularVector[dis]->setIcon(QIcon(":/images/img/playing32.png"));
     }
     if (newIt != newRadioVector.end()) {
         dis = std::distance(newRadioVector.begin(), newIt);
+        newRadioVector[dis]->setIcon(QIcon(":/images/img/playing32.png"));
     }
     QModelIndex radioIndex = ui->tableView->model()->index(dis, 0);
 
