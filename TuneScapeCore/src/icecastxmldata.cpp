@@ -51,10 +51,10 @@ void IceCastXmlData::loadXmlData()
         loop.quit();
     });
 
-    QObject::connect(reply, &QObject::destroyed, [&loop, this]() {
+    QObject::connect(reply, &QObject::destroyed, [this]() {
         qDebug() << "Download destroyed";
         ui->iceCastprogressBar->hide();
-        loop.quit();
+        //loop.quit();
     });
 
     loop.exec();

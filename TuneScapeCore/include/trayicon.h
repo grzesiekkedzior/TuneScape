@@ -20,6 +20,13 @@ struct RadioTable
     const int NEWRADIO = 2;
 };
 
+struct RadioPlaylistName
+{
+    const QString TOP = "Top";
+    const QString POPULAR = "Popular";
+    const QString NEW = "New";
+};
+
 class TrayIcon : public QWidget
 {
     Q_OBJECT
@@ -57,6 +64,7 @@ private:
     QMenu *newRadio = nullptr;
 
     RadioTable radioTable;
+    RadioPlaylistName radioPlaylist;
 
     RadioAudioManager *radioAudioManager = nullptr;
     RadioList *radioList = nullptr;
@@ -79,6 +87,8 @@ private:
     const int TRAY_TIME_MESSAGE = 5000;
     void setNotifications(bool isNotificationEnabled);
     QModelIndex createTrayRadioLists(QAction *action);
+    void clearIcon();
+    void setTrayListIcon();
 };
 
 #endif // TRAYICON_H

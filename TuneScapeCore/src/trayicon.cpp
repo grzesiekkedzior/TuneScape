@@ -51,6 +51,24 @@ void TrayIcon::setClearTimer()
     clearRecentTitlesTimer->start();
 }
 
+void TrayIcon::setTrayListIcon()
+{
+    clearIcon();
+
+    int position = radioList->getRadioIndexNumber();
+    QString treeItem = radioList->getItem();
+    if (treeItem.isEmpty() || position > topVector.size())
+        return;
+    qDebug() << "item ---------> " << treeItem;
+    QString iconAddress = ":/images/img/playing32.png";
+    if (treeItem == radioPlaylist.TOP)
+        topVector[position]->setIcon(QIcon(iconAddress));
+    else if (treeItem == radioPlaylist.POPULAR)
+        popularVector[position]->setIcon(QIcon(iconAddress));
+    else if (treeItem == radioPlaylist.NEW)
+        newRadioVector[position]->setIcon(QIcon(iconAddress));
+}
+
 void TrayIcon::trayIconButtonClicked()
 {
     if (!systemTrayIcon->isVisible())
@@ -59,6 +77,9 @@ void TrayIcon::trayIconButtonClicked()
     if (radioAudioManager->getMediaPlayer()->isPlaying()) {
         trayMenu->actions().at(0)->setText("Pause");
         trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/pause30.png"));
+
+        setTrayListIcon();
+
     } else {
         trayMenu->actions().at(0)->setText("Play");
         trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/play30.png"));
@@ -103,6 +124,16 @@ void TrayIcon::loadTrayLists()
     }
 }
 
+void TrayIcon::clearIcon()
+{
+    for (QAction *a : topVector)
+        a->setIcon(QIcon());
+    for (QAction *a : popularVector)
+        a->setIcon(QIcon());
+    for (QAction *a : newRadioVector)
+        a->setIcon(QIcon());
+}
+
 QModelIndex TrayIcon::createTrayRadioLists(QAction *action)
 {
     auto topIt = std::find_if(topVector.begin(), topVector.end(), [action](QAction *topAction) {
@@ -128,6 +159,7 @@ QModelIndex TrayIcon::createTrayRadioLists(QAction *action)
         QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
         QModelIndex treeIndex = ui->treeView->model()->index(treeNumber, 0, libraryIndex);
         ui->treeView->selectionModel()->clearSelection();
+        qDebug() << "------------------> " << treeIndex.data().toString();
         ui->treeView->selectionModel()->select(treeIndex, QItemSelectionModel::Select);
 
         if (treeIndex.isValid()) {
@@ -140,19 +172,10 @@ QModelIndex TrayIcon::createTrayRadioLists(QAction *action)
         qDebug() << "Element not found.";
     }
 
-    QModelIndex treeIndex = ui->treeView->model()->index(treeNumber, 0);
-
-    radioList->onTrayViewItemClicked(treeIndex);
-
     int dis = 0;
 
     // Must rebuild...
-    for (QAction *a : topVector)
-        a->setIcon(QIcon());
-    for (QAction *a : popularVector)
-        a->setIcon(QIcon());
-    for (QAction *a : newRadioVector)
-        a->setIcon(QIcon());
+    clearIcon();
 
     if (topIt != topVector.end()) {
         dis = std::distance(topVector.begin(), topIt);

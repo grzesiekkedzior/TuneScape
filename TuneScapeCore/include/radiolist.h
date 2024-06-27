@@ -70,6 +70,10 @@ public:
 
     void setIsTreeClicked(bool newIsTreeClicked);
 
+    QString getItem() const;
+
+    int getRadioIndexNumber() const;
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();

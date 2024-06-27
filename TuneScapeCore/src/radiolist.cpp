@@ -236,6 +236,16 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+int RadioList::getRadioIndexNumber() const
+{
+    return radioIndexNumber;
+}
+
+QString RadioList::getItem() const
+{
+    return item;
+}
+
 void RadioList::setIsTreeClicked(bool newIsTreeClicked)
 {
     isTreeClicked = newIsTreeClicked;
