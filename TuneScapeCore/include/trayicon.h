@@ -25,6 +25,7 @@ struct RadioPlaylistName
     const QString TOP = "Top";
     const QString POPULAR = "Popular";
     const QString NEW = "New";
+    const QString FAVORITE = "Favorite";
 };
 
 class TrayIcon : public QWidget
@@ -45,6 +46,7 @@ public:
     bool getIsNotificationEnable() const;
     void setIsNotificationEnable(bool newIsNotificationEnable);
     void loadTrayLists();
+    void clearIcon();
 
 private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -87,7 +89,7 @@ private:
     const int TRAY_TIME_MESSAGE = 5000;
     void setNotifications(bool isNotificationEnabled);
     QModelIndex createTrayRadioLists(QAction *action);
-    void clearIcon();
+
     void setTrayListIcon();
 };
 

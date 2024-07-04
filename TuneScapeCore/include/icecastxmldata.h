@@ -9,6 +9,8 @@
 #include "streamrecorder.h"
 #include "ui_mainwindow.h"
 
+class TrayIcon;
+
 struct IceCastTableRow
 {
     QString station = "";
@@ -87,6 +89,9 @@ public:
     bool getIsDownloadFinish() const;
     void setIsDownloadFinish(bool newIsDownloadFinish);
 
+    TrayIcon *getTrayIcon() const;
+    void setTryIcon(TrayIcon *newTrayIcon);
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
     void updateProgressBar(int progress);
@@ -117,6 +122,8 @@ private:
     void setIceCastInfo(int index);
 
     QSharedPointer<CustomColorDelegate> customColor{nullptr};
+
+    TrayIcon *trayIcon = nullptr;
 };
 
 #endif // ICECASTXMLDATA_H

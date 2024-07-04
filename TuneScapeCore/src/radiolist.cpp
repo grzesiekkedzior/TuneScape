@@ -236,6 +236,26 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+IceCastXmlData *RadioList::getIceCastXmlData() const
+{
+    return iceCastXmlData;
+}
+
+bool RadioList::getIsSearchTablelDoubleCliced() const
+{
+    return isSearchTablelDoubleCliced;
+}
+
+void RadioList::setIsSearchTablelDoubleCliced(bool newIsSearchTablelDoubleCliced)
+{
+    isSearchTablelDoubleCliced = newIsSearchTablelDoubleCliced;
+}
+
+QString RadioList::getTreeItem() const
+{
+    return treeItem;
+}
+
 int RadioList::getRadioIndexNumber() const
 {
     return radioIndexNumber;
@@ -901,6 +921,11 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         streamRecorder->stopRecording();
         streamRecorder->setIsRecording(false);
     }
+
+    if (this->treeItem == "Search")
+        setIsSearchTablelDoubleCliced(true);
+    else
+        setIsSearchTablelDoubleCliced(false);
 }
 
 void RadioList::onPlayPauseButtonCliced()
@@ -1237,6 +1262,8 @@ void RadioList::searchStations()
     }
 
     this->treeItem = "Search";
+    this->item = "Search";
     ui->tabRadioListWidget->setCurrentIndex(0);
     this->clearIconLabelColor();
+    this->clearTableViewColor();
 }

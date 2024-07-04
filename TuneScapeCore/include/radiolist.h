@@ -74,6 +74,13 @@ public:
 
     int getRadioIndexNumber() const;
 
+    QString getTreeItem() const;
+
+    bool getIsSearchTablelDoubleCliced() const;
+    void setIsSearchTablelDoubleCliced(bool newIsSearchTablelDoubleCliced);
+
+    IceCastXmlData *getIceCastXmlData() const;
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -130,6 +137,7 @@ private:
     bool isDarkMode = false;
     bool isPause = false;
     bool isBrowseStationLoaded = false;
+    bool isSearchTablelDoubleCliced = false;
 
     const QString STATION = "Station";
     const QString GENRE = "Genre";

@@ -3,7 +3,6 @@
 #include <QDialog>
 #include <QMainWindow>
 #include <QResizeEvent>
-#include "icecastxmldata.h"
 #include "include/radioexplorer.h"
 #include "include/radioinfo.h"
 #include "include/radiolist.h"
@@ -32,7 +31,6 @@ private:
     RadioExplorer *radioExplorer;
     RadioList *radioList;
     RadioInfo *radioInfo;
-    IceCastXmlData *iceCastXmlData;
     QDialog *licenseDialog;
     QLabel *licenseLabel;
     QLabel *aboutTuneScape;

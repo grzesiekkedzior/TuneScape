@@ -29,7 +29,6 @@ MainWindow::~MainWindow()
     delete radioExplorer;
     delete radioList;
     delete radioInfo;
-    delete iceCastXmlData;
     delete trayIcon;
 }
 
@@ -49,13 +48,14 @@ void MainWindow::start()
     radioExplorer = new RadioExplorer(ui);
     radioList = new RadioList(ui);
     radioInfo = new RadioInfo(ui);
-    //iceCastXmlData = new IceCastXmlData(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioAudioManager(&radioList->getRadioManager());
     trayIcon->setRadioList(radioList);
     trayIcon->loadTrayLists();
+    // Very very weird
+    radioList->getIceCastXmlData()->setTryIcon(trayIcon);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

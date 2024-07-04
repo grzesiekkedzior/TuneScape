@@ -53,7 +53,12 @@ void TrayIcon::setClearTimer()
 
 void TrayIcon::setTrayListIcon()
 {
-    clearIcon();
+    if (radioList->getIsSearchTablelDoubleCliced() || radioList->getItem() == radioPlaylist.FAVORITE
+        || radioList->getItem() == radioPlaylist.TOP
+        || radioList->getItem() == radioPlaylist.POPULAR
+        || radioList->getItem() == radioPlaylist.NEW) {
+        clearIcon();
+    }
 
     int position = radioList->getRadioIndexNumber();
     QString treeItem = radioList->getItem();

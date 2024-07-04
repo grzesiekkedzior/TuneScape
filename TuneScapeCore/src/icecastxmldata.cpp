@@ -6,6 +6,7 @@
 #include <QNetworkRequest>
 #include <QXmlStreamReader>
 #include <QtConcurrent>
+#include "include/TrayIcon.h"
 #include "include/radiolist.h"
 
 IceCastXmlData::IceCastXmlData() {}
@@ -254,6 +255,8 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         }
 
         clearTableViewColor();
+        trayIcon->clearIcon();
+
         QString url = iceCastStationTableRows[index.row()].listen_url;
 
         setCurrentPlayingStation(index.row());
@@ -291,6 +294,16 @@ void IceCastXmlData::setIceCastInfo(int index)
     ui->tableWidget->setItem(0, 1, new QTableWidgetItem(iceCastStationTableRows[index].station));
     ui->tableWidget->setItem(5, 1, new QTableWidgetItem(iceCastStationTableRows[index].codec));
     ui->tableWidget->setItem(6, 1, new QTableWidgetItem(iceCastStationTableRows[index].bitrate));
+}
+
+TrayIcon *IceCastXmlData::getTrayIcon() const
+{
+    return trayIcon;
+}
+
+void IceCastXmlData::setTryIcon(TrayIcon *newTrayIcon)
+{
+    trayIcon = newTrayIcon;
 }
 void IceCastXmlData::updateProgressBar(int progress)
 {
