@@ -81,6 +81,9 @@ public:
 
     IceCastXmlData *getIceCastXmlData() const;
 
+    QMainWindow *getMainWindow() const;
+    void setMainWindow(QMainWindow *newMainWindow);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -124,6 +127,7 @@ private:
     QString item = "";
 
     QMessageBox message;
+    QMainWindow *mainWindow = nullptr;
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;

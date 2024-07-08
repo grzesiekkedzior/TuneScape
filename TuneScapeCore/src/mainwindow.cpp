@@ -50,6 +50,7 @@ void MainWindow::start()
     radioInfo = new RadioInfo(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
+    radioList->setMainWindow(this);
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioAudioManager(&radioList->getRadioManager());
     trayIcon->setRadioList(radioList);

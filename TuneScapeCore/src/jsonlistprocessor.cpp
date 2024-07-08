@@ -95,6 +95,8 @@ bool JsonListProcessor::checkInternetConnection()
 
 void JsonListProcessor::lostConnection()
 {
+    if (radioList->getMainWindow()->isHidden())
+        radioList->getMainWindow()->show();
     ui->statusbar->showMessage("Connection lost");
     ui->statusbar->setStyleSheet("color: red");
     messagebox.setText("Connection is lost!!!");

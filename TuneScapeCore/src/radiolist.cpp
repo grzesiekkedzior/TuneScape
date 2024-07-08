@@ -236,6 +236,16 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+QMainWindow *RadioList::getMainWindow() const
+{
+    return mainWindow;
+}
+
+void RadioList::setMainWindow(QMainWindow *newMainWindow)
+{
+    mainWindow = newMainWindow;
+}
+
 IceCastXmlData *RadioList::getIceCastXmlData() const
 {
     return iceCastXmlData;
@@ -807,6 +817,8 @@ void RadioList::onInternetConnectionRestored()
     iceCastXmlData->clearTableViewColor();
     setIndexColor();
     loadAllData();
+    if (getMainWindow()->isHidden())
+        getMainWindow()->show();
     message.show();
 }
 
