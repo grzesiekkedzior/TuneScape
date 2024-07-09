@@ -13,7 +13,8 @@
 ![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)
 ![darktiles](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/16e0fa4d-c84e-4320-a251-07c4986d3479)   
 ![tray1](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a5697f87-8b78-46a0-bdc7-20f93afb1f69)
-![tray2](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/04dfa067-40ec-488f-aab4-0fdecb6e5805)   
+![tray2](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/38610f42-4f10-4fe3-a3a0-c07b8bbd7356)
+   
 
 
 This is an open-source internet radio app that provides access to a wide range of radio stations. It leverages a database of radio stations from the website https://www.radio-browser.info/ to offer a diverse selection of online radio channels for all users.
