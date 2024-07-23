@@ -3,6 +3,8 @@
 
 #include <QMessageBox>
 #include "../ui_mainwindow.h"
+#include "audioprocessor.h"
+#include "container.h"
 #include "icecastxmldata.h"
 #include "include/customcolordelegate.h"
 #include "include/flowlayout.h"
@@ -128,6 +130,8 @@ private:
 
     QMessageBox message;
     QMainWindow *mainWindow = nullptr;
+
+    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;

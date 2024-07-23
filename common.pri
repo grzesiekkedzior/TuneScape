@@ -13,7 +13,10 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/radioexplorer.h \
            $$PWD/TuneScapeCore/include/radiolist.h \
            $$PWD/TuneScapeCore/include/radiostations.h \
-           $$PWD/TuneScapeCore/include/AppConfig.h
+           $$PWD/TuneScapeCore/include/AppConfig.h \
+           $$PWD/TuneScapeCore/include/audioprocessor.h \
+           $$PWD/TuneScapeCore/include/container.h \
+           $$PWD/TuneScapeCore/include/fft.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/StreamRecorder.cpp \
@@ -29,7 +32,9 @@ SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/radioexplorer.cpp \
            $$PWD/TuneScapeCore/src/radiolist.cpp \
            $$PWD/TuneScapeCore/src/radiostations.cpp \
-           $$PWD/TuneScapeCore/src/AppConfig.cpp
+           $$PWD/TuneScapeCore/src/AppConfig.cpp \
+           $$PWD/TuneScapeCore/src/audioprocessor.cpp \
+           $$PWD/TuneScapeCore/src/fft.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui

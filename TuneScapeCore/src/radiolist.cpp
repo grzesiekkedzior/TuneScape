@@ -67,6 +67,12 @@ RadioList::RadioList(Ui::MainWindow *ui)
     model->setHorizontalHeaderLabels(headers);
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
+
+    audioProcessor.setFixedSize(97, 28);
+    audioProcessor.setPlayer(radioManager.getMediaPlayer());
+    audioProcessor.show();
+
+    ui->fft->addWidget(&audioProcessor);
 }
 
 void RadioList::clearFlowLayout()
@@ -832,6 +838,7 @@ void RadioList::playStream(int radioNumber)
     QUrl streamUrl(currentRadioPlayingAddress);
     radioManager.loadStream(streamUrl);
     radioManager.playStream();
+    audioProcessor.start(currentRadioPlayingAddress);
 }
 
 void RadioList::setIndexColor()
@@ -1061,6 +1068,7 @@ void RadioList::onStopButtonClicked()
         if (radioManager.getMediaPlayer()->isPlaying()) {
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
             radioManager.stopStream();
+            audioProcessor.stop();
             currentRadioPlayingAddress = "";
             if (isDarkMode) {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
