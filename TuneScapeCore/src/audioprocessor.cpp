@@ -27,6 +27,7 @@ void AudioProcessor::start(const QString &filePath)
 {
     audioDecoder->setSource(QUrl::fromLocalFile(filePath));
     audioDecoder->start();
+    setPaintingEnabled(true);
     connect(audioDecoder, &QAudioDecoder::finished, this, &AudioProcessor::handleFinished);
     connect(player, &QMediaPlayer::positionChanged, this, &AudioProcessor::handleBufferReady);
 }
@@ -83,7 +84,7 @@ void AudioProcessor::processAudioData()
 
     // Stars
     qDebug() << "FFT Output as star bars:";
-    for (int i = 0; i < 32 && i < outputBuffer.size(); ++i) {
+    for (int i = 0; i < 16 && i < outputBuffer.size(); ++i) {
         // 0-10
         int numStars = static_cast<int>(
             outputBuffer[i] / *std::max_element(outputBuffer.begin(), outputBuffer.end()) * 10);
@@ -106,7 +107,7 @@ void AudioProcessor::paintEvent(QPaintEvent *event)
 
     int width = this->width();
     int height = this->height();
-    int barWidth = width / 32;
+    int barWidth = width / 16;
 
     // Find maximum value and normalize
     float maxValue = *std::max_element(outputBuffer.begin(), outputBuffer.end());
@@ -118,7 +119,7 @@ void AudioProcessor::paintEvent(QPaintEvent *event)
     // Set brush color to red for drawing the bars
     painter.setBrush(Qt::green);
 
-    for (int i = 0; i < 32 && i < outputBuffer.size(); ++i) {
+    for (int i = 0; i < 16 && i < outputBuffer.size(); ++i) {
         float normalizedValue = outputBuffer[i] / maxValue;
         int barHeight = static_cast<int>(normalizedValue * height);
 

@@ -2,6 +2,8 @@
 #define ICECASTXMLDATA_H
 #include <QSharedPointer>
 #include <QUrl>
+#include "audioprocessor.h"
+#include "container.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
 #include "radioaudiomanager.h"
@@ -124,6 +126,7 @@ private:
     QSharedPointer<CustomColorDelegate> customColor{nullptr};
 
     TrayIcon *trayIcon = nullptr;
+    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
 };
 
 #endif // ICECASTXMLDATA_H

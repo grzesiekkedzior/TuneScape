@@ -262,6 +262,7 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         setCurrentPlayingStation(index.row());
         indexPlayingStation = index;
         radioAudioManager->loadStream(url);
+        audioProcessor.start(url);
         radioAudioManager->playStream();
         setIndexColor(index);
         radioList->clearTableViewColor();
