@@ -68,11 +68,13 @@ RadioList::RadioList(Ui::MainWindow *ui)
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
 
-    audioProcessor.setFixedSize(97, 28);
-    audioProcessor.setPlayer(radioManager.getMediaPlayer());
-    audioProcessor.show();
+    // audioProcessor.setFixedSize(97, 28);
+    // audioProcessor.setPlayer(radioManager.getMediaPlayer());
+    // audioProcessor.show();
 
-    ui->fft->addWidget(&audioProcessor);
+    // ui->fft->addWidget(&audioProcessor);
+    audioProcessor.setUi(ui);
+    audioProcessor.setPlayer(radioManager.getMediaPlayer());
 }
 
 void RadioList::clearFlowLayout()

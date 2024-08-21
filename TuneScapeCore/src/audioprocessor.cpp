@@ -1,12 +1,13 @@
 #include "include/audioprocessor.h"
 #include <QAudioBuffer>
 #include <QDebug>
+#include <QGraphicsRectItem>
 #include <QPainter>
+#include <QtConcurrent>
 #include <algorithm>
 
-AudioProcessor::AudioProcessor(QWidget *parent)
-    : QWidget(parent)
-    , audioDecoder(nullptr)
+AudioProcessor::AudioProcessor()
+    : audioDecoder(nullptr)
     , fftState(nullptr)
     , paintingEnabled(true)
 {
@@ -28,18 +29,23 @@ void AudioProcessor::start(const QString &filePath)
     audioDecoder->setSource(QUrl::fromLocalFile(filePath));
     audioDecoder->start();
     setPaintingEnabled(true);
-    connect(audioDecoder, &QAudioDecoder::finished, this, &AudioProcessor::handleFinished);
-    connect(player, &QMediaPlayer::positionChanged, this, &AudioProcessor::handleBufferReady);
+    setShouldAutoRestart(true);
+    if (updateTimer && updateTimer->isActive()) {
+        updateTimer->stop();
+    }
+    initTimer();
 }
 
 void AudioProcessor::stop()
 {
     audioDecoder->stop();
-    disconnect(audioDecoder, &QAudioDecoder::finished, this, &AudioProcessor::handleFinished);
-    disconnect(player, &QMediaPlayer::positionChanged, this, &AudioProcessor::handleBufferReady);
     setPaintingEnabled(false);
+    setShouldAutoRestart(false);
     outputBuffer.clear();
-    update();
+    if (updateTimer && updateTimer->isActive()) {
+        updateTimer->stop();
+    }
+    graphScene->clear();
 }
 
 QMediaPlayer *AudioProcessor::getPlayer() const
@@ -57,76 +63,174 @@ void AudioProcessor::setPaintingEnabled(bool enabled)
     paintingEnabled = enabled;
 }
 
-void AudioProcessor::handleBufferReady()
-{
-    QAudioBuffer buffer = audioDecoder->read();
-    qint64 len = buffer.sampleCount();
-    if (len > FFT_BUFFER_SIZE) {
-        len = FFT_BUFFER_SIZE;
-    }
+// void AudioProcessor::handleBufferReady()
+// {
+//     QAudioBuffer buffer = audioDecoder->read();
+//     qint64 len = buffer.sampleCount();
+//     if (len > FFT_BUFFER_SIZE) {
+//         len = FFT_BUFFER_SIZE;
+//     }
 
-    const qint16 *data = buffer.constData<qint16>();
-    for (int i = 0; i < len; ++i) {
-        inputBuffer[i] = static_cast<sound_sample>(data[i]);
-    }
+//     const qint16 *data = buffer.constData<qint16>();
+//     std::copy(data, data + len, inputBuffer.data());
 
-    processAudioData();
-}
+//     QtConcurrent::run([this]() {
+//         fft.perform(inputBuffer, outputBuffer, fftState);
+
+//         QMetaObject::invokeMethod(this, [this]() {
+//             if (!graphScene) {
+//                 qDebug() << "graphScene is null!";
+//                 return;
+//             }
+
+//             graphScene->clear();
+//             int width = ui->graphicsView->width();
+//             int height = ui->graphicsView->height();
+//             int barWidth = width / 16;
+//             float maxValue = *std::max_element(outputBuffer.begin(), outputBuffer.end());
+//             if (maxValue == 0) {
+//                 maxValue = 1; // Avoid division by zero
+//             }
+//             for (int i = 0; i < 16 && i < outputBuffer.size(); ++i) {
+//                 float normalizedValue = outputBuffer[i] / maxValue;
+//                 int barHeight = static_cast<int>(normalizedValue * height);
+//                 QGraphicsRectItem *bar = new QGraphicsRectItem(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+//                 bar->setBrush(Qt::green);
+//                 graphScene->addItem(bar);
+//             }
+//         }, Qt::QueuedConnection);
+//     });
+// }
 
 void AudioProcessor::handleFinished()
 {
     qDebug() << "Decoding finished.";
+
+    // audioDecoder->stop();
+    // inputBuffer.clear();
+    // outputBuffer.clear();
+
+    // if (getShouldAutoRestart()) {
+    //     audioDecoder->start();
+    // }
 }
 
 void AudioProcessor::processAudioData()
 {
     fft.perform(inputBuffer, outputBuffer, fftState);
-
-    // Stars
-    qDebug() << "FFT Output as star bars:";
-    for (int i = 0; i < 16 && i < outputBuffer.size(); ++i) {
-        // 0-10
-        int numStars = static_cast<int>(
-            outputBuffer[i] / *std::max_element(outputBuffer.begin(), outputBuffer.end()) * 10);
-        QString stars(numStars, '*');
-        qDebug() << "Bin" << i << ":" << stars;
-    }
-
-    update();
 }
 
-void AudioProcessor::paintEvent(QPaintEvent *event)
+void AudioProcessor::updateGraph()
 {
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+    if (!graphScene || !ui)
+        return;
 
-    // Fill the background with black color
-    painter.fillRect(rect(), Qt::black);
-    if (!paintingEnabled)
-        return; // Do nothing if painting is disabled - THE STOP BUTTON IS PUSHED
-
-    int width = this->width();
-    int height = this->height();
-    int barWidth = width / 16;
-
-    // Find maximum value and normalize
-    float maxValue = *std::max_element(outputBuffer.begin(), outputBuffer.end());
-
-    if (maxValue == 0) {
-        maxValue = 1; // Avoid division by zero
+    if (!audioDecoder->isDecoding()) {
+        qDebug() << "AudioDecoder is not in the decoding state, resetting...";
+        qDebug() << "AudioDecoder error occurred:" << audioDecoder->errorString();
+        resetAudioDecoder();
+        return;
     }
 
-    // Set brush color to red for drawing the bars
-    painter.setBrush(Qt::green);
+    // Retrieve and process the audio data
+    QAudioBuffer buffer = audioDecoder->read();
+    if (!buffer.isValid()) {
+        qDebug() << "Invalid buffer or no data available.";
+        return;
+    }
 
-    for (int i = 0; i < 16 && i < outputBuffer.size(); ++i) {
-        float normalizedValue = outputBuffer[i] / maxValue;
-        int barHeight = static_cast<int>(normalizedValue * height);
+    QtConcurrent::run([this, buffer]() {
+        qint64 len = buffer.sampleCount();
+        if (len > FFT_BUFFER_SIZE) {
+            len = FFT_BUFFER_SIZE;
+        }
 
-        qDebug() << "Bar" << i << ":" << outputBuffer[i] << "Normalized:" << normalizedValue
-                 << "Height:" << barHeight;
+        const qint16 *data = buffer.constData<qint16>();
+        std::copy(data, data + len, inputBuffer.data());
 
-        // Draw the bar with the calculated height
-        painter.drawRect(i * barWidth, height - barHeight, barWidth - 1, barHeight);
+        // Perform FFT on the data
+        fft.perform(inputBuffer, outputBuffer, fftState);
+
+        // Calculate the maximum value to normalize the bars
+        float maxValue = *std::max_element(outputBuffer.begin(), outputBuffer.end());
+        if (maxValue == 0) {
+            maxValue = 1; // Avoid division by zero
+        }
+
+        QMetaObject::invokeMethod(
+            this,
+            [this, maxValue]() {
+                // Clear the previous content of the scene
+                graphScene->clear();
+
+                // Determine the dimensions for the bars
+                int width = ui->graphicsView->width();
+                int height = ui->graphicsView->height();
+                int barWidth = width / 16;
+
+                // Draw the bars in the scene
+                for (int i = 0; i < 16 && i < outputBuffer.size(); ++i) {
+                    float normalizedValue = outputBuffer[i] / maxValue;
+                    int barHeight = static_cast<int>(normalizedValue * height);
+                    QGraphicsRectItem *bar = new QGraphicsRectItem(i * barWidth,
+                                                                   height - barHeight,
+                                                                   barWidth - 1,
+                                                                   barHeight);
+                    bar->setBrush(Qt::green);
+                    graphScene->addItem(bar);
+                }
+
+                qDebug() << "Graph updated.";
+            },
+            Qt::QueuedConnection);
+    });
+}
+
+void AudioProcessor::resetAudioDecoder()
+{
+    audioDecoder->stop();
+
+    QUrl currentSource = audioDecoder->source();
+    if (currentSource.isEmpty()) {
+        qDebug() << "No source set for audioDecoder.";
+        return;
+    }
+
+    audioDecoder->setSource(currentSource);
+    audioDecoder->start();
+
+    qDebug() << "AudioDecoder has been reset.";
+}
+
+void AudioProcessor::initTimer()
+{
+    if (!updateTimer) {
+        updateTimer = new QTimer(this);
+        connect(updateTimer, &QTimer::timeout, this, &AudioProcessor::updateGraph);
+    }
+
+    updateTimer->start(100); // Update every 100 ms
+}
+
+bool AudioProcessor::getShouldAutoRestart() const
+{
+    return shouldAutoRestart;
+}
+
+void AudioProcessor::setShouldAutoRestart(bool newShouldAutoRestart)
+{
+    shouldAutoRestart = newShouldAutoRestart;
+}
+
+void AudioProcessor::setUi(Ui::MainWindow *newUi)
+{
+    ui = newUi;
+    if (!graphScene) {
+        graphScene = new QGraphicsScene(this);
+        ui->graphicsView->setScene(graphScene);
+        ui->graphicsView->fitInView(graphScene->sceneRect(), Qt::KeepAspectRatio);
+
+        ui->graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        ui->graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     }
 }
