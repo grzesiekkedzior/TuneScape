@@ -34,6 +34,8 @@ public:
     bool getShouldAutoRestart() const;
     void setShouldAutoRestart(bool newShouldAutoRestart);
     void resetAudioDecoder();
+    QTimer *getUpdateTimer() const;
+
 private slots:
     //void handleBufferReady();
     void handleFinished();

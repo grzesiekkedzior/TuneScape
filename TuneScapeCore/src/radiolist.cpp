@@ -970,10 +970,12 @@ void RadioList::onPlayPauseButtonCliced()
         iceCastXmlData->setPlaying(false);
         iceCastXmlData->playPauseIcon();
         radioManager.stopStream();
+        audioProcessor.getUpdateTimer()->stop();
     } else if (!iceCastXmlData->getPlaying() && iceCastXmlData->getCurrentPlayingStation() != -1
                && !getIsBrowseStationLoaded()) {
         qDebug() << "3";
         radioManager.playStream();
+        audioProcessor.getUpdateTimer()->start();
         iceCastXmlData->setPlaying(true);
         iceCastXmlData->playPauseIcon();
 
@@ -981,10 +983,12 @@ void RadioList::onPlayPauseButtonCliced()
     } else {
         if (radioManager.getMediaPlayer()->isPlaying()) {
             radioManager.stopStream();
+            audioProcessor.getUpdateTimer()->stop();
             setIsPlaying(false);
         } else if (currentRadioPlayingAddress != ""
                    && radioManager.getMediaPlayer()->isAvailable()) {
             radioManager.playStream();
+            audioProcessor.getUpdateTimer()->start();
             setIsPlaying(true);
 
         } else if (currentRadioPlayingAddress.isEmpty()

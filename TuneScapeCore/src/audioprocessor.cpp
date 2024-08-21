@@ -120,6 +120,11 @@ void AudioProcessor::processAudioData()
     fft.perform(inputBuffer, outputBuffer, fftState);
 }
 
+QTimer *AudioProcessor::getUpdateTimer() const
+{
+    return updateTimer;
+}
+
 void AudioProcessor::updateGraph()
 {
     if (!graphScene || !ui)
