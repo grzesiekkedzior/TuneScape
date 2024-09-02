@@ -1,5 +1,9 @@
 
 # TuneScape   
+### **4.3.1**   
+In version 4.3.1, I resigned from creating independent widgets (FFT) to create some easily multiplatform integration.   
+For now I use QGraphicsView, and there are some problems in Linux. I think I will resolved this problem in the future.   
+I have fought seriously with FFT. There were very uncommon problems with buffers and streams!!!. The tests took a lot of time, but now it looks great.   
 ### **A new release, 4.2.1, with audio frequency spectrum.**   
 ![fft](https://github.com/user-attachments/assets/6bcc87d3-4990-4d28-a480-d4dfcd38b903)   
 ### **You can test the new beta version 4.1.0 with the tray radio lists.**   
