@@ -629,7 +629,7 @@ void RadioList::setFavoriteStatons()
     QVector<QString> streamAddresses;
     QVector<QString> iconAddresses;
     // Read favorite radio from file
-    QFile file("playlist.txt");
+    QFile file(RADIO_BROWSER_PLAYLIST);
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         while (!in.atEnd()) {
@@ -804,7 +804,7 @@ void RadioList::getSongTitle(const QString &url)
 
 void RadioList::checkIsRadioOnPlaylist()
 {
-    if (isAddressExists(currentRadioPlayingAddress, "playlist.txt")) {
+    if (isAddressExists(currentRadioPlayingAddress, RADIO_BROWSER_PLAYLIST)) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     } else {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
@@ -1179,12 +1179,12 @@ void RadioList::addRadioToFavorite()
                             .at(radioIndexCurrentPlaying)
                             .stationUrl;
 
-                if (isRadioAdded(data, "playlist.txt")) {
+                if (isRadioAdded(data, RADIO_BROWSER_PLAYLIST)) {
                     qDebug() << "remove";
-                    removeRadio(data, "playlist.txt");
+                    removeRadio(data, RADIO_BROWSER_PLAYLIST);
                     ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
                 } else if (!data.isEmpty()) {
-                    QFile file("playlist.txt");
+                    QFile file(RADIO_BROWSER_PLAYLIST);
 
                     if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
                         qDebug() << "Error";

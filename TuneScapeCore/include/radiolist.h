@@ -163,6 +163,7 @@ private:
     const QString FAVORITE_TREE = "Favorite";
     const QString FAVORITE_ICECAST = "IceCastFavorite";
     const QString ICECAST_PLAYLIST = "icecast.txt";
+    const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
 
     QVector<QVector<TableRow>> allTableRows;
     QVector<QVector<QString>> allStreamAddresses;

@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     src/AppConfig.cpp \
     src/IceCastXmlData.cpp \
+    src/Menu.cpp \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
     src/TrayIcon.cpp \
@@ -31,6 +32,7 @@ SOURCES += \
 HEADERS += \
     include/AppConfig.h \
     include/IceCastXmlData.h \
+    include/Menu.h \
     include/StreamRecorder.h \
     include/Theme.h \
     include/TrayIcon.h \

@@ -28,7 +28,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="sizeConstraint">
-     <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
+     <enum>QLayout::SetDefaultConstraint</enum>
     </property>
     <property name="topMargin">
      <number>11</number>
@@ -42,7 +42,7 @@
        </sizepolicy>
       </property>
       <property name="orientation">
-       <enum>Qt::Orientation::Horizontal</enum>
+       <enum>Qt::Horizontal</enum>
       </property>
       <property name="childrenCollapsible">
        <bool>true</bool>
@@ -79,16 +79,16 @@
         <string notr="true"/>
        </property>
        <property name="frameShape">
-        <enum>QFrame::Shape::NoFrame</enum>
+        <enum>QFrame::NoFrame</enum>
        </property>
        <property name="frameShadow">
-        <enum>QFrame::Shadow::Plain</enum>
+        <enum>QFrame::Plain</enum>
        </property>
        <property name="lineWidth">
         <number>1</number>
        </property>
        <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
+        <enum>QAbstractScrollArea::AdjustIgnored</enum>
        </property>
        <property name="widgetResizable">
         <bool>true</bool>
@@ -99,7 +99,7 @@
           <x>0</x>
           <y>0</y>
           <width>180</width>
-          <height>405</height>
+          <height>410</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -154,7 +154,7 @@
             </size>
            </property>
            <property name="tabShape">
-            <enum>QTabWidget::TabShape::Rounded</enum>
+            <enum>QTabWidget::Rounded</enum>
            </property>
            <property name="currentIndex">
             <number>0</number>
@@ -194,16 +194,16 @@
                 <string notr="true">background-color: transparent;</string>
                </property>
                <property name="frameShape">
-                <enum>QFrame::Shape::StyledPanel</enum>
+                <enum>QFrame::StyledPanel</enum>
                </property>
                <property name="lineWidth">
                 <number>1</number>
                </property>
                <property name="verticalScrollBarPolicy">
-                <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOff</enum>
+                <enum>Qt::ScrollBarAlwaysOff</enum>
                </property>
                <property name="sizeAdjustPolicy">
-                <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustToContentsOnFirstShow</enum>
+                <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
                </property>
                <property name="autoExpandDelay">
                 <number>-1</number>
@@ -246,7 +246,7 @@
                 <bool>false</bool>
                </property>
                <property name="alignment">
-                <set>Qt::AlignmentFlag::AlignCenter</set>
+                <set>Qt::AlignCenter</set>
                </property>
                <property name="margin">
                 <number>16</number>
@@ -267,7 +267,7 @@
                 <bool>true</bool>
                </property>
                <property name="alignment">
-                <set>Qt::AlignmentFlag::AlignCenter</set>
+                <set>Qt::AlignCenter</set>
                </property>
                <property name="wordWrap">
                 <bool>true</bool>
@@ -305,7 +305,7 @@
                 <bool>false</bool>
                </property>
                <property name="alignment">
-                <set>Qt::AlignmentFlag::AlignCenter</set>
+                <set>Qt::AlignCenter</set>
                </property>
                <property name="margin">
                 <number>16</number>
@@ -339,7 +339,7 @@
                 </size>
                </property>
                <property name="frameShadow">
-                <enum>QFrame::Shadow::Sunken</enum>
+                <enum>QFrame::Sunken</enum>
                </property>
                <property name="lineWidth">
                 <number>1</number>
@@ -348,7 +348,7 @@
                 <number>0</number>
                </property>
                <property name="editTriggers">
-                <set>QAbstractItemView::EditTrigger::AnyKeyPressed</set>
+                <set>QAbstractItemView::AnyKeyPressed</set>
                </property>
                <property name="showGrid">
                 <bool>false</bool>
@@ -545,10 +545,10 @@
         <string notr="true"/>
        </property>
        <property name="frameShape">
-        <enum>QFrame::Shape::NoFrame</enum>
+        <enum>QFrame::NoFrame</enum>
        </property>
        <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
+        <enum>QAbstractScrollArea::AdjustIgnored</enum>
        </property>
        <property name="widgetResizable">
         <bool>true</bool>
@@ -558,8 +558,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>683</width>
-          <height>405</height>
+          <width>684</width>
+          <height>410</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -613,31 +613,31 @@ selection-color: rgb(4, 4, 4);</string>
                 <number>0</number>
                </property>
                <property name="verticalScrollBarPolicy">
-                <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
+                <enum>Qt::ScrollBarAsNeeded</enum>
                </property>
                <property name="horizontalScrollBarPolicy">
-                <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
+                <enum>Qt::ScrollBarAsNeeded</enum>
                </property>
                <property name="sizeAdjustPolicy">
-                <enum>QAbstractScrollArea::SizeAdjustPolicy::AdjustIgnored</enum>
+                <enum>QAbstractScrollArea::AdjustIgnored</enum>
                </property>
                <property name="editTriggers">
-                <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+                <set>QAbstractItemView::NoEditTriggers</set>
                </property>
                <property name="alternatingRowColors">
                 <bool>false</bool>
                </property>
                <property name="selectionMode">
-                <enum>QAbstractItemView::SelectionMode::ContiguousSelection</enum>
+                <enum>QAbstractItemView::ContiguousSelection</enum>
                </property>
                <property name="selectionBehavior">
-                <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                <enum>QAbstractItemView::SelectRows</enum>
                </property>
                <property name="showGrid">
                 <bool>false</bool>
                </property>
                <property name="gridStyle">
-                <enum>Qt::PenStyle::SolidLine</enum>
+                <enum>Qt::SolidLine</enum>
                </property>
                <property name="wordWrap">
                 <bool>false</bool>
@@ -670,8 +670,8 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>653</width>
-                  <height>348</height>
+                  <width>656</width>
+                  <height>349</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -739,22 +739,22 @@ QProgressBar::chunk {
 }</string>
                </property>
                <property name="editTriggers">
-                <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+                <set>QAbstractItemView::NoEditTriggers</set>
                </property>
                <property name="alternatingRowColors">
                 <bool>false</bool>
                </property>
                <property name="selectionMode">
-                <enum>QAbstractItemView::SelectionMode::ContiguousSelection</enum>
+                <enum>QAbstractItemView::ContiguousSelection</enum>
                </property>
                <property name="selectionBehavior">
-                <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+                <enum>QAbstractItemView::SelectRows</enum>
                </property>
                <property name="showGrid">
                 <bool>false</bool>
                </property>
                <property name="gridStyle">
-                <enum>Qt::PenStyle::SolidLine</enum>
+                <enum>Qt::SolidLine</enum>
                </property>
                <property name="wordWrap">
                 <bool>false</bool>
@@ -784,7 +784,7 @@ QProgressBar::chunk {
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalBarLayout">
-      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QPushButton" name="stop">
         <property name="minimumSize">
          <size>
@@ -803,7 +803,7 @@ QProgressBar::chunk {
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QPushButton" name="previous">
         <property name="minimumSize">
          <size>
@@ -822,7 +822,7 @@ QProgressBar::chunk {
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QPushButton" name="playPause">
         <property name="minimumSize">
          <size>
@@ -888,7 +888,7 @@ QProgressBar::chunk {
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QPushButton" name="next">
         <property name="minimumSize">
          <size>
@@ -922,10 +922,10 @@ QProgressBar::chunk {
          </size>
         </property>
         <property name="layoutDirection">
-         <enum>Qt::LayoutDirection::LeftToRight</enum>
+         <enum>Qt::LeftToRight</enum>
         </property>
         <property name="frameShape">
-         <enum>QFrame::Shape::NoFrame</enum>
+         <enum>QFrame::NoFrame</enum>
         </property>
        </widget>
       </item>
@@ -943,10 +943,10 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
+         <enum>Qt::Horizontal</enum>
         </property>
         <property name="sizeType">
-         <enum>QSizePolicy::Policy::Expanding</enum>
+         <enum>QSizePolicy::Expanding</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -966,7 +966,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QPushButton" name="volume">
         <property name="minimumSize">
          <size>
@@ -985,7 +985,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         </property>
        </widget>
       </item>
-      <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
        <widget class="QSlider" name="horizontalVolumeSlider">
         <property name="minimumSize">
          <size>
@@ -1003,7 +1003,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
          <number>99</number>
         </property>
         <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
+         <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>
@@ -1079,6 +1079,29 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         <property name="icon">
          <iconset resource="res.qrc">
           <normaloff>:/images/img/tray64.png</normaloff>:/images/img/tray64.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="impExpPlaylist">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/images/img/imp_exp-8-64.png</normaloff>:/images/img/imp_exp-8-64.png</iconset>
         </property>
        </widget>
       </item>
