@@ -1037,6 +1037,35 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
        </widget>
       </item>
       <item>
+       <widget class="QToolButton" name="menuButton">
+        <property name="minimumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/images/img/imp_exp-8-64.png</normaloff>:/images/img/imp_exp-8-64.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="themeButton">
         <property name="minimumSize">
          <size>
@@ -1079,29 +1108,6 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         <property name="icon">
          <iconset resource="res.qrc">
           <normaloff>:/images/img/tray64.png</normaloff>:/images/img/tray64.png</iconset>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="impExpPlaylist">
-        <property name="minimumSize">
-         <size>
-          <width>30</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>30</width>
-          <height>30</height>
-         </size>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-        <property name="icon">
-         <iconset resource="res.qrc">
-          <normaloff>:/images/img/imp_exp-8-64.png</normaloff>:/images/img/imp_exp-8-64.png</iconset>
         </property>
        </widget>
       </item>

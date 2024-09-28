@@ -52,6 +52,8 @@
         <file>img/playing48.png</file>
         <file>img/notification-64.png</file>
         <file>img/imp_exp-8-64.png</file>
+        <file>img/download-20-32.png</file>
+        <file>img/upload-20-32.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>

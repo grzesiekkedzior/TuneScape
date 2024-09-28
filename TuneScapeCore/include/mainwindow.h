@@ -3,6 +3,7 @@
 #include <QDialog>
 #include <QMainWindow>
 #include <QResizeEvent>
+#include "include/Menu.h"
 #include "include/radioexplorer.h"
 #include "include/radioinfo.h"
 #include "include/radiolist.h"
@@ -36,6 +37,7 @@ private:
     QLabel *aboutTuneScape;
     QScrollArea *scrollArea;
     TrayIcon *trayIcon;
+    Menu *appMenu;
     void set_icon_btn();
     void start();
     void resizeEvent(QResizeEvent *event);

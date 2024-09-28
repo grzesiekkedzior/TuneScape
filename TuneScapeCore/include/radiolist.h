@@ -43,6 +43,7 @@ public:
     void clearTableViewColor();
     void checkIsRadioOnPlaylist();
     bool isAddressExists(const QString address, const QString playlist);
+    void setFavoriteStatons();
 
     bool getIsPlaying() const;
     void setIsPlaying(bool newIsPlaying);
@@ -180,7 +181,6 @@ private:
 
     void clearRadioInfoLabel();
     void setVectorsOfStation(const QString endpoint);
-    void setFavoriteStatons();
     void setTopListOnStart();
 
     // Add and remove the playlists!!!

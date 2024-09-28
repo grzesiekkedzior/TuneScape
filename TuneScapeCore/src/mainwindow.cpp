@@ -57,6 +57,7 @@ void MainWindow::start()
     trayIcon->loadTrayLists();
     // Very very weird
     radioList->getIceCastXmlData()->setTryIcon(trayIcon);
+    appMenu = new Menu(ui, radioList, radioList->getIceCastXmlData());
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

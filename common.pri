@@ -1,5 +1,6 @@
 INCLUDEPATH += $$PWD/TuneScapeCore
 HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
+           $$PWD/TuneScapeCore/include/Menu.h \
            $$PWD/TuneScapeCore/include/StreamRecorder.h \
            $$PWD/TuneScapeCore/include/Theme.h \
            $$PWD/TuneScapeCore/include/TrayIcon.h \
@@ -19,6 +20,7 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/fft.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
+           $$PWD/TuneScapeCore/src/Menu.cpp \
            $$PWD/TuneScapeCore/src/StreamRecorder.cpp \
            $$PWD/TuneScapeCore/src/Theme.cpp \
            $$PWD/TuneScapeCore/src/TrayIcon.cpp \
