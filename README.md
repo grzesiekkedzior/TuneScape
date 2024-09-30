@@ -1,5 +1,8 @@
 
 # TuneScape   
+### **4.4.0**   
+In version 4.4.0 is added export and import functionality for the favorite playlists and a simple settings/menu button.   
+![playlists](https://github.com/user-attachments/assets/757570af-1877-4645-852f-dc7aa1ee3aec)   
 ### **4.3.1**   
 In version 4.3.1, I resigned from creating independent widgets (FFT) to create some easily multiplatform integration.   
 For now I use QGraphicsView, and there are some problems in Linux. I think I will resolved this problem in the future.   
