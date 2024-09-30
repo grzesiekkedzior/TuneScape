@@ -3,10 +3,10 @@
 #include <QMenu>
 #include <QMessageBox>
 
-Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXml)
+Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlData)
     : ui(ui)
     , radioList(radioList)
-    , iceCastXml(iceCastXml)
+    , iceCastXmlData(iceCastXmlData)
 
 {
     mainMenu = new QMenu("Menu");
@@ -69,12 +69,16 @@ void Menu::importPlaylists()
     QMessageBox::information(nullptr, "Sukccess", "Playlist is imported successfully.");
 
     if (playlist == RADIO_BROWSER) {
+        qDebug() << "???????????????????????????????";
         radioList->setFavoriteStatons();
+        radioList->setFavoriteLibrary();
     }
     if (playlist == ICE_CAST) {
-        iceCastXml->loadFavoriteIceCastStations();
-        iceCastXml->setFavoriteStations();
-        iceCastXml->setFavoriteList();
+        if (iceCastXmlData->getIsFavoriteOnTreeCliced())
+            iceCastXmlData->loadFavoriteIceCastStations();
+        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
+        iceCastXmlData->setFavoriteStations();
+        iceCastXmlData->loadFavoriteIceCastStations();
     }
 }
 

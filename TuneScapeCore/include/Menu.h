@@ -17,7 +17,7 @@ private slots:
 private:
     Ui::MainWindow *ui = nullptr;
     RadioList *radioList = nullptr;
-    IceCastXmlData *iceCastXml = nullptr;
+    IceCastXmlData *iceCastXmlData = nullptr;
 
     QMenu *mainMenu = nullptr;
     QAction *importPls = nullptr;

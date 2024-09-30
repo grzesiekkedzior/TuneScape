@@ -86,6 +86,7 @@ public:
 
     QMainWindow *getMainWindow() const;
     void setMainWindow(QMainWindow *newMainWindow);
+    void setFavoriteLibrary();
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
