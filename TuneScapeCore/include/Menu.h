@@ -12,7 +12,8 @@ public:
 
 private slots:
     void importPlaylists();
-    void exportPlaylists();
+    void exportRadioBrowserPlaylist();
+    void exortIceCastPlaylist();
 
 private:
     Ui::MainWindow *ui = nullptr;
@@ -20,11 +21,15 @@ private:
     IceCastXmlData *iceCastXmlData = nullptr;
 
     QMenu *mainMenu = nullptr;
+    QMenu *exportPls = nullptr;
     QAction *importPls = nullptr;
-    QAction *exportPls = nullptr;
+    QAction *exportRadioBrowser = nullptr;
+    QAction *exportIceCastRadio = nullptr;
 
     const QString RADIO_BROWSER = "radiobrowser.txt";
     const QString ICE_CAST = "icecast.txt";
+
+    void exportRadio(const QString &playlist);
 };
 
 #endif // MENU_H

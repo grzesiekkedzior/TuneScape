@@ -12,15 +12,22 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     mainMenu = new QMenu("Menu");
     importPls = new QAction("import pls");
     importPls->setIcon(QIcon(":/images/img/download-20-32.png"));
-    exportPls = new QAction("export pls");
+    exportPls = new QMenu("export pls");
     exportPls->setIcon(QIcon(":/images/img/upload-20-32.png"));
+    exportRadioBrowser = new QAction("Radio-Browser");
+    exportRadioBrowser->setIcon(QIcon(":/images/img/playlist-27-32.png"));
+    exportIceCastRadio = new QAction("IceCast");
+    exportIceCastRadio->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     mainMenu->addAction(importPls);
-    mainMenu->addAction(exportPls);
+    mainMenu->addMenu(exportPls);
+    exportPls->addAction(exportRadioBrowser);
+    exportPls->addAction(exportIceCastRadio);
     ui->menuButton->setMenu(mainMenu);
     ui->menuButton->setPopupMode(QToolButton::InstantPopup);
 
     connect(importPls, &QAction::triggered, this, &Menu::importPlaylists);
-    connect(exportPls, &QAction::triggered, this, &Menu::exportPlaylists);
+    connect(exportRadioBrowser, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylist);
+    connect(exportIceCastRadio, &QAction::triggered, this, &Menu::exortIceCastPlaylist);
 }
 
 void Menu::importPlaylists()
@@ -69,7 +76,6 @@ void Menu::importPlaylists()
     QMessageBox::information(nullptr, "Sukccess", "Playlist is imported successfully.");
 
     if (playlist == RADIO_BROWSER) {
-        qDebug() << "???????????????????????????????";
         radioList->setFavoriteStatons();
         radioList->setFavoriteLibrary();
     }
@@ -82,4 +88,45 @@ void Menu::importPlaylists()
     }
 }
 
-void Menu::exportPlaylists() {}
+void Menu::exportRadioBrowserPlaylist()
+{
+    exportRadio(RADIO_BROWSER);
+}
+
+void Menu::exortIceCastPlaylist()
+{
+    exportRadio(ICE_CAST);
+}
+
+void Menu::exportRadio(const QString &playlist)
+{
+    QFile inputFile(playlist);
+    if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(nullptr, "Error", "Cannot open file.");
+        return;
+    }
+
+    QTextStream in(&inputFile);
+    QString fileContent = in.readAll();
+    inputFile.close();
+
+    QString saveFilePath = QFileDialog::getSaveFileName(nullptr,
+                                                        "Save playlist",
+                                                        playlist,
+                                                        "Text file (*.txt);;All files (*.*)");
+    if (saveFilePath.isEmpty()) {
+        return;
+    }
+
+    QFile outputFile(saveFilePath);
+    if (!outputFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(nullptr, "Error", "Cannot open file for writing.");
+        return;
+    }
+
+    QTextStream out(&outputFile);
+    out << fileContent;
+    outputFile.close();
+
+    QMessageBox::information(nullptr, "Sukccess", "Playlist is saved correctly.");
+}
