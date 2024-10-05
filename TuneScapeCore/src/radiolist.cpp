@@ -880,6 +880,8 @@ void RadioList::setRadioImage(const QModelIndex &index)
     if (!(jsonListProcesor.isConnected))
         return;
     QEventLoop loop;
+    if (jsonListProcesor.getIconAddresses().size() == 0)
+        return;
     QUrl imageUrl(jsonListProcesor.getIconAddresses(index.row()));
 
     QNetworkAccessManager manager;
@@ -1020,7 +1022,8 @@ void RadioList::onPlayPauseButtonCliced()
             ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
             markIconPlayingStation(newIndex.row());
             setIsPlaying(true);
-        } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == "") {
+        } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == ""
+                   && ui->tableView->currentIndex().row() > 0) {
             playStream(radioIndexNumber);
             setIsPlaying(true);
         }

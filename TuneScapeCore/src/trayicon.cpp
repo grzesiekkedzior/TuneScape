@@ -303,8 +303,12 @@ void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
 
 TrayIcon::~TrayIcon()
 {
-    delete systemTrayIcon;
-    delete trayMenu;
-    delete playPauseAction;
-    delete exitAction;
+    if (systemTrayIcon)
+        delete systemTrayIcon;
+    if (trayMenu)
+        delete trayMenu;
+    if (playPauseAction)
+        delete playPauseAction;
+    if (exitAction)
+        delete exitAction;
 }
