@@ -1,5 +1,13 @@
 
 # TuneScape   
+### **4.5.0**   
+Version 4.5.0 brings a new look for TuneScape. The appearance of the light and dark themes is more elegant, and its behavior is idealy the same.
+I prepared architecture to add more themes in the future too.   
+<br/>
+![light](https://github.com/user-attachments/assets/e23a5170-d8b5-45c2-89bf-d0e08c4b70de)   
+<br/>
+![dark](https://github.com/user-attachments/assets/d7b539e4-45c7-4b34-927f-99192f303826)   
+<br/>
 ### **4.4.0**   
 In version 4.4.0 is added export and import functionality for the favorite playlists and a simple settings/menu button.   
 <br/>
