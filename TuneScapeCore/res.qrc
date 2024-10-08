@@ -59,5 +59,6 @@
     <qresource prefix="/src">
         <file>files/license.txt</file>
         <file>theme/Combinear.qss</file>
+        <file>theme/LightTheme.qss</file>
     </qresource>
 </RCC>

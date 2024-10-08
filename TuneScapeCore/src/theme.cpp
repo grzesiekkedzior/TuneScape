@@ -2,10 +2,14 @@
 
 Theme::Theme()
     : filetheme(":/src/theme/Combinear.qss")
+    , lightTheme(":/src/theme/LightTheme.qss")
     , style{""}
 {
     filetheme.open(QFile::ReadOnly);
+    lightTheme.open(QFile::ReadOnly);
     style = filetheme.readAll();
+    lightThm = lightTheme.readAll();
+    setLightTheme();
 }
 // QTC_TEMP
 bool Theme::getIsDark() const
@@ -36,7 +40,7 @@ void Theme::setDarkTheme()
 
 void Theme::setLightTheme()
 {
-    app->setStyleSheet("");
+    app->setStyleSheet(lightThm);
 }
 
 void Theme::getApplicationObject(QApplication &app)

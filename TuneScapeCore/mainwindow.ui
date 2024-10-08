@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>891</width>
+    <width>893</width>
     <height>577</height>
    </rect>
   </property>
@@ -99,7 +99,7 @@
           <x>0</x>
           <y>0</y>
           <width>180</width>
-          <height>410</height>
+          <height>405</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -558,8 +558,8 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>684</width>
-          <height>410</height>
+          <width>685</width>
+          <height>405</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -670,8 +670,8 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>656</width>
-                  <height>349</height>
+                  <width>655</width>
+                  <height>348</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -788,7 +788,7 @@ QProgressBar::chunk {
        <widget class="QPushButton" name="stop">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -797,6 +797,9 @@ QProgressBar::chunk {
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -807,7 +810,7 @@ QProgressBar::chunk {
        <widget class="QPushButton" name="previous">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -816,6 +819,9 @@ QProgressBar::chunk {
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -826,7 +832,7 @@ QProgressBar::chunk {
        <widget class="QPushButton" name="playPause">
         <property name="minimumSize">
          <size>
-          <width>40</width>
+          <width>0</width>
           <height>40</height>
          </size>
         </property>
@@ -835,6 +841,9 @@ QProgressBar::chunk {
           <width>40</width>
           <height>33</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -854,7 +863,7 @@ QProgressBar::chunk {
        <widget class="QPushButton" name="favorite">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -863,6 +872,9 @@ QProgressBar::chunk {
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -873,7 +885,7 @@ QProgressBar::chunk {
        <widget class="QPushButton" name="record">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -882,6 +894,9 @@ QProgressBar::chunk {
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -892,7 +907,7 @@ QProgressBar::chunk {
        <widget class="QPushButton" name="next">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -901,6 +916,9 @@ QProgressBar::chunk {
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -958,6 +976,12 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
       </item>
       <item>
        <widget class="QLineEdit" name="serachInput">
+        <property name="minimumSize">
+         <size>
+          <width>150</width>
+          <height>0</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">border: noborder;</string>
         </property>
@@ -970,7 +994,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
        <widget class="QPushButton" name="volume">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>42</width>
           <height>30</height>
          </size>
         </property>
@@ -979,6 +1003,16 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    min-width: 30px;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 7px;
+    padding: 5px;
+}
+</string>
         </property>
         <property name="text">
          <string/>
@@ -1017,7 +1051,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         </property>
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -1026,6 +1060,9 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -1040,7 +1077,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
        <widget class="QToolButton" name="menuButton">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -1056,6 +1093,9 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         <property name="autoFillBackground">
          <bool>false</bool>
         </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
         <property name="text">
          <string/>
         </property>
@@ -1069,7 +1109,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
        <widget class="QPushButton" name="themeButton">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -1078,6 +1118,9 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -1092,7 +1135,7 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
        <widget class="QPushButton" name="tryIcon">
         <property name="minimumSize">
          <size>
-          <width>30</width>
+          <width>0</width>
           <height>30</height>
          </size>
         </property>
@@ -1101,6 +1144,9 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
           <width>30</width>
           <height>30</height>
          </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>

@@ -27,7 +27,9 @@ private:
     bool isDark = false;
 
     QFile filetheme;
+    QFile lightTheme;
     QString style;
+    QString lightThm;
 };
 
 #endif // THEME_H
