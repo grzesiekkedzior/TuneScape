@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QtTest>
 #include "include/AppConfig.h"
+#include "include/miniplayer.h"
 #include "include/radiolist.h"
 // add necessary includes here
 
@@ -22,6 +23,7 @@ private slots:
     void testAppConfigCheckFileIsExists();
     void testAppConfigCheckBoolState();
     void testAppConfigChangeBoolState();
+    void testMiniPlayerIsVisible();
 };
 
 TuneScapeTests::TuneScapeTests() {}
@@ -83,6 +85,15 @@ void TuneScapeTests::testAppConfigChangeBoolState()
     // file is false for now
     bool state = appConfig.changeBoolState(false);
     QCOMPARE(state, true);
+}
+
+void TuneScapeTests::testMiniPlayerIsVisible()
+{
+    miniplayer miniPlayer;
+    bool state = miniPlayer.getIsVisible();
+    QCOMPARE_NE(state, true);
+    miniPlayer.setIsVisible(false);
+    QCOMPARE(state, false);
 }
 
 QTEST_MAIN(TuneScapeTests)

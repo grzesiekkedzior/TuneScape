@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>893</width>
+    <width>987</width>
     <height>577</height>
    </rect>
   </property>
@@ -558,7 +558,7 @@
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>685</width>
+          <width>779</width>
           <height>405</height>
          </rect>
         </property>
@@ -670,7 +670,7 @@ selection-color: rgb(4, 4, 4);</string>
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>655</width>
+                  <width>749</width>
                   <height>348</height>
                  </rect>
                 </property>
@@ -1128,6 +1128,23 @@ font: 700 9pt &quot;Segoe UI&quot;;</string>
         <property name="icon">
          <iconset resource="res.qrc">
           <normaloff>:/images/img/dark240.png</normaloff>:/images/img/dark240.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="minplr">
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="res.qrc">
+          <normaloff>:/images/img/minimize30.png</normaloff>:/images/img/minimize30.png</iconset>
         </property>
        </widget>
       </item>

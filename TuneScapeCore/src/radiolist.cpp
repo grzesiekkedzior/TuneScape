@@ -60,6 +60,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
             &RadioList::handleIconPlayButtonDoubleClick);
     connect(this, &RadioList::allIconsLoaded, this, &RadioList::onAllIconsLoaded);
     connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
+    connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -75,6 +76,8 @@ RadioList::RadioList(Ui::MainWindow *ui)
     // ui->fft->addWidget(&audioProcessor);
     audioProcessor.setUi(ui);
     audioProcessor.setPlayer(radioManager.getMediaPlayer());
+    miniPlayer.setUi(ui);
+    miniPlayer.setRadioList(this);
 }
 
 void RadioList::clearFlowLayout()
@@ -149,6 +152,11 @@ void RadioList::setRawDarkRadioImage()
 {
     ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
     ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+}
+
+void RadioList::showMiniplayer()
+{
+    miniPlayer.showMiniPlayer();
 }
 
 void RadioList::setRawRadioImage()
@@ -1032,6 +1040,8 @@ void RadioList::onPlayPauseButtonCliced()
             setIndexColor();
         }
         ui->playPause->setIcon(
+            QIcon(getIsPlaying() ? ":/images/img/pause30.png" : ":/images/img/play30.png"));
+        miniPlayer.getMui()->play->setIcon(
             QIcon(getIsPlaying() ? ":/images/img/pause30.png" : ":/images/img/play30.png"));
         setIsBrowseStationLoaded(true);
     }

@@ -18,6 +18,7 @@
 #include <QObject>
 #include <QStandardItemModel>
 #include <QStringList>
+#include "miniplayer.h"
 
 enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
 
@@ -133,7 +134,9 @@ private:
     QMessageBox message;
     QMainWindow *mainWindow = nullptr;
 
+    //Singletons
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
+    miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;
@@ -215,6 +218,7 @@ private:
     void isDark();
     void setRawRadioImage();
     void setRawDarkRadioImage();
+    void showMiniplayer();
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
 };

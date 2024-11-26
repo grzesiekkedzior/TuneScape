@@ -19,6 +19,7 @@ SOURCES += \
     src/customcolordelegate.cpp \
     src/fft.cpp \
     src/flowlayout.cpp \
+    src/miniplayer.cpp \
     src/radioinfo.cpp \
     src/streamReader.cpp \
     src/jsonlistprocessor.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     include/customcolordelegate.h \
     include/fft.h \
     include/flowlayout.h \
+    include/miniplayer.h \
     include/radioinfo.h \
     include/streamReader.h \
     include/jsonlistprocessor.h \
@@ -52,7 +54,8 @@ HEADERS += \
 
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    mini_player.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
