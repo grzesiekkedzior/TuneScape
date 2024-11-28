@@ -6,6 +6,7 @@
 #include "container.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
+#include "miniplayer.h"
 #include "radioaudiomanager.h"
 #include "radioinfo.h"
 #include "streamrecorder.h"
@@ -127,6 +128,7 @@ private:
 
     TrayIcon *trayIcon = nullptr;
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
+    miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
 };
 
 #endif // ICECASTXMLDATA_H

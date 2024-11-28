@@ -47,8 +47,12 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->stop, &QPushButton::clicked, this, &RadioList::onStopButtonClicked);
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTableViewClicked);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
+
     connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, &RadioList::sliderMoved);
+    connect(miniPlayer.getMui()->dial, &QDial::sliderMoved, this, &RadioList::sliderMoved);
+    connect(miniPlayer.getMui()->dial, &QDial::valueChanged, this, &RadioList::sliderMoved);
+
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
     //connect(ui->record, &QPushButton::clicked, this, &RadioList::setMp3FileName);
     connect(ui->record, &QPushButton::clicked, this, &RadioList::startStopRecord);
@@ -61,6 +65,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(this, &RadioList::allIconsLoaded, this, &RadioList::onAllIconsLoaded);
     connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
+    connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -152,17 +157,30 @@ void RadioList::setRawDarkRadioImage()
 {
     ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
     ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+    miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
 }
 
 void RadioList::showMiniplayer()
 {
     miniPlayer.showMiniPlayer();
+    int value = ui->horizontalVolumeSlider->value();
+    miniPlayer.getMui()->dial->setValue(value);
+    mainWindow->hide();
+}
+
+void RadioList::maximizeWindow()
+{
+    miniPlayer.window()->close();
+    mainWindow->show();
+    int value = miniPlayer.getMui()->dial->value();
+    ui->horizontalVolumeSlider->setValue(value);
 }
 
 void RadioList::setRawRadioImage()
 {
     ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
     ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+    miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
 }
 
 void RadioList::setDarkMode()
@@ -913,21 +931,29 @@ void RadioList::setRadioImage(const QModelIndex &index)
                 QSize imageSize(120, 120);
                 pixmap = pixmap.scaled(imageSize, Qt::KeepAspectRatio);
                 ui->infoLabel->setPixmap(pixmap);
+                miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
                 ui->infoLabel->show();
             }
         } else {
-            if (isDarkMode)
+            if (isDarkMode) {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-            else
+                miniPlayer.getMui()->radioImage->setPixmap(
+                    QPixmap(":/images/img/radiodark-10-96.png"));
+            } else {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            }
             ui->infoLabel->show();
         }
     } else {
         qDebug() << "Error:" << reply->errorString();
-        if (isDarkMode)
+        if (isDarkMode) {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-        else
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+        } else {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+        }
         ui->infoLabel->show();
     }
 
@@ -950,8 +976,10 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 
         setIsPlaying(true);
         setIsBrowseStationLoaded(true);
-        if (getIsPlaying())
+        if (getIsPlaying()) {
             ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
+            miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/pause30.png"));
+        }
 
         isStopClicked = false;
         ui->infoData->clear();
@@ -1028,6 +1056,9 @@ void RadioList::onPlayPauseButtonCliced()
             QModelIndex newIndex = ui->tableView->model()->index(0, 0);
             setRadioImage(newIndex);
             ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
+            /***************************************************/
+            miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
+            /***************************************************/
             markIconPlayingStation(newIndex.row());
             setIsPlaying(true);
         } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == ""
@@ -1103,15 +1134,19 @@ void RadioList::onStopButtonClicked()
         isStopClicked = true;
         if (radioManager.getMediaPlayer()->isPlaying()) {
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+            miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
             radioManager.stopStream();
             audioProcessor.stop();
             currentRadioPlayingAddress = "";
             if (isDarkMode) {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
                 ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+                miniPlayer.getMui()->radioImage->setPixmap(
+                    QPixmap(":/images/img/radiodark-10-96.png"));
             } else {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
                 ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             }
 
             ui->infoLabel->show();
@@ -1120,6 +1155,7 @@ void RadioList::onStopButtonClicked()
             ui->tableView->setCurrentIndex(newIndex);
         } else {
             ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+            miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
             currentRadioPlayingAddress = "";
             QModelIndex newIndex = ui->tableView->model()->index(0, 0);
             ui->tableView->setCurrentIndex(newIndex);
@@ -1243,6 +1279,9 @@ void RadioList::handleDataReceived(const QString &data)
         qDebug() << title;
         ui->infoData->clear();
         ui->infoData->setText(title);
+        miniPlayer.getMui()->radioText->clear();
+        miniPlayer.getMui()->radioText->setText(title);
+
         emit sendTitleToTray(title);
     }
     //metaData = "";

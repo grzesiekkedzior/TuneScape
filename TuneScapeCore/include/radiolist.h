@@ -219,6 +219,7 @@ private:
     void setRawRadioImage();
     void setRawDarkRadioImage();
     void showMiniplayer();
+    void maximizeWindow();
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
 };

@@ -237,10 +237,13 @@ void IceCastXmlData::setRadioInfo(RadioInfo *radioInfo)
 
 void IceCastXmlData::playPauseIcon()
 {
-    if (getPlaying())
+    if (getPlaying()) {
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
-    else
+        miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/pause30.png"));
+    } else {
         ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+        miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
+    }
 }
 
 void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
@@ -273,9 +276,11 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         if (radioList->getIsDarkMode()) {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         } else {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         }
 
         radioList->getSongTitle(url);

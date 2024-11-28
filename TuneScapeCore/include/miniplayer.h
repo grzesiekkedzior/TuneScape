@@ -35,6 +35,7 @@ private:
 
     void playRadio();
     void maximizeWindow();
+    void stayOnTop();
 };
 
 #endif // MINIPLAYER_H

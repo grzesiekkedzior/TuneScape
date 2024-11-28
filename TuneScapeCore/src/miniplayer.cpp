@@ -7,6 +7,8 @@ miniplayer::miniplayer()
 {
     mui->setupUi(this);
     connect(mui->play, &QPushButton::clicked, this, &miniplayer::playRadio);
+    connect(mui->stayTop, &QRadioButton::clicked, this, &miniplayer::stayOnTop);
+    this->setStyleSheet(":/src/theme/Combinear.qss");
     qDebug() << "miniplayer";
 }
 
@@ -70,3 +72,12 @@ void miniplayer::playRadio()
 }
 
 void miniplayer::maximizeWindow() {}
+
+void miniplayer::stayOnTop()
+{
+    if (mui->stayTop->isChecked())
+        this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
+    else
+        this->setWindowFlags(this->windowFlags() & ~Qt::WindowStaysOnTopHint);
+    this->show();
+}
