@@ -1,5 +1,11 @@
 
 # TuneScape   
+### **4.6.0**   
+We get a new feature with version 4.6.0. Miniplayer that shows for you only minimal useful information and can stay on top of other windows if you want.   
+<br/>
+![miniplayerlight](https://github.com/user-attachments/assets/ff0851f7-166f-4dd2-a22c-de7793bb647e)
+![miniplayerdark](https://github.com/user-attachments/assets/615644b3-2f6a-4f1d-93e1-298b67bafb16)   
+<br/>
 ### **4.5.0**   
 Version 4.5.0 brings a new look for TuneScape. The appearance of the light and dark themes is more elegant, and its behavior is idealy the same.
 I prepared architecture to add more themes in the future too.   
