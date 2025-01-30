@@ -46,7 +46,7 @@ private:
     Infodata infoData;
     const int infoSize = 10;
 
-    const QString ENDPOINT = "/json/stations/search?name=";
+    const QString ENDPOINT = "json/stations/search?name=";
 
     // json key to get data from an array
     const QString FAVICON = "favicon";

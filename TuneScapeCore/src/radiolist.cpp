@@ -25,6 +25,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     iceCastXmlData->setRadioList(this);
     iceCastXmlData->setRadioInfo(radioInfo);
     iceCastXmlData->makeShareStreamRecorder(streamRecorder);
+    ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     // for list
