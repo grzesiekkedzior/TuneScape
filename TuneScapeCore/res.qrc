@@ -60,5 +60,6 @@
         <file>files/license.txt</file>
         <file>theme/Combinear.qss</file>
         <file>theme/LightTheme.qss</file>
+        <file>theme/LightInDarkWindows.qss</file>
     </qresource>
 </RCC>

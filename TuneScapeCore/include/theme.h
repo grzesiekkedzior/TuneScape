@@ -17,6 +17,8 @@ public:
     void setDarkTheme();
     void setLightTheme();
     void getApplicationObject(QApplication &app);
+    bool isSystemDarkMode();
+    void checkThemeChange();
 
     Ui::MainWindow *getUi() const;
     void setUi(Ui::MainWindow *newUi);
@@ -28,8 +30,12 @@ private:
 
     QFile filetheme;
     QFile lightTheme;
+    QFile lightInDarkWIndowsTheme;
     QString style;
     QString lightThm;
+    QString lightInDarkWindows;
+
+    const QString THEME_REGISTER = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 };
 
 #endif // THEME_H

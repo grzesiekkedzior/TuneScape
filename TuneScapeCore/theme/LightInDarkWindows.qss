@@ -3,18 +3,19 @@ QPushButton {
     border-style: solid;
     border-width: 1px;
     border-radius: 7px;
-    border-color: lightgray;
+    border-color: #555;
     padding: 5px;
-    background-color: #FFFFFF;
+    background-color: #333;
+    color: white;
 }
 
 QPushButton:hover {
-    background-color: rgba(0, 0, 0, 3%);
+    background-color: #444;
 }
 
 QPushButton:pressed {
-    background-color: lightgray;
-    border-color: #A9A9A9;
+    background-color: #666;
+    border-color: #777;
 }
 
 QToolButton {
@@ -22,23 +23,24 @@ QToolButton {
     border-style: solid;
     border-width: 1px;
     border-radius: 7px;
-    border-color: lightgray;
+    border-color: #555;
     padding: 5px;
+    background-color: #333;
+    color: white;
 }
-
 QToolButton:hover {
-    background-color: rgba(0, 0, 0, 3%);
+    background-color: #444;
 }
 
 QToolButton::menu-indicator{
     image: none;
 }
 
-
 QLineEdit {
     min-height: 25px;
     border-radius: 15px;
-    border: 1px solid lightgray;
+    border: 1px solid #555;
     padding: 5px 10px;
-    background-color: white;
+    background-color: #222;
+    color: white;
 }
