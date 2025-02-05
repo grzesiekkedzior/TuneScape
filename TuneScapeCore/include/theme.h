@@ -30,10 +30,10 @@ private:
 
     QFile filetheme;
     QFile lightTheme;
-    QFile lightInDarkWIndowsTheme;
+    QFile light;
     QString style;
     QString lightThm;
-    QString lightInDarkWindows;
+    QString lightDarkMode;
 
     const QString THEME_REGISTER = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 };
