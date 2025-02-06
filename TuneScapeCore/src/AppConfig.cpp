@@ -9,7 +9,8 @@ AppConfig::AppConfig(QString path)
     if (!file->exists()) {
         if (file->open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(file);
-            out << "notifications=true\n";
+            out << "notifications=true" << Qt::endl;
+            out << "darktheme=false" << Qt::endl;
             file->close();
         } else {
             qDebug() << "Can't create file: " << file->errorString();
@@ -29,7 +30,7 @@ bool AppConfig::checkFile()
     return file->exists();
 }
 
-bool AppConfig::checkBoolState()
+bool AppConfig::checkBoolState(QString properties)
 {
     if (!file->open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
@@ -37,7 +38,7 @@ bool AppConfig::checkBoolState()
     bool result = false;
     while (!file->atEnd()) {
         QByteArray line = file->readLine().trimmed();
-        if (line.contains("notifications")) {
+        if (line.contains(properties.toStdString())) {
             QList<QByteArray> parts = line.split('=');
             if (parts.size() == 2 && parts[1].trimmed() == "true") {
                 result = true;
@@ -49,7 +50,7 @@ bool AppConfig::checkBoolState()
     return result;
 }
 
-bool AppConfig::changeBoolState(bool state)
+bool AppConfig::changeBoolState(bool state, QString properties)
 {
     if (!checkFile())
         return false;
@@ -65,7 +66,7 @@ bool AppConfig::changeBoolState(bool state)
 
     bool found = false;
     for (int i = 0; i < lines.size(); ++i) {
-        if (lines[i].contains("notifications")) {
+        if (lines[i].contains(properties.toStdString())) {
             QList<QByteArray> parts = lines[i].split('=');
             if (parts.size() == 2) {
                 parts[1] = state ? "true\n" : "false\n";

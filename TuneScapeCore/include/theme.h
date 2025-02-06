@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QObject>
 #include "../ui_mainwindow.h"
+#include "../include/AppConfig.h"
 
 class Theme : public QObject
 {
@@ -27,6 +28,7 @@ private:
     Ui::MainWindow *ui;
     QApplication *app = nullptr;
     bool isDark = false;
+    AppConfig *appConfig = nullptr;
 
     QFile filetheme;
     QFile lightTheme;
@@ -36,6 +38,7 @@ private:
     QString lightDarkMode;
 
     const QString THEME_REGISTER = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+    const QString DARK_THEME_PROPERTY = "darktheme";
 };
 
 #endif // THEME_H

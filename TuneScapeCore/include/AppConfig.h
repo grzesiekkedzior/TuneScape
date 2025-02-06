@@ -12,8 +12,8 @@ public:
     explicit AppConfig(QString path);
     ~AppConfig();
     bool checkFile();
-    bool checkBoolState();
-    bool changeBoolState(bool state);
+    bool checkBoolState(QString properties);
+    bool changeBoolState(bool state, QString properties);
 
 private:
     QFile *file = nullptr;

@@ -33,9 +33,9 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     trayMenu->addMenu(newRadio);
 
     // load settings from application.properties file
-    QString action = appConfig->checkBoolState() ? NOTIFICATIONS.YES : NOTIFICATIONS.NO;
+    QString action = appConfig->checkBoolState(NOTIFICATIONS_PROPERTY) ? NOTIFICATIONS.YES : NOTIFICATIONS.NO;
     turnOnOffNotification = trayMenu->addAction(QIcon(":/images/img/notification-64.png"), action);
-    isNotificationEnabled = appConfig->checkBoolState();
+    isNotificationEnabled = appConfig->checkBoolState(NOTIFICATIONS_PROPERTY);
 
     systemTrayIcon->setContextMenu(trayMenu);
     connect(ui->tryIcon, &QPushButton::clicked, this, &TrayIcon::trayIconButtonClicked);
@@ -101,13 +101,13 @@ void TrayIcon::setNotifications(bool isNotificationEnabled)
                    this,
                    &TrayIcon::handleTitleFromRadioList);
         trayMenu->actions().at(5)->setText(NOTIFICATIONS.NO);
-        appConfig->changeBoolState(false);
+        appConfig->changeBoolState(false, NOTIFICATIONS_PROPERTY);
     } else {
         qDebug() << "connect";
         connect(radioList, &RadioList::sendTitleToTray, this, &TrayIcon::handleTitleFromRadioList);
         setIsNotificationEnable(true);
         trayMenu->actions().at(5)->setText(NOTIFICATIONS.YES);
-        appConfig->changeBoolState(true);
+        appConfig->changeBoolState(true, NOTIFICATIONS_PROPERTY);
     }
 }
 

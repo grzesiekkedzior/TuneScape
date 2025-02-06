@@ -87,6 +87,7 @@ private:
     const int MAX_RECENT_TITLES = 2;
     const int DELAY_BETWEEN_NOTIFICATIONS = 5 * 60 * 1000;
     const int TRAY_TIME_MESSAGE = 5000;
+    const QString NOTIFICATIONS_PROPERTY = "notifications";
     void setNotifications(bool isNotificationEnabled);
     QModelIndex createTrayRadioLists(QAction *action);
 

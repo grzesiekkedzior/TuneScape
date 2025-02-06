@@ -74,8 +74,8 @@ void TuneScapeTests::testAppConfigCheckBoolState()
 {
     AppConfig appConfig{"C:\\QtProjects\\TuneScape\\TuneScapeTests\\application.properties"};
     // file is false for now
-    appConfig.changeBoolState(false);
-    bool state = appConfig.checkBoolState();
+    appConfig.changeBoolState(false, "notifications");
+    bool state = appConfig.checkBoolState("notifications");
     QCOMPARE(state, false);
 }
 
@@ -83,7 +83,7 @@ void TuneScapeTests::testAppConfigChangeBoolState()
 {
     AppConfig appConfig{"C:\\QtProjects\\TuneScape\\TuneScapeTests\\application.properties"};
     // file is false for now
-    bool state = appConfig.changeBoolState(false);
+    bool state = appConfig.changeBoolState(false,"notifications");
     QCOMPARE(state, true);
 }
 

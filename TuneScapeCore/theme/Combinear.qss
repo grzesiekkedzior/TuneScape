@@ -843,3 +843,7 @@ QProgressBar::chunk
 
 }
 
+/*-----QTableView-----*/
+QTableView {
+    alternate-background-color: transparent;
+}

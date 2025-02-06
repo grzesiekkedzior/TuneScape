@@ -13,15 +13,15 @@ Theme::Theme()
     style = filetheme.readAll();
     lightThm = lightTheme.readAll();
     lightDarkMode = light.readAll();
-
-    if (isSystemDarkMode()) {
+    appConfig = new AppConfig("application.properties");
+    isDark = appConfig->checkBoolState(DARK_THEME_PROPERTY);
+    if (isDark) {
         app->setStyleSheet(style);
         isDark = true;
     } else {
-        app->setStyleSheet(lightThm);
+        app->setStyleSheet(lightDarkMode);
         isDark = false;
     }
-
 }
 
 bool Theme::getIsDark() const
@@ -48,6 +48,8 @@ void Theme::setTheme()
         app->setStyleSheet(style);
         isDark = true;
     }
+    appConfig->changeBoolState(isDark, DARK_THEME_PROPERTY);
+
 }
 
 void Theme::setDarkTheme()
