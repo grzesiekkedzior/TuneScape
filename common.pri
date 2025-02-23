@@ -18,7 +18,8 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/audioprocessor.h \
            $$PWD/TuneScapeCore/include/container.h \
            $$PWD/TuneScapeCore/include/fft.h \
-           $$PWD/TuneScapeCore/include/miniplayer.h
+           $$PWD/TuneScapeCore/include/miniplayer.h \
+           $$PWD/TuneScapeCore/include/Country.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/Menu.cpp \
@@ -38,7 +39,8 @@ SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/AppConfig.cpp \
            $$PWD/TuneScapeCore/src/audioprocessor.cpp \
            $$PWD/TuneScapeCore/src/fft.cpp \
-           $$PWD/TuneScapeCore/src/miniplayer.cpp
+           $$PWD/TuneScapeCore/src/miniplayer.cpp \
+           $$PWD/TuneScapeCore/src/Country.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui \

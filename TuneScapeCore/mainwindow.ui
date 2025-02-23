@@ -597,7 +597,7 @@
 selection-color: rgb(4, 4, 4);</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>3</number>
            </property>
            <widget class="QWidget" name="listTab">
             <attribute name="title">
@@ -772,6 +772,33 @@ QProgressBar::chunk {
                 <bool>false</bool>
                </attribute>
               </widget>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="listCountries">
+            <attribute name="title">
+             <string>Countries</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_9">
+             <item>
+              <layout class="QVBoxLayout" name="coutriesLayout">
+               <item>
+                <widget class="QComboBox" name="comboBox"/>
+               </item>
+               <item>
+                <widget class="QTableWidget" name="tableOfCoutries">
+                 <attribute name="horizontalHeaderMinimumSectionSize">
+                  <number>60</number>
+                 </attribute>
+                 <attribute name="horizontalHeaderDefaultSectionSize">
+                  <number>160</number>
+                 </attribute>
+                 <attribute name="horizontalHeaderStretchLastSection">
+                  <bool>true</bool>
+                 </attribute>
+                </widget>
+               </item>
+              </layout>
              </item>
             </layout>
            </widget>

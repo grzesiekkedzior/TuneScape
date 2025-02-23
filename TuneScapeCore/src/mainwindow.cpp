@@ -58,6 +58,8 @@ void MainWindow::start()
     // Very very weird
     radioList->getIceCastXmlData()->setTryIcon(trayIcon);
     appMenu = new Menu(ui, radioList, radioList->getIceCastXmlData());
+    country.setData(ui, radioList);
+    country.load();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
