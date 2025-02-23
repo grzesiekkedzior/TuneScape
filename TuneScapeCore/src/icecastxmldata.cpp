@@ -270,6 +270,8 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         setIndexColor(index);
         radioList->clearTableViewColor();
         radioList->clearIconLabelColor();
+        country.clearTableColor();
+        country.setIsPlaying(false);
         ui->infoData->clear();
         radioInfo->clearInfo();
         setIceCastInfo(index.row());

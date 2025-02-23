@@ -2,6 +2,7 @@
 #define ICECASTXMLDATA_H
 #include <QSharedPointer>
 #include <QUrl>
+#include "Country.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "customcolordelegate.h"
@@ -129,6 +130,7 @@ private:
     TrayIcon *trayIcon = nullptr;
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
+    Country &country = SingletonContainer::getSingleton().getInstance<Country>();
 };
 
 #endif // ICECASTXMLDATA_H

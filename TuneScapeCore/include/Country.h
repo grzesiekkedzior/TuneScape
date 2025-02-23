@@ -1,6 +1,9 @@
 #ifndef COUNTRY_H
 #define COUNTRY_H
 
+#include "audioprocessor.h"
+#include "container.h"
+#include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
 #include "qnetworkreply.h"
 #include "qobject.h"
@@ -39,6 +42,7 @@ public:
     bool createTable(QNetworkReply *reply);
     void searchCountry(QString country);
     void addRowToTable(const TableRow &row);
+    void setIndexColor(const QModelIndex &index);
 
     QVector<TableRow> &getTableRows();
     QVector<QString> &getStreamAddresses();
@@ -50,10 +54,22 @@ public:
     const QString URL = "homepage";
     const QString URL_RESOLVED = "url_resolved";
     const QString URL_STREAM = "url";
+    const QString FAVICON = "favicon";
     // const -> array
     const QString COUNTRY_NAME = "name";
     const QString COUNTRY_ISO = "iso_3166_1";
     const QString COUNTRY_COUNT = "stationcount";
+    const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
+
+    bool getIsPlaying() const;
+    void setIsPlaying(bool newIsPlaying);
+    void clearTableColor();
+    void checkIsOnPlaylist(const QModelIndex &index, QString currentRadioPlayingAddress);
+
+    QString getIconAddresses(int index) const;
+
+private slots:
+    void onDoubleListClicked(const QModelIndex &index);
 
 private:
     Ui::MainWindow *ui = nullptr;
@@ -68,9 +84,18 @@ private:
     QVector<TableRow> tableRows;
     QVector<CountriesData> countriesData;
     QVector<QString> streamAddresses;
+    QVector<QString> iconAddresses;
+
+    QSharedPointer<CustomColorDelegate> customColor{nullptr};
+
+    bool isPlaying;
 
     const QString COUNTRY_ENDPOINT_SEARCH = "json/stations/search?country=";
     const QString COUNTRY_ENDPOINT_NAME = "json/countries";
+
+    void playPauseIcon();
+    void setRadioImage(const QModelIndex &index);
+    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
 };
 
 #endif // COUNTRY_H

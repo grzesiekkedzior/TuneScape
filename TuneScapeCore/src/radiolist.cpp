@@ -273,6 +273,21 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+bool RadioList::getIsStopClicked() const
+{
+    return isStopClicked;
+}
+
+void RadioList::setIsStopClicked(bool newIsStopClicked)
+{
+    isStopClicked = newIsStopClicked;
+}
+
+RadioInfo *RadioList::getRadioInfo() const
+{
+    return radioInfo;
+}
+
 QMainWindow *RadioList::getMainWindow() const
 {
     return mainWindow;
@@ -972,6 +987,8 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         playStream(radioIndexNumber);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
+        country.clearTableColor();
+        country.setIsPlaying(false);
         setIndexColor();
         markIconPlayingStation(index.row());
 

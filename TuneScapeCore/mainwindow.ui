@@ -157,7 +157,7 @@
             <enum>QTabWidget::Rounded</enum>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>1</number>
            </property>
            <property name="usesScrollButtons">
             <bool>true</bool>
@@ -787,6 +787,9 @@ QProgressBar::chunk {
                </item>
                <item>
                 <widget class="QTableWidget" name="tableOfCoutries">
+                 <property name="editTriggers">
+                  <set>QAbstractItemView::NoEditTriggers</set>
+                 </property>
                  <property name="selectionMode">
                   <enum>QAbstractItemView::ContiguousSelection</enum>
                  </property>
