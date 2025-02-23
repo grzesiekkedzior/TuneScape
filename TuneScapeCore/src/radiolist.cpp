@@ -1283,6 +1283,31 @@ void RadioList::addRadioToFavorite()
             }
             setFavoriteStatons();
         }
+    } else if (country.getIsPlaying()) {
+        if (radioManager.getMediaPlayer()->isPlaying()) {
+            QString data = country.dtoFavorite.icon + "," + country.dtoFavorite.stream + ","
+                           + country.dtoFavorite.station + "," + country.dtoFavorite.country + ","
+                           + country.dtoFavorite.genre + "," + country.dtoFavorite.stationUrl;
+
+            if (isRadioAdded(data, RADIO_BROWSER_PLAYLIST)) {
+                qDebug() << "remove";
+                removeRadio(data, RADIO_BROWSER_PLAYLIST);
+                ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+            } else if (!data.isEmpty()) {
+                QFile file(RADIO_BROWSER_PLAYLIST);
+
+                if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+                    qDebug() << "Error";
+                    return;
+                }
+
+                QTextStream out(&file);
+                out << data << "\n";
+                file.close();
+                ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+            }
+        }
+        setFavoriteStatons();
     }
 }
 

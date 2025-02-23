@@ -21,6 +21,16 @@ class Country : public QObject
         QString stationUrl;
     };
 
+    struct DtoFavourite
+    {
+        QString icon;
+        QString stream;
+        QString station;
+        QString genre;
+        QString country;
+        QString stationUrl;
+    };
+
     struct CountriesData
     {
         QString countryName;
@@ -67,6 +77,10 @@ public:
     void checkIsOnPlaylist(const QModelIndex &index, QString currentRadioPlayingAddress);
 
     QString getIconAddresses(int index) const;
+
+    DtoFavourite dtoFavorite;
+
+    void createDtoFavorites(const QModelIndex &index, QString url);
 
 private slots:
     void onDoubleListClicked(const QModelIndex &index);

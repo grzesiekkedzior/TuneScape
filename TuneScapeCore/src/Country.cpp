@@ -145,10 +145,22 @@ void Country::setIndexColor(const QModelIndex &index)
     ui->tableOfCoutries->setItemDelegate(customColor.get());
 }
 
+void Country::createDtoFavorites(const QModelIndex &index, QString url)
+{
+    dtoFavorite.stream = url;
+    dtoFavorite.icon = iconAddresses[index.row()];
+    dtoFavorite.country = tableRows[index.row()].country;
+    dtoFavorite.genre = tableRows[index.row()].genre;
+    dtoFavorite.station = tableRows[index.row()].station;
+    dtoFavorite.stationUrl = tableRows[index.row()].stationUrl;
+}
+
 void Country::onDoubleListClicked(const QModelIndex &index)
 {
     if (radioList->getJsonListProcessor()->isConnected) {
         QString url = streamAddresses[index.row()];
+        createDtoFavorites(index, url);
+
         radioList->getRadioManager().loadStream(url);
         audioProcessor.start(url);
         radioList->getRadioManager().playStream();
