@@ -36,7 +36,9 @@ public:
     void loadCountriesToComboBox();
     QNetworkReply *setConnection(QString endpoint);
     bool createCountryArray(QNetworkReply *reply);
-    void countryNameJsonQuery(QNetworkReply *reply);
+    bool createTable(QNetworkReply *reply);
+    void searchCountry(QString country);
+    void addRowToTable(const TableRow &row);
 
     QVector<TableRow> &getTableRows();
     QVector<QString> &getStreamAddresses();
