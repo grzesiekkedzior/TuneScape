@@ -1094,6 +1094,7 @@ void RadioList::onPlayPauseButtonCliced()
         miniPlayer.getMui()->play->setIcon(
             QIcon(getIsPlaying() ? ":/images/img/pause30.png" : ":/images/img/play30.png"));
         setIsBrowseStationLoaded(true);
+        ui->tabRadioListWidget->setCurrentIndex(0);
     }
     if (isStopClicked) {
         setRadioImage(model->index(0, 0));
