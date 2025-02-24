@@ -33,9 +33,7 @@ I have fought seriously with FFT. There were very uncommon problems with buffers
 - Add a menu for a radio-browser station to tray the menu.   
 ### **The new branch for Linux development's name is "linux".**   
 ![main](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a6074926-5540-401d-a4e3-a93594de6edf)
-![darklist](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/cb29751d-19f5-4079-8aa6-76d2c89bcb91)
-![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)
-![darktiles](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/16e0fa4d-c84e-4320-a251-07c4986d3479)   
+![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)  
 ![tray1](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a5697f87-8b78-46a0-bdc7-20f93afb1f69)
 ![tray2](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/38610f42-4f10-4fe3-a3a0-c07b8bbd7356)
    
