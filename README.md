@@ -25,7 +25,8 @@ I have fought seriously with FFT. There were very uncommon problems with buffers
 ### **A new release, 4.2.1, with audio frequency spectrum.**   
 ![fft](https://github.com/user-attachments/assets/6bcc87d3-4990-4d28-a480-d4dfcd38b903)   
 ### **You can test the new beta version 4.1.0 with the tray radio lists.**   
-![radiolist](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/3dec5f97-6efc-47bc-9e4e-2bda6a7cdc85)   
+![smallmenu](https://github.com/user-attachments/assets/0ebbd10b-7ee7-41e3-a502-f719af5ce6a5)   
+
 ### **A new release, 4.0.0, is now available. Qt 6.7.0**   
 
 ### Expansion of features:    
