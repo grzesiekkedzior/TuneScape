@@ -45,7 +45,29 @@ This is an open-source internet radio app that provides access to a wide range o
 
 **TuneScape** for now is being tested on the Windows platform.
 
-[![Download TuneScape](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/tunescape/files/latest/download)
+[![Download TuneScape](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/tunescape/files/latest/download)   
+
+## 🎵 Support TuneScape
+
+If you enjoy using TuneScape and would like to support its development, you can make a donation via PayPal.  
+Every contribution helps maintain the project, add new features, and improve performance.  
+
+### 💰 Donate via PayPal  
+You can support TuneScape by sending a donation through PayPal:  
+[![Donate via PayPal](https://img.shields.io/badge/Donate%20via%20PayPal-00457C?logo=paypal&logoColor=white&style=for-the-badge)](https://www.paypal.com/donate/?hosted_button_id=MW4VMJ8YHSZF2)
+
+Or simply scan the QR code below:  
+
+![Kod QR](https://github.com/user-attachments/assets/a9c86292-1220-4e7e-b7b2-6e7415075220)
+
+### 🙌 Other Ways to Support  
+If you can't donate, you can still help by:  
+- ⭐ Starring the project on GitHub to increase its visibility.  
+- 📝 Providing feedback and suggestions to improve TuneScape.  
+- 📢 Sharing the app with friends who love internet radio.  
+
+Thank you for your support! 🎶❤️  
+
 
 # License
 **TuneScape** is released under the GPLv3 license.  
