@@ -32,8 +32,9 @@ I have fought seriously with FFT. There were very uncommon problems with buffers
 - Add a record icon to the tray menu.
 - Add a menu for a radio-browser station to tray the menu.   
 ### **The new branch for Linux development's name is "linux".**   
-![main](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a6074926-5540-401d-a4e3-a93594de6edf)
-![info](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/e074fa42-826f-439f-9cf9-7830e028044d)  
+![small](https://github.com/user-attachments/assets/579593cd-c669-4da1-8d9e-121b461da267)
+![small2](https://github.com/user-attachments/assets/a0ecb5d1-2735-4336-ae77-fa524d98b6d2)   
+
 ![tray1](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a5697f87-8b78-46a0-bdc7-20f93afb1f69)
 ![tray2](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/38610f42-4f10-4fe3-a3a0-c07b8bbd7356)
    
