@@ -13,6 +13,7 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
     this->radioList = radioList;
     connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
     connect(ui->tableOfCoutries, &QTableWidget::doubleClicked, this, &Country::onDoubleListClicked);
+    connect(ui->tableOfCoutries, &QTableWidget::activated, this, &Country::onDoubleListClicked);
 }
 
 void Country::load()

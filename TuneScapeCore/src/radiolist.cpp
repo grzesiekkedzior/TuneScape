@@ -795,7 +795,8 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item << " ROW " << index.row();
     if (!checkItem(item, LIBRARY_TREE)) {
-        if (!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2) {
+        if ((!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2)
+            || ui->tabRadioListWidget->currentIndex() == 3) {
             if (this->treeItem == "Search")
                 this->treeItem = "";
             ui->tabRadioListWidget->setCurrentIndex(0);

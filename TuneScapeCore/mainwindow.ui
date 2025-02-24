@@ -803,7 +803,7 @@ QProgressBar::chunk {
                   <bool>false</bool>
                  </property>
                  <attribute name="horizontalHeaderMinimumSectionSize">
-                  <number>60</number>
+                  <number>49</number>
                  </attribute>
                  <attribute name="horizontalHeaderDefaultSectionSize">
                   <number>160</number>
