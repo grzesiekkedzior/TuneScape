@@ -5,6 +5,7 @@
 #include "container.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
+#include "miniplayer.h"
 #include "qnetworkreply.h"
 #include "qobject.h"
 #include "ui_mainwindow.h"
@@ -110,6 +111,7 @@ private:
     void playPauseIcon();
     void setRadioImage(const QModelIndex &index);
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
+    miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
 };
 
 #endif // COUNTRY_H

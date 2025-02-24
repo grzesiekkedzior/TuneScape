@@ -174,11 +174,11 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         if (radioList->getIsDarkMode()) {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-            //miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         } else {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-            //miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         }
         setIsPlaying(true);
         if (isPlaying) {
@@ -234,17 +234,17 @@ void Country::setRadioImage(const QModelIndex &index)
                 QSize imageSize(120, 120);
                 pixmap = pixmap.scaled(imageSize, Qt::KeepAspectRatio);
                 ui->infoLabel->setPixmap(pixmap);
-                //miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
+                miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
                 ui->infoLabel->show();
             }
         } else {
             if (radioList->getIsDarkMode()) {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-                //miniPlayer.getMui()->radioImage->setPixmap(
-                //QPixmap(":/images/img/radiodark-10-96.png"));
+                miniPlayer.getMui()->radioImage->setPixmap(
+                    QPixmap(":/images/img/radiodark-10-96.png"));
             } else {
                 ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-                //miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             }
             ui->infoLabel->show();
         }
@@ -252,10 +252,10 @@ void Country::setRadioImage(const QModelIndex &index)
         qDebug() << "Error:" << reply->errorString();
         if (radioList->getIsDarkMode()) {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-            //miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
         } else {
             ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-            //miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         }
         ui->infoLabel->show();
     }
@@ -298,9 +298,9 @@ void Country::playPauseIcon()
 {
     if (getIsPlaying()) {
         ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
-        //miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/pause30.png"));
+        miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/pause30.png"));
     } else {
         ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
-        //miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
+        miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
     }
 }

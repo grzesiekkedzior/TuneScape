@@ -1191,6 +1191,7 @@ void RadioList::onStopButtonClicked()
             streamRecorder->stopRecording();
             streamRecorder->setIsRecording(false);
         }
+        country.clearTableColor();
     } else {
         return;
     }
