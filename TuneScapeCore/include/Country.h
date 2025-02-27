@@ -103,6 +103,8 @@ private:
     QVector<QString> streamAddresses;
     QVector<QString> iconAddresses;
 
+    QPixmap pixmap;
+
     QSharedPointer<CustomColorDelegate> customColor{nullptr};
 
     bool isPlaying;

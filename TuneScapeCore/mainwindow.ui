@@ -793,6 +793,13 @@ QProgressBar::chunk {
                 </widget>
                </item>
                <item>
+                <widget class="QLabel" name="worldImage">
+                 <property name="text">
+                  <string/>
+                 </property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QTableWidget" name="tableOfCoutries">
                  <property name="styleSheet">
                   <string notr="true">QTableWidget::item { padding: 2px; }</string>

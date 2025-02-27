@@ -14,6 +14,10 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
     connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
     connect(ui->tableOfCoutries, &QTableWidget::doubleClicked, this, &Country::onDoubleListClicked);
     //connect(ui->tableOfCoutries, &QTableWidget::activated, this, &Country::onDoubleListClicked);
+    pixmap.load(":/images/img/word.png");
+    ui->worldImage->setPixmap(pixmap);
+    ui->worldImage->setAlignment(Qt::AlignCenter);
+    ui->tableOfCoutries->setVisible(false);
 }
 
 void Country::load()
@@ -123,6 +127,10 @@ bool Country::createTable(QNetworkReply *reply)
 
 void Country::searchCountry(QString country)
 {
+    if (!ui->tableOfCoutries->isVisible()) {
+        ui->tableOfCoutries->setVisible(true);
+        ui->worldImage->hide();
+    }
     QString path = COUNTRY_ENDPOINT_SEARCH + country;
     RadioStations radioStations(path);
     reply = jsonListProcessor.checkAvailability(radioStations.getAddresses());
