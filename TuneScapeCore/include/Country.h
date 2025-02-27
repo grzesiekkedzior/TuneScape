@@ -55,9 +55,6 @@ public:
     void addRowToTable(const TableRow &row);
     void setIndexColor(const QModelIndex &index);
 
-    QVector<TableRow> &getTableRows();
-    QVector<QString> &getStreamAddresses();
-
     // const -> JSON
     const QString NAME = "name";
     const QString GENRE = "tags";
@@ -83,6 +80,11 @@ public:
 
     void createDtoFavorites(const QModelIndex &index, QString url);
 
+    QVector<QString> getStreamAddresses() const;
+
+    int getCurrentIndexPlaying() const;
+    void setCurrentIndexPlaying(int newCourrentIndexPlaying);
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
 
@@ -104,6 +106,7 @@ private:
     QSharedPointer<CustomColorDelegate> customColor{nullptr};
 
     bool isPlaying;
+    int courrentIndexPlaying = -1;
 
     const QString COUNTRY_ENDPOINT_SEARCH = "json/stations/search?country=";
     const QString COUNTRY_ENDPOINT_NAME = "json/countries";

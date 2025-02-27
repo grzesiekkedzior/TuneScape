@@ -13,7 +13,7 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
     this->radioList = radioList;
     connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
     connect(ui->tableOfCoutries, &QTableWidget::doubleClicked, this, &Country::onDoubleListClicked);
-    connect(ui->tableOfCoutries, &QTableWidget::activated, this, &Country::onDoubleListClicked);
+    //connect(ui->tableOfCoutries, &QTableWidget::activated, this, &Country::onDoubleListClicked);
 }
 
 void Country::load()
@@ -22,6 +22,7 @@ void Country::load()
     reply = setConnection(COUNTRY_ENDPOINT_NAME);
     createCountryArray(reply);
     loadCountriesToComboBox();
+    ui->tableOfCoutries->verticalHeader()->setDefaultSectionSize(18);
 }
 
 void Country::createHeaders()
@@ -164,7 +165,7 @@ void Country::onDoubleListClicked(const QModelIndex &index)
 
         radioList->getRadioManager().loadStream(url);
         audioProcessor.start(url);
-        radioList->getRadioManager().playStream();
+
         radioList->getIceCastXmlData()->clearTableViewColor();
         setIndexColor(index);
         ui->infoData->clear();
@@ -181,6 +182,7 @@ void Country::onDoubleListClicked(const QModelIndex &index)
             ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
             miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
         }
+        radioList->getRadioManager().playStream();
         setIsPlaying(true);
         if (isPlaying) {
             radioList->getRadioInfo()->loadEndpoint(tableRows[index.row()].station);
@@ -193,15 +195,30 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         radioList->setIsStopClicked(false);
         radioList->getSongTitle(url);
         //check favourite todo
-        setIsPlaying(true);
         radioList->setIsPlaying(false);
         radioList->getIceCastXmlData()->setPlaying(false);
         if (radioList->getStreamRecorder()->getIsRecording()) {
             radioList->getStreamRecorder()->stopRecording();
             radioList->getStreamRecorder()->setIsRecording(false);
         }
+        setCurrentIndexPlaying(index.row());
         playPauseIcon();
     }
+}
+
+int Country::getCurrentIndexPlaying() const
+{
+    return courrentIndexPlaying;
+}
+
+void Country::setCurrentIndexPlaying(int newCourrentIndexPlaying)
+{
+    courrentIndexPlaying = newCourrentIndexPlaying;
+}
+
+QVector<QString> Country::getStreamAddresses() const
+{
+    return streamAddresses;
 }
 
 void Country::setRadioImage(const QModelIndex &index)

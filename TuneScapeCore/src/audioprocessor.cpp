@@ -185,7 +185,7 @@ void AudioProcessor::updateGraph()
                     graphScene->addItem(bar);
                 }
 
-                qDebug() << "Graph updated.";
+                //qDebug() << "Graph updated.";
             },
             Qt::QueuedConnection);
     });
