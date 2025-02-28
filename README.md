@@ -1,5 +1,9 @@
 
 # TuneScape   
+### **4.7.0**   
+Version 4.7.0 brings us the countries choosing.   
+![world](https://github.com/user-attachments/assets/4423ba6c-f5ba-44af-9730-96f3fca2619d)   
+
 ### **4.6.0**   
 We get a new feature with version 4.6.0. Miniplayer that shows for you only minimal useful information and can stay on top of other windows if you want.   
 <br/>
