@@ -3,6 +3,7 @@
 
 #include <QMessageBox>
 #include "../ui_mainwindow.h"
+#include "Country.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "icecastxmldata.h"
@@ -89,6 +90,11 @@ public:
     void setMainWindow(QMainWindow *newMainWindow);
     void setFavoriteLibrary();
 
+    RadioInfo *getRadioInfo() const;
+
+    bool getIsStopClicked() const;
+    void setIsStopClicked(bool newIsStopClicked);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -137,6 +143,7 @@ private:
     //Singletons
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
+    Country &country = SingletonContainer::getSingleton().getInstance<Country>();
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;

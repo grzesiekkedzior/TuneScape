@@ -42,3 +42,6 @@ QLineEdit {
     padding: 5px 10px;
     background-color: white;
 }
+
+QTableView { border: none; }
+QTableView::item { border: none; }

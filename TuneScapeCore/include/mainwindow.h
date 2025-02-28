@@ -3,6 +3,7 @@
 #include <QDialog>
 #include <QMainWindow>
 #include <QResizeEvent>
+#include "Country.h"
 #include "include/Menu.h"
 #include "include/radioexplorer.h"
 #include "include/radioinfo.h"
@@ -32,6 +33,7 @@ private:
     RadioExplorer *radioExplorer;
     RadioList *radioList;
     RadioInfo *radioInfo;
+    Country &country = SingletonContainer::getSingleton().getInstance<Country>();
     QDialog *licenseDialog;
     QLabel *licenseLabel;
     QLabel *aboutTuneScape;
