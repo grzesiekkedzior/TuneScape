@@ -662,3 +662,5 @@ QTableView {
     alternate-background-color: transparent;
 }
 
+QTableView::item { border-right: none; }
+

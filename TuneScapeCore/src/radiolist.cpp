@@ -190,8 +190,6 @@ void RadioList::setDarkMode()
     // if play
     isDarkMode = (isDarkMode) ? false : true;
     if (isDarkMode) {
-        ui->tableView->setAlternatingRowColors(false);
-        ui->icecastTable->setAlternatingRowColors(false);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
         if (!isStopClicked)
@@ -203,8 +201,6 @@ void RadioList::setDarkMode()
             setRawDarkRadioImage();
 
     } else {
-        ui->tableView->setAlternatingRowColors(true);
-        ui->icecastTable->setAlternatingRowColors(true);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
         if (!isStopClicked)
@@ -745,8 +741,6 @@ void RadioList::loadAllData()
 
     setFavoriteStatons();
     if (!isDarkMode) {
-        ui->tableView->setAlternatingRowColors(true);
-        ui->icecastTable->setAlternatingRowColors(true);
     }
 
     setTopListOnStart();
