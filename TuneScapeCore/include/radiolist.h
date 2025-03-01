@@ -165,6 +165,7 @@ private:
     const QString HOMEPAGE = "Homepage";
     const QString LIBRARY = "Library";
     const QString FAVORITE = "Favorite";
+    const QString SEARCH = "Search";
 
     const QString JSON_ENDPOINT_TOP = "json/stations/topvote/20";
     const QString JSON_ENDPOINT_POPULAR = "json/stations/topclick/20";
@@ -227,6 +228,9 @@ private:
     void setRawDarkRadioImage();
     void showMiniplayer();
     void maximizeWindow();
+    QString getCurrentStreamUrl() const;
+    bool shouldUpdateIcon() const;
+    void handleIconUpdate();
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
 };

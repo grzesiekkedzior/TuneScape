@@ -78,6 +78,8 @@ void StreamRecorder::startRecording()
     reply = manager->get(request);
     connect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
     connect(reply, &QNetworkReply::downloadProgress, this, &StreamRecorder::downloadProgress);
+    setIsRecording(true);
+
 }
 
 void StreamRecorder::stopRecording()
@@ -90,6 +92,8 @@ void StreamRecorder::stopRecording()
     if (reply != nullptr) {
         disconnect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
     }
+
+    setIsRecording(false);
 }
 
 bool StreamRecorder::getIsRecording() const

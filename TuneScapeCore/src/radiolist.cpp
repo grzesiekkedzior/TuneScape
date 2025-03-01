@@ -74,12 +74,6 @@ RadioList::RadioList(Ui::MainWindow *ui)
     model->setHorizontalHeaderLabels(headers);
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
-
-    // audioProcessor.setFixedSize(97, 28);
-    // audioProcessor.setPlayer(radioManager.getMediaPlayer());
-    // audioProcessor.show();
-
-    // ui->fft->addWidget(&audioProcessor);
     audioProcessor.setUi(ui);
     audioProcessor.setPlayer(radioManager.getMediaPlayer());
     miniPlayer.setUi(ui);
@@ -88,15 +82,6 @@ RadioList::RadioList(Ui::MainWindow *ui)
 
 void RadioList::clearFlowLayout()
 {
-    // I think here must be better solution!!!
-    //    for (int i = 0; i < flowLayout->count(); i++) {
-    //        QLayoutItem *item = flowLayout->takeAt(i);
-    //        if (item) {
-    //            flowLayout->removeItem(item);
-    //            delete item->widget();
-    //            delete item;
-    //        }
-    //    }
     QLayoutItem *item;
     while ((item = flowLayout->takeAt(0)) != nullptr) {
         while (QWidget *widget = item->widget()) {
@@ -144,11 +129,7 @@ void RadioList::markIconPlayingStation(int radioNumber)
     }
 
     if (label) {
-        //if (isDarkMode) {
         label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
-        //} else {
-        //label->setStyleSheet("background-color: #deffdf; color: white; font-weight: bold;");
-        //}
     } else {
         qDebug() << "All icons are not loaded";
     }
@@ -222,54 +203,59 @@ void RadioList::isDark() {}
 
 void RadioList::setMp3FileName()
 {
+    QString title = "";
+    QString extension = "";
+
     if (isPlaying) {
-        QString title = ui->tableWidget->item(0, 1)->text();
-        QString extention = ui->tableWidget->item(5, 1)->text().toLower();
-        extention.replace("+", "");
-
-        streamRecorder->setFileName(title, extention);
-
+        title = ui->tableWidget->item(0, 1)->text();
+        extension = ui->tableWidget->item(5, 1)->text().toLower();
     } else if (country.getIsPlaying()) {
-        QString countryTitle = country.dtoFavorite.station;
-        QString countryExtention = ui->tableWidget->item(5, 1)->text().toLower();
-        countryExtention.replace("+", "");
-        streamRecorder->setFileName(countryTitle, countryExtention);
+        title = country.dtoFavorite.station;
+        extension = ui->tableWidget->item(5, 1)->text().toLower();
     } else if (iceCastXmlData->getPlaying() || iceCastXmlData->getIsFavoritePlaying()) {
-        QString iceCastTitle = ui->icecastTable->item(iceCastXmlData->getCurrentPlayingStation(), 0)
+        int stationIndex = iceCastXmlData->getCurrentPlayingStation();
+        title = ui->icecastTable->item(stationIndex, 0)
                                    ->text();
-        QString iceCastExtention = ui->icecastTable
-                                       ->item(iceCastXmlData->getCurrentPlayingStation(), 2)
+        extension = ui->icecastTable
+                                       ->item(stationIndex, 2)
                                        ->text()
                                        .toLower();
-        iceCastExtention.erase(iceCastExtention.constBegin(), iceCastExtention.constBegin() + 6);
-        iceCastExtention.replace("+", "");
-        qDebug() << iceCastExtention;
-        streamRecorder->setFileName(iceCastTitle, iceCastExtention);
+        extension.remove(0, 6);
     } else {
+        return;
     }
+    extension.replace("+", "");
+    streamRecorder->setFileName(title, extension);
 }
 
 void RadioList::onAllIconsLoaded()
 {
-    if (currentPlayListPlaying == currentPlaylistIndex && isIconFlowlayoutFull) {
-        if (getIsPlaying()) {
-            qDebug() << "Color" << iceCastXmlData->getPlaying();
-            qDebug() << "radioIndex: " << radioIndexNumber;
-            if (treeItem == "Search")
-                return;
-            if (radioIndexNumber >= buttonCache.size())
-                return;
-            QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
-            if (buttonContainer) {
-                QLabel *label = buttonContainer->findChild<QLabel *>();
-                if (label) {
-                    label->setStyleSheet(
-                        "background-color: #deffdf; color: black; font-weight: bold;");
-                } else {
-                    // handle the case when label is not found
-                    // todo
-                }
-            }
+    if (!shouldUpdateIcon())
+        return;
+
+    if (getIsPlaying()) {
+        handleIconUpdate();
+    }
+}
+
+bool RadioList::shouldUpdateIcon() const
+{
+    bool isSamePlaylist = (currentPlayListPlaying == currentPlaylistIndex);
+    bool isLayoutFull = isIconFlowlayoutFull;
+    bool isNotSearchMode = (treeItem != SEARCH);
+    bool isValidIndex = (radioIndexNumber < buttonCache.size());
+    return isSamePlaylist && isLayoutFull && isNotSearchMode && isValidIndex;
+}
+
+void RadioList::handleIconUpdate()
+{
+    QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
+    if (buttonContainer) {
+        QLabel *label = buttonContainer->findChild<QLabel *>();
+        if (label) {
+            label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
+        } else {
+            qDebug() << "Error!!!";
         }
     }
 }
@@ -1349,28 +1335,28 @@ void RadioList::handleDataReceived(const QString &data)
 
 void RadioList::startStopRecord()
 {
-    if (radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected) {
-        qDebug() << "Hello recording";
-        if (!streamRecorder->getIsRecording()) {
-            setMp3FileName();
+    if (!(radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected))
+        return;
 
-            if (isPlaying)
-                streamRecorder->loadCurrentAddress(currentRadioPlayingAddress);
-            else if (country.getIsPlaying()) {
-                streamRecorder->loadCurrentAddress(country.dtoFavorite.stream);
-            } else
-                streamRecorder->loadCurrentAddress(
-                    iceCastXmlData->getIceCastStationTableRows()
-                        .at(iceCastXmlData->getCurrentPlayingStation())
-                        .listen_url);
-            streamRecorder->startRecording();
-            streamRecorder->setIsRecording(true);
-        } else {
-            qDebug() << "record false";
-            streamRecorder->stopRecording();
-            streamRecorder->setIsRecording(false);
-        }
+    if (!streamRecorder->getIsRecording()) {
+        setMp3FileName();
+        streamRecorder->loadCurrentAddress(getCurrentStreamUrl());
+        streamRecorder->startRecording();
+    } else {
+        qDebug() << "record false";
+        streamRecorder->stopRecording();
     }
+}
+
+QString RadioList::getCurrentStreamUrl() const
+{
+    if (isPlaying)
+        return currentRadioPlayingAddress;
+    if (country.getIsPlaying())
+        return country.dtoFavorite.stream;
+    return iceCastXmlData->getIceCastStationTableRows()
+        .at(iceCastXmlData->getCurrentPlayingStation())
+        .listen_url;
 }
 
 void RadioList::setVectorsOfStation(const QString endpoint)
