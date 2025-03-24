@@ -4,9 +4,8 @@
 #include <QObject>
 struct ServerAddress
 {
-    QStringList addresses = {"http://de1.api.radio-browser.info/",
-                             "https://fr1.api.radio-browser.info/",
-                             "https://at1.api.radio-browser.info/"};
+    QStringList addresses = {"http://de2.api.radio-browser.info/",
+                             "https://nl.api.radio-browser.info/"};
 };
 
 class RadioStations : public QObject
