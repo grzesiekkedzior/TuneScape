@@ -8,6 +8,8 @@
 #include <QTcpSocket>
 #include <QTimer>
 #include "include/radiolist.h"
+#include <QMessageBox>
+#include <QProgressDialog>
 
 JsonListProcessor::JsonListProcessor()
 {
@@ -189,24 +191,58 @@ QVector<TableRow> &JsonListProcessor::getTableRows()
     return tableRows;
 }
 
-QNetworkReply *JsonListProcessor::checkAvailability(const QStringList &radioAddresses)
+QNetworkReply* JsonListProcessor::checkAvailability(const QStringList& radioAddresses)
 {
     QEventLoop loop;
     int status;
 
-    for (const QString &address : radioAddresses) {
+    // Creating "Connecting..." dialog
+    QProgressDialog progressDialog("Connecting to servers...", "Cancel", 0, radioAddresses.size());
+    progressDialog.setWindowModality(Qt::WindowModal);
+    progressDialog.setMinimumDuration(500); // Shows only if the operation lasts >500ms
+    progressDialog.setWindowIcon(QIcon(":/images/img/radio30.png"));
+    progressDialog.setAutoClose(true);
+
+    for (int i = 0; i < radioAddresses.size(); ++i) {
+        const QString& address = radioAddresses[i];
+        progressDialog.setValue(i);
+        progressDialog.setLabelText(QString("Attempting connection to %1...").arg(address));
+
+        // If the user cancels, break the loop
+        if (progressDialog.wasCanceled()) {
+            qDebug() << "Connection check canceled by user";
+            break;
+        }
+
         QNetworkRequest request((QUrl(address)));
         reply = manager.get(request);
         QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec();
+
         status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        qDebug() << "status " << status;
-        if (reply->error() == QNetworkReply::NoError)
+        QString errorString = reply->errorString();
+
+        if (reply->error() == QNetworkReply::NoError) {
+            qDebug() << "Connection successful:" << address << "Status code:" << status;
+            progressDialog.close();  // Force immediate dialog closure
             return reply;
+        } else {
+            qDebug() << "Connection failed:" << address << "Status:" << status
+                     << "Error:" << errorString;
+
+            QMessageBox::critical(nullptr, "Connection Error",
+                                  QString("Failed to connect to %1.\nError: %2")
+                                      .arg(address, errorString));
+
+            reply->deleteLater();
+        }
     }
 
+    progressDialog.setValue(radioAddresses.size()); // Complete progress if all attempts failed
+    qDebug() << "No available servers found";
     return nullptr;
 }
+
 
 QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply)
 {

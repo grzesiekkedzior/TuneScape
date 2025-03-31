@@ -36,6 +36,7 @@ HEADERS += \
     include/Country.h \
     include/IceCastXmlData.h \
     include/Menu.h \
+    include/RadioBrowserApi.h \
     include/StreamRecorder.h \
     include/Theme.h \
     include/TrayIcon.h \

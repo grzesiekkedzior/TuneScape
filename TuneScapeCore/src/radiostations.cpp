@@ -1,4 +1,5 @@
 #include "include/radiostations.h"
+#include "include/RadioBrowserApi.h"
 
 RadioStations::RadioStations(QObject *parent)
     : QObject{parent}
@@ -6,6 +7,10 @@ RadioStations::RadioStations(QObject *parent)
 
 RadioStations::RadioStations(const QString &endpoint)
 {
+    serverAddress.addresses = RadioBrowserApi::getRadioBrowserBaseUrls();
+    for (const QString &address : serverAddress.addresses) {
+        qDebug() << address;
+    }
     fullServerAddresses = generateFullAddresses(endpoint);
 }
 
