@@ -58,8 +58,9 @@ private:
     bool paintingEnabled;
     bool shouldAutoRestart;
     void initTimer();
-
-
+    
+    
+    void showErrorStrreamInfo();
 };
 
 #endif // AUDIOPROCESSOR_H

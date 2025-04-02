@@ -1,4 +1,5 @@
 #include "include/audioprocessor.h"
+#include <QMessageBox>
 #include <QAudioBuffer>
 #include <QDebug>
 #include <QGraphicsRectItem>
@@ -125,14 +126,27 @@ QTimer *AudioProcessor::getUpdateTimer() const
     return updateTimer;
 }
 
+void AudioProcessor::showErrorStrreamInfo()
+{
+    QString errorDecoder = audioDecoder->errorString();
+    qDebug() << "AudioDecoder is not in the decoding state, resetting...";
+    qDebug() << "AudioDecoder error occurred:" << errorDecoder;
+
+    QMessageBox::StandardButton errorMsg;
+    errorMsg = QMessageBox::critical(nullptr, "Error", errorDecoder, QMessageBox::Retry | QMessageBox::Abort);
+
+    if (errorMsg == QMessageBox::Abort) {
+        stop();
+    }
+}
+
 void AudioProcessor::updateGraph()
 {
     if (!graphScene || !ui)
         return;
 
     if (!audioDecoder->isDecoding()) {
-        qDebug() << "AudioDecoder is not in the decoding state, resetting...";
-        qDebug() << "AudioDecoder error occurred:" << audioDecoder->errorString();
+        showErrorStrreamInfo();
         resetAudioDecoder();
         return;
     }
