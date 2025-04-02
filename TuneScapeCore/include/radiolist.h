@@ -231,6 +231,7 @@ private:
     QString getCurrentStreamUrl() const;
     bool shouldUpdateIcon() const;
     void handleIconUpdate();
+    void updateThemeAppearance(bool darkMode);
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
 };

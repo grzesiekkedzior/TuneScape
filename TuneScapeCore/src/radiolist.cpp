@@ -165,34 +165,25 @@ void RadioList::setRawRadioImage()
     miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
 }
 
+void RadioList::updateThemeAppearance(bool darkMode)
+{
+    clearTableViewColor();
+    iceCastXmlData->clearTableViewColor();
+
+    if (!isStopClicked)
+        setIndexColor();
+
+    iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
+
+    if (!radioManager.getMediaPlayer()->isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
+        darkMode ? setRawDarkRadioImage() : setRawRadioImage();
+    }
+}
+
 void RadioList::setDarkMode()
 {
-    // if not play !radioManager.getMediaPlayer()->isPlaying()
-    // if play
-    isDarkMode = (isDarkMode) ? false : true;
-    if (isDarkMode) {
-        clearTableViewColor();
-        iceCastXmlData->clearTableViewColor();
-        if (!isStopClicked)
-            setIndexColor();
-        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
-        if (!radioManager.getMediaPlayer()->isPlaying())
-            setRawDarkRadioImage();
-        if (radioInfo->getInfoData().favicon == "")
-            setRawDarkRadioImage();
-
-    } else {
-        clearTableViewColor();
-        iceCastXmlData->clearTableViewColor();
-        if (!isStopClicked)
-            setIndexColor();
-        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
-
-        if (!radioManager.getMediaPlayer()->isPlaying())
-            setRawRadioImage();
-        if (radioInfo->getInfoData().favicon == "")
-            setRawRadioImage();
-    }
+    isDarkMode = !isDarkMode;
+    updateThemeAppearance(isDarkMode);
 
     loadRadioIconList();
     if (radioIndexNumber != -1)
