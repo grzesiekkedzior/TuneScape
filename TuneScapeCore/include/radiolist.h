@@ -178,6 +178,8 @@ private:
     const QString ICECAST_PLAYLIST = "icecast.txt";
     const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
 
+    const QString RADIO_ICON = ":/images/img/radio96x96.png";
+
     QVector<QVector<TableRow>> allTableRows;
     QVector<QVector<QString>> allStreamAddresses;
     QVector<QVector<QString>> allIconsAddresses;

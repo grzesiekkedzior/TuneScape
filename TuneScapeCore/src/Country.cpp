@@ -182,13 +182,13 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         radioList->clearIconLabelColor();
 
         if (radioList->getIsDarkMode()) {
-            ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-            ui->radioIcon->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            ui->infoLabel->setPixmap(QPixmap((RADIO_ICON)));
+            ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
         } else {
-            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-            ui->radioIcon->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
+            ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
         }
         radioList->getRadioManager().playStream();
         setIsPlaying(true);
@@ -265,23 +265,23 @@ void Country::setRadioImage(const QModelIndex &index)
             }
         } else {
             if (radioList->getIsDarkMode()) {
-                ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+                ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
                 miniPlayer.getMui()->radioImage->setPixmap(
-                    QPixmap(":/images/img/radiodark-10-96.png"));
+                    QPixmap(RADIO_ICON));
             } else {
-                ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+                ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
+                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
             }
             ui->infoLabel->show();
         }
     } else {
         qDebug() << "Error:" << reply->errorString();
         if (radioList->getIsDarkMode()) {
-            ui->infoLabel->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
-            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radiodark-10-96.png"));
+            ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
         } else {
-            ui->infoLabel->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
-            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(":/images/img/radio-10-96.png"));
+            ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
+            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
         }
         ui->infoLabel->show();
     }

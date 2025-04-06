@@ -9,7 +9,7 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     , mainWindow(&mainWindow)
 {
     appConfig = new AppConfig("application.properties");
-    systemTrayIcon = new QSystemTrayIcon(QIcon(":/images/img/radio30.png"), &mainWindow);
+    systemTrayIcon = new QSystemTrayIcon(QIcon(RADIO_ICON), &mainWindow);
 
     trayMenu = new QMenu(this);
     //Top

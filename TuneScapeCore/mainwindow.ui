@@ -240,10 +240,10 @@
                 <string/>
                </property>
                <property name="pixmap">
-                <pixmap resource="res.qrc">:/images/img/radio-10-96.png</pixmap>
+                <pixmap resource="res.qrc">:/images/img/radio96x96.png</pixmap>
                </property>
                <property name="scaledContents">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="alignment">
                 <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -299,10 +299,10 @@
                 <string/>
                </property>
                <property name="pixmap">
-                <pixmap resource="res.qrc">:/images/img/radio-10-96.png</pixmap>
+                <pixmap resource="res.qrc">:/images/img/radio96x96.png</pixmap>
                </property>
                <property name="scaledContents">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
                <property name="alignment">
                 <set>Qt::AlignmentFlag::AlignCenter</set>
@@ -597,7 +597,7 @@
 selection-color: rgb(4, 4, 4);</string>
            </property>
            <property name="currentIndex">
-            <number>3</number>
+            <number>0</number>
            </property>
            <widget class="QWidget" name="listTab">
             <attribute name="title">

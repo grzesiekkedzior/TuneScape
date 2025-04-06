@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
     Theme theme;
     theme.setUi(w.getUi());
     theme.getApplicationObject(a);
-    w.setWindowIcon(QIcon(":/images/img/radio30.png"));
+    w.setWindowIcon(QIcon(":/images/img/radio96x96.png"));
     w.setWindowTitle("TuneScape");
     w.show();
     return a.exec();

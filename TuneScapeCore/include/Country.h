@@ -112,6 +112,7 @@ private:
 
     const QString COUNTRY_ENDPOINT_SEARCH = "json/stations/search?country=";
     const QString COUNTRY_ENDPOINT_NAME = "json/countries";
+    const QString RADIO_ICON = ":/images/img/radio96x96.png";
 
     void playPauseIcon();
     void setRadioImage(const QModelIndex &index);

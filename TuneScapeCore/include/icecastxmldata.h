@@ -131,6 +131,8 @@ private:
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
+
+    const QString RADIO_ICON = ":/images/img/radio96x96.png";
 };
 
 #endif // ICECASTXMLDATA_H

@@ -56,6 +56,7 @@
         <file>img/upload-20-32.png</file>
         <file>img/playlist-27-32.png</file>
         <file>img/word.png</file>
+        <file>img/radio96x96.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>
