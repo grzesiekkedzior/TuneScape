@@ -1,5 +1,7 @@
 
 # TuneScape   
+### **4.7.4**   
+The main icon is changed. The icon is from [iconduck.com](https://iconduck.com/icons/105034/radio) and is for [GPL v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) licence.   
 ### **4.7.3**   
 Version 4.7.3 ... more functionality. A crash radio station is handled.   
 ![connect](https://github.com/user-attachments/assets/30052936-4b9e-48df-8350-4f2017ca6cc1)   
