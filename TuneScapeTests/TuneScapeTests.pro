@@ -4,6 +4,8 @@ QT += network
 QT += multimedia
 QT += concurrent
 QT += gui
+QT += svg
+QT += svgwidgets
 CONFIG += qt warn_on depend_includepath testcase
 CONFIG += no_testcase_installs
 include(../common.pri)

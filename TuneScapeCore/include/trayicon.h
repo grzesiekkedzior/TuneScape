@@ -88,7 +88,7 @@ private:
     const int DELAY_BETWEEN_NOTIFICATIONS = 5 * 60 * 1000;
     const int TRAY_TIME_MESSAGE = 5000;
     const QString NOTIFICATIONS_PROPERTY = "notifications";
-    const QString RADIO_ICON = ":/images/img/radio72x72.png";
+    const QString RADIO_ICON = ":/images/img/radio96x96.png";
     void setNotifications(bool isNotificationEnabled);
     QModelIndex createTrayRadioLists(QAction *action);
 

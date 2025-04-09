@@ -179,6 +179,7 @@ private:
     const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
 
     const QString RADIO_ICON = ":/images/img/radio96x96.png";
+    const QString TUNESCAPE_ICON = ":/images/img/TuneScape.ico";
 
     QVector<QVector<TableRow>> allTableRows;
     QVector<QVector<QString>> allStreamAddresses;

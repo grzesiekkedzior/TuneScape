@@ -228,11 +228,23 @@
                </property>
               </widget>
              </item>
-             <item>
+             <item alignment="Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignVCenter">
               <widget class="QLabel" name="infoLabel">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="minimumSize">
                 <size>
-                 <width>0</width>
+                 <width>150</width>
+                 <height>150</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>150</width>
                  <height>150</height>
                 </size>
                </property>
@@ -291,7 +303,7 @@
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>16777215</width>
+                 <width>150</width>
                  <height>150</height>
                 </size>
                </property>

@@ -483,25 +483,10 @@ void RadioList::addEmptyIconButton(int row)
         }
     });
 
-    QString radioIcon = "";
-    if (isDarkMode)
-        radioIcon = RADIO_ICON;
-    else
-        radioIcon = RADIO_ICON;
-    QPixmap originalPixmap(radioIcon);
-    int x = (button->width() - originalPixmap.width()) / 2;
-    int y = (button->height() - originalPixmap.height()) / 2;
-    QSize buttonSize(120, 120);
-    QPixmap pixmap(buttonSize);
-    pixmap.fill(Qt::transparent);
+    QIcon icon(TUNESCAPE_ICON);
 
-    QPainter painter(&pixmap);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setRenderHint(QPainter::SmoothPixmapTransform);
-    painter.drawPixmap(x, y, originalPixmap);
-
-    button->setIcon(QIcon(pixmap));
-    button->setIconSize(buttonSize);
+    button->setIcon(icon);
+    button->setIconSize(QSize(100, 100));
 
     if (row < buttonCache.size())
         buttonCache[row] = itemContainer;
@@ -924,7 +909,7 @@ void RadioList::setRadioImage(const QModelIndex &index)
 
             if (!pixmap.isNull()) {
                 QSize imageSize(120, 120);
-                pixmap = pixmap.scaled(imageSize, Qt::KeepAspectRatio);
+                pixmap = pixmap.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
                 ui->infoLabel->setPixmap(pixmap);
                 miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
                 ui->infoLabel->show();
