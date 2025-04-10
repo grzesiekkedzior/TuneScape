@@ -1115,11 +1115,12 @@ void RadioList::onPlayPauseButtonCliced()
         setIsBrowseStationLoaded(true);
         if (!country.getIsPlaying() && country.getCurrentIndexPlaying() == -1)
             ui->tabRadioListWidget->setCurrentIndex(0);
+        if (isStopClicked) {
+            setRadioImage(model->index(0, 0));
+            isStopClicked = false;
+        }
     }
-    if (isStopClicked) {
-        setRadioImage(model->index(0, 0));
-        isStopClicked = false;
-    }
+
 }
 
 // Not use for now
