@@ -206,11 +206,11 @@ void RadioList::setMp3FileName()
     } else if (iceCastXmlData->getPlaying() || iceCastXmlData->getIsFavoritePlaying()) {
         int stationIndex = iceCastXmlData->getCurrentPlayingStation();
         title = ui->icecastTable->item(stationIndex, 0)
-                                   ->text();
+                    ->text();
         extension = ui->icecastTable
-                                       ->item(stationIndex, 2)
-                                       ->text()
-                                       .toLower();
+                        ->item(stationIndex, 2)
+                        ->text()
+                        .toLower();
         extension.remove(0, 6);
     } else {
         return;
@@ -448,49 +448,80 @@ void RadioList::loadRadioIconList()
     }
 }
 
+void RadioList::handleIconClick(int row)
+{
+    static QTimer timer;             // Timer to detect double-click
+    static int lastClickedRow = -1;  // Track last clicked row
+    static bool singleClick = false; // Track single click
+
+    if (singleClick && lastClickedRow == row) {
+        // Double-click detected
+        emit playIconButtonDoubleClicked(row);
+        singleClick = false;
+        timer.stop(); // Stop the timer
+    } else {
+        singleClick = true;
+        lastClickedRow = row;
+        // Start the timer to detect double-click
+        timer.singleShot(QApplication::doubleClickInterval(), [=]() { singleClick = false; });
+    }
+}
+
 void RadioList::addEmptyIconButton(int row)
 {
-    QWidget *itemContainer = new QWidget;
-    QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
-    QPushButton *button = new QPushButton; // Allocate on the heap
-    button->setFixedSize(120, 120);
-    QString description = jsonListProcesor.getTableRows().at(row).station;
-    QLabel *label = new QLabel(description); // Allocate on the heap
-    label->setFixedWidth(120);
-    label->setWordWrap(true);
-    label->setAlignment(Qt::AlignCenter);
-
-    itemLayout->addWidget(button);
-    itemLayout->addWidget(label);
-
-    // For now double clicked solution
-    connect(button, &QPushButton::clicked, this, [=]() {
-        // Static to prevent variable state loss!!!
-        static QTimer timer;             // Timer to detect double-click
-        static int lastClickedRow = -1;  // Track last clicked row
-        static bool singleClick = false; // Track single click
-
-        if (singleClick && lastClickedRow == row) {
-            // Double-click detected
-            emit playIconButtonDoubleClicked(row);
-            singleClick = false;
-            timer.stop(); // Stop the timer
-        } else {
-            singleClick = true;
-            lastClickedRow = row;
-            // Start the timer to detect double-click
-            timer.singleShot(QApplication::doubleClickInterval(), [=]() { singleClick = false; });
-        }
-    });
-
-    QIcon icon(TUNESCAPE_ICON);
-
-    button->setIcon(icon);
-    button->setIconSize(QSize(100, 100));
+    QWidget *itemContainer = createIconButtonWithLabel(row);
 
     if (row < buttonCache.size())
         buttonCache[row] = itemContainer;
 
+    updateLayoutOrProgress();
+}
+
+QWidget * RadioList::createIconButtonWithLabel(int row)
+{
+    QWidget *itemContainer = new QWidget;
+    QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
+
+    QLabel *label = createLabelForRow(row);
+
+    QPushButton *button = createIconButton(row);
+
+    itemLayout->addWidget(button);
+    itemLayout->addWidget(label);
+
+    return itemContainer;
+}
+
+QLabel * RadioList::createLabelForRow(int row)
+{
+    QString description = jsonListProcesor.getTableRows().at(row).station;
+    QLabel *label = new QLabel(description);
+    label->setFixedWidth(120);
+    label->setWordWrap(true);
+    label->setAlignment(Qt::AlignCenter);
+
+    return label;
+}
+
+QPushButton * RadioList::createIconButton(int row)
+{
+    QPushButton *button = new QPushButton;
+    button->setFixedSize(120, 120);
+    QIcon icon(TUNESCAPE_ICON);
+
+    button->setIcon(icon);
+    button->setIconSize(QSize(100, 100));
+    // For now double clicked solution
+    connect(button, &QPushButton::clicked, this, [=]() {
+        // Static to prevent variable state loss!!!
+        handleIconClick(row);
+    });
+
+    return button;
+}
+
+void RadioList::updateLayoutOrProgress()
+{
     if (!buttonCache.contains(nullptr)) {
         for (QWidget *button : buttonCache) {
             flowLayout->addWidget(button);
@@ -653,6 +684,22 @@ void RadioList::setFavoriteStatons()
     QVector<QString> streamAddresses;
     QVector<QString> iconAddresses;
     // Read favorite radio from file
+    readFavoriteStationsFromFile(tableRows, iconAddresses, streamAddresses);
+
+    // I think here is better solution to do
+    if (allTableRows.size() > Stations::FAVORITE) {
+        allTableRows[Stations::FAVORITE] = tableRows;
+        allStreamAddresses[Stations::FAVORITE] = streamAddresses;
+        allIconsAddresses[Stations::FAVORITE] = iconAddresses;
+    } else {
+        allTableRows.push_back(tableRows);
+        allStreamAddresses.push_back(streamAddresses);
+        allIconsAddresses.push_back(iconAddresses);
+    }
+}
+
+void RadioList::readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses)
+{
     QFile file(RADIO_BROWSER_PLAYLIST);
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
@@ -672,17 +719,6 @@ void RadioList::setFavoriteStatons()
             }
         }
         file.close();
-    }
-
-    // I think here is better solution to do
-    if (allTableRows.size() > Stations::FAVORITE) {
-        allTableRows[Stations::FAVORITE] = tableRows;
-        allStreamAddresses[Stations::FAVORITE] = streamAddresses;
-        allIconsAddresses[Stations::FAVORITE] = iconAddresses;
-    } else {
-        allTableRows.push_back(tableRows);
-        allStreamAddresses.push_back(streamAddresses);
-        allIconsAddresses.push_back(iconAddresses);
     }
 }
 

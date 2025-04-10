@@ -237,6 +237,12 @@ private:
     void updateThemeAppearance(bool darkMode);
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
+    QPushButton * createIconButton(int row);
+    void handleIconClick(int row);
+    void updateLayoutOrProgress();
+    QLabel * createLabelForRow(int row);
+    QWidget * createIconButtonWithLabel(int row);
+    void readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses);
 };
 
 #endif // RADIOLIST_H
