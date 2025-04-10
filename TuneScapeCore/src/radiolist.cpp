@@ -414,36 +414,45 @@ void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
 
 void RadioList::loadRadioIconList()
 {
-    if (jsonListProcesor.isConnected) {
-        clearAll();
-        int dataSize = jsonListProcesor.getTableRows().size();
-        qDebug() << "datasize: " << dataSize;
-        ui->progressBar->setRange(0, dataSize);
-        if (dataSize > 0)
-            ui->progressBar->show();
-        buttonCache.resize(dataSize, nullptr);
-        if (!networkManager) {
-            networkManager = new QNetworkAccessManager(this);
+    if (!jsonListProcesor.isConnected)
+        return;
+    clearAll();
+    int dataSize = jsonListProcesor.getTableRows().size();
+    qDebug() << "datasize: " << dataSize;
+    ui->progressBar->setRange(0, dataSize);
+
+    if (dataSize > 0)
+        ui->progressBar->show();
+
+    buttonCache.resize(dataSize, nullptr);
+
+    if (!networkManager) {
+        networkManager = new QNetworkAccessManager(this);
+    }
+
+    // Load buttons with empty icons first
+    for (int row = 0; row < dataSize; ++row) {
+        // Without this condition app will crash?! Some check analyzer suggest that it's unnecessary
+        if (dataSize > row) {
+            addEmptyIconButton(row);
         }
+    }
 
-        // Load buttons with empty icons first
-        for (int row = 0; row < dataSize; ++row) {
-            // Without this condition app will crash?! Some check analyzer suggest that it's unnecessary
-            if (dataSize > row) {
-                addEmptyIconButton(row);
-            }
-        }
+    // Load icons from the internet
+    loadRadioIconsFromNetwork(dataSize);
 
-        // Load icons from the internet
-        for (int row = 0; row < dataSize; ++row) {
-            if (dataSize > row) {
-                QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
-                QNetworkRequest request(imageUrl);
-                QNetworkReply *reply = networkManager->get(request);
-                networkReplies.append(reply);
+}
 
-                connect(reply, &QNetworkReply::finished, [=]() { handleNetworkReply(reply, row); });
-            }
+void RadioList::loadRadioIconsFromNetwork(int dataSize)
+{
+    for (int row = 0; row < dataSize; ++row) {
+        if (dataSize > row) {
+            QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
+            QNetworkRequest request(imageUrl);
+            QNetworkReply *reply = networkManager->get(request);
+            networkReplies.append(reply);
+
+            connect(reply, &QNetworkReply::finished, [=]() { handleNetworkReply(reply, row); });
         }
     }
 }
@@ -879,14 +888,12 @@ void RadioList::checkIsRadioOnPlaylist()
 
 void RadioList::onInternetConnectionRestored()
 {
-    allIconsAddresses.clear();
-    allStreamAddresses.clear();
-    allTableRows.clear();
+    clearRadioDataVectors();
     //this->onStopButtonClicked();
-    message.setText("The connection has been restored. Select a station.");
-    message.setIcon(QMessageBox::Information);
-    message.setWindowIcon(QIcon(":/images/img/radio30.png"));
+    prepareRestoredConnectionMessage();
+
     clearTableViewColor();
+
     ui->treeView->clearSelection();
     iceCastXmlData->clearTableViewColor();
     setIndexColor();
@@ -894,6 +901,20 @@ void RadioList::onInternetConnectionRestored()
     if (getMainWindow()->isHidden())
         getMainWindow()->show();
     message.show();
+}
+
+void RadioList::prepareRestoredConnectionMessage()
+{
+    message.setText("The connection has been restored. Select a station.");
+    message.setIcon(QMessageBox::Information);
+    message.setWindowIcon(QIcon(":/images/img/radio30.png"));
+}
+
+void RadioList::clearRadioDataVectors()
+{
+    allIconsAddresses.clear();
+    allStreamAddresses.clear();
+    allTableRows.clear();
 }
 
 void RadioList::playStream(int radioNumber)
@@ -926,62 +947,56 @@ void RadioList::sliderMoved(int move)
 
 void RadioList::setRadioImage(const QModelIndex &index)
 {
-    if (!(jsonListProcesor.isConnected))
+    if (!jsonListProcesor.isConnected || jsonListProcesor.getIconAddresses().isEmpty())
         return;
-    QEventLoop loop;
-    if (jsonListProcesor.getIconAddresses().size() == 0)
-        return;
+
     QUrl imageUrl(jsonListProcesor.getIconAddresses(index.row()));
+    QPixmap pixmap = downloadImageSync(imageUrl);
+    setImageToUI(pixmap);
+    qDebug() << "Image is loaded.";
+}
 
+QPixmap RadioList::downloadImageSync(const QUrl &url)
+{
     QNetworkAccessManager manager;
-
-    QNetworkRequest request(imageUrl);
+    QNetworkRequest request(url);
     QNetworkReply *reply = manager.get(request);
 
+    QEventLoop loop;
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
     loop.exec();
 
+    QPixmap pixmap;
+
     if (reply->error() == QNetworkReply::NoError) {
-        QVariant contentType = reply->header(QNetworkRequest::ContentTypeHeader);
-        QString contentTypeString = contentType.toString();
-
-        if (contentTypeString.startsWith("image/")) {
+        QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
+        if (contentType.startsWith("image/")) {
             QByteArray imageData = reply->readAll();
-            QPixmap pixmap;
             pixmap.loadFromData(imageData);
-
-            if (!pixmap.isNull()) {
-                QSize imageSize(120, 120);
-                pixmap = pixmap.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
-                ui->infoLabel->setPixmap(pixmap);
-                miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
-                ui->infoLabel->show();
-            }
-        } else {
-            if (isDarkMode) {
-                ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-                miniPlayer.getMui()->radioImage->setPixmap(
-                    QPixmap(RADIO_ICON));
-            } else {
-                ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
-            }
-            ui->infoLabel->show();
         }
     } else {
-        qDebug() << "Error:" << reply->errorString();
-        if (isDarkMode) {
-            ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
-        } else {
-            ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-            miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
-        }
-        ui->infoLabel->show();
+        qDebug() << "Image download error:" << reply->errorString();
     }
 
     reply->deleteLater();
+    return pixmap;
 }
+
+void RadioList::setImageToUI(const QPixmap &pixmap)
+{
+    QPixmap scaled = pixmap;
+    if (!scaled.isNull()) {
+        QSize imageSize(120, 120);
+        scaled = scaled.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
+    } else {
+        scaled = QPixmap(RADIO_ICON);
+    }
+
+    ui->infoLabel->setPixmap(scaled);
+    miniPlayer.getMui()->radioImage->setPixmap(scaled);
+    ui->infoLabel->show();
+}
+
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {

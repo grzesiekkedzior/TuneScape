@@ -248,6 +248,11 @@ private:
     void switchToPlaylist(Stations station);
     void switchToIceCastTab(bool favorite);
     void updateStationColoring();
+    void loadRadioIconsFromNetwork(int dataSize);
+    void clearRadioDataVectors();
+    void prepareRestoredConnectionMessage();
+    QPixmap downloadImageSync(const QUrl &url);
+    void setImageToUI(const QPixmap &pixmap);
 };
 
 #endif // RADIOLIST_H
