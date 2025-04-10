@@ -793,66 +793,73 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     isTreeClicked = true;
     item = index.data().toString();
     qDebug() << "onTreeViewItemClicked " << item << " ROW " << index.row();
-    if (!checkItem(item, LIBRARY_TREE)) {
-        if ((!checkItem(item, "Discover") && ui->tabRadioListWidget->currentIndex() == 2)
-            || ui->tabRadioListWidget->currentIndex() == 3) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            ui->tabRadioListWidget->setCurrentIndex(0);
-        }
-        if (checkItem(item, "Top")) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            setRadioListVectors(Stations::TOP);
-            currentPlaylistIndex = Stations::TOP;
-        } else if (checkItem(item, "Popular")) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            setRadioListVectors(Stations::POPULAR);
-            currentPlaylistIndex = Stations::POPULAR;
-        } else if (checkItem(item, "New")) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            setRadioListVectors(Stations::NEW);
-            currentPlaylistIndex = Stations::NEW;
-        } else if (checkItem(item, "Favorite")) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            setRadioListVectors(Stations::FAVORITE);
-            currentPlaylistIndex = Stations::FAVORITE;
-            qDebug() << "HELLO";
-        } else if (checkItem(item, "Discover")) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            ui->tabRadioListWidget->setCurrentIndex(2);
-            // TODO connection checker
-            iceCastXmlData->setIsFavoriteOnTreeCliced(false);
-            iceCastXmlData->loadDiscoveryStations();
-            qDebug() << "Discover";
-        } else if (checkItem(item, "Ice-Favorite")) {
-            if (this->treeItem == "Search")
-                this->treeItem = "";
-            ui->tabRadioListWidget->setCurrentIndex(2);
-            qDebug() << "Ice-Cast favorite";
-            iceCastXmlData->setIsFavoriteOnTreeCliced(true);
-            iceCastXmlData->loadFavoriteIceCastStations();
-            //iceCastXmlData->setFavoriteList();
-        }
-        if (jsonListProcesor.checkInternetConnection()) {
-            loadedStationsCount = 0;
-            model->clear();
-            loadRadioList();
-            loadRadioIconList();
-        }
 
-        if (currentPlayListPlaying == currentPlaylistIndex) {
-            if (getIsPlaying())
-                setIndexColor();
-        } else {
-            // Clear the color-marked station when changing tree items.
-            if (customColor)
-                customColor->clearRowColor();
-        }
+    if (checkItem(item, LIBRARY_TREE))
+        return;
+
+    const int tabIndex = ui->tabRadioListWidget->currentIndex();
+
+    if ((!checkItem(item, "Discover") && tabIndex == 2)
+        || tabIndex == 3) {
+        resetTreeItemIfSearch();
+        ui->tabRadioListWidget->setCurrentIndex(0);
+    }
+
+    if (checkItem(item, "Top"))
+        switchToPlaylist(Stations::TOP);
+    else if (checkItem(item, "Popular"))
+        switchToPlaylist(Stations::POPULAR);
+    else if (checkItem(item, "New"))
+        switchToPlaylist(Stations::NEW);
+    else if (checkItem(item, "Favorite"))
+        switchToPlaylist(Stations::FAVORITE);
+    else if (checkItem(item, "Discover"))
+        switchToIceCastTab(false);
+    else if (checkItem(item, "Ice-Favorite"))
+        switchToIceCastTab(true);
+    if (jsonListProcesor.checkInternetConnection()) {
+        loadedStationsCount = 0;
+        model->clear();
+        loadRadioList();
+        loadRadioIconList();
+    }
+
+    updateStationColoring();
+}
+
+void RadioList::resetTreeItemIfSearch()
+{
+    if (this->treeItem == "Search")
+        this->treeItem = "";
+}
+
+void RadioList::switchToPlaylist(Stations station)
+{
+    resetTreeItemIfSearch();
+    setRadioListVectors(station);
+    currentPlaylistIndex = station;
+}
+
+void RadioList::switchToIceCastTab(bool favorite)
+{
+    resetTreeItemIfSearch();
+    ui->tabRadioListWidget->setCurrentIndex(2);
+    iceCastXmlData->setIsFavoriteOnTreeCliced(favorite);
+    if (favorite)
+        iceCastXmlData->loadFavoriteIceCastStations();
+    else
+        iceCastXmlData->loadDiscoveryStations();
+}
+
+void RadioList::updateStationColoring()
+{
+    if (currentPlayListPlaying == currentPlaylistIndex) {
+        if (getIsPlaying())
+            setIndexColor();
+    } else {
+        // Clear the color-marked station when changing tree items.
+        if (customColor)
+            customColor->clearRowColor();
     }
 }
 

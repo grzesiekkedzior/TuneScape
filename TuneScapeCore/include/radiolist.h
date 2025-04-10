@@ -95,6 +95,8 @@ public:
     bool getIsStopClicked() const;
     void setIsStopClicked(bool newIsStopClicked);
 
+    void resetTreeItemIfSearch();
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -243,6 +245,9 @@ private:
     QLabel * createLabelForRow(int row);
     QWidget * createIconButtonWithLabel(int row);
     void readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses);
+    void switchToPlaylist(Stations station);
+    void switchToIceCastTab(bool favorite);
+    void updateStationColoring();
 };
 
 #endif // RADIOLIST_H
