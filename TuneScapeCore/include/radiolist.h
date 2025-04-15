@@ -253,6 +253,18 @@ private:
     void prepareRestoredConnectionMessage();
     QPixmap downloadImageSync(const QUrl &url);
     void setImageToUI(const QPixmap &pixmap);
+    bool isIceCastTabOpen();
+    bool isIceCastReadyToPlay();
+    void startFirstIceCastStation();
+    void pauseIceCastStream();
+    void returnIceCastStreamToPlay();
+    void stopRadioBrowserStream();
+    void returnRadioBrowserToPlay();
+    void playCountryStream();
+    void startRadioBrowserStream();
+    void updatePlayPauseIcons();
+    void switchToDefaultTabIfNoCountryStationPlaying();
+    void resetImageIfStopped();
 };
 
 #endif // RADIOLIST_H
