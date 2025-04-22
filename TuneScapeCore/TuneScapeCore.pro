@@ -12,6 +12,7 @@ SOURCES += \
     src/AppConfig.cpp \
     src/Country.cpp \
     src/IceCastXmlData.cpp \
+    src/M3UHandler.cpp \
     src/Menu.cpp \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
@@ -35,6 +36,7 @@ HEADERS += \
     include/AppConfig.h \
     include/Country.h \
     include/IceCastXmlData.h \
+    include/M3UHandler.h \
     include/Menu.h \
     include/RadioBrowserApi.h \
     include/StreamRecorder.h \
