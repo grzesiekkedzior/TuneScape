@@ -20,9 +20,9 @@ public:
 private:
     //Load pls
     QList<TableRow> importM3Ufile(const QString path);
-    bool isM3Ufile();
-    bool isRadioInPlaylist(const QString data, const QString playlist);
-    bool saveOnTuneScapeFile();
+    bool isM3Ufile(const QString& path) const;
+    bool isRadioInPlaylist(const QString data);
+    bool saveOnTuneScapeFile(QString line);
 
     //Export pls
     bool exportM3Ufile();
