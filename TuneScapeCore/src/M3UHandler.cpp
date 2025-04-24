@@ -39,7 +39,7 @@ void M3UHandler::importM3Ufile(const QString path ,const QString playlist)
                 qDebug() << "streamAddress " << streamAddress;
                 if (stationName.isEmpty() || streamAddress.isEmpty())
                     continue;
-                saveOnTuneScapeFile(stationName, streamAddress);
+                saveOnTuneScapeFile(stationName, streamAddress, playlist);
             }
 
             extInf = false;
@@ -73,9 +73,23 @@ bool M3UHandler::isRadioInPlaylist(const QString& stationName, const QString& pl
     return false;
 }
 
-bool M3UHandler::saveOnTuneScapeFile(QString stationName, QString streamAddress)
+bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &streamAddress, const QString &playlist)
 {
+    QFile file(playlist);
 
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
+        qDebug() << "Error";
+        return false;
+    }
+
+    QTextStream out(&file);
+
+    out << "," << streamAddress << "," << stationName << "," << "," << "," << "\n" ;
+
+    file.close();
+
+    return true;
 }
 
 bool M3UHandler::exportM3Ufile()
