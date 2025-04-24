@@ -19,10 +19,10 @@ public:
 
 private:
     //Load pls
-    QList<TableRow> importM3Ufile(const QString path);
+    void importM3Ufile(const QString path, const QString playlist);
     bool isM3Ufile(const QString& path) const;
-    bool isRadioInPlaylist(const QString data);
-    bool saveOnTuneScapeFile(QString line);
+    bool isRadioInPlaylist(const QString &stationName, const QString &playlist);
+    bool saveOnTuneScapeFile(QString stationName, QString streamAddress);
 
     //Export pls
     bool exportM3Ufile();
@@ -30,6 +30,9 @@ private:
 
     //Common
     static bool fileExists(const QString path);
+
+    const QString ICECAST_PLAYLIST = "icecast.txt";
+    const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
 
 
 };
