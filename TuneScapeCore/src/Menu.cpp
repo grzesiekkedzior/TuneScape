@@ -1,4 +1,5 @@
 #include "include/Menu.h"
+#include "include/M3UHandler.h"
 #include <QFileDialog>
 #include <QMenu>
 #include <QMessageBox>
@@ -15,18 +16,22 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     exportPls = new QMenu("export pls");
     exportPls->setIcon(QIcon(":/images/img/upload-20-32.png"));
     exportRadioBrowser = new QAction("Radio-Browser");
+    exportRadioBrowserM3U = new QAction("Radio_Browser-M3U");
     exportRadioBrowser->setIcon(QIcon(":/images/img/playlist-27-32.png"));
+    exportRadioBrowserM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     exportIceCastRadio = new QAction("IceCast");
     exportIceCastRadio->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     mainMenu->addAction(importPls);
     mainMenu->addMenu(exportPls);
     exportPls->addAction(exportRadioBrowser);
+    exportPls->addAction(exportRadioBrowserM3U);
     exportPls->addAction(exportIceCastRadio);
     ui->menuButton->setMenu(mainMenu);
     ui->menuButton->setPopupMode(QToolButton::InstantPopup);
 
     connect(importPls, &QAction::triggered, this, &Menu::importPlaylists);
     connect(exportRadioBrowser, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylist);
+    connect(exportRadioBrowserM3U, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylistM3U);
     connect(exportIceCastRadio, &QAction::triggered, this, &Menu::exortIceCastPlaylist);
 }
 
@@ -90,15 +95,26 @@ void Menu::importPlaylists()
 
 void Menu::exportRadioBrowserPlaylist()
 {
-    exportRadio(RADIO_BROWSER);
+    exportRadio(RADIO_BROWSER, TUNSCAPE_FORMAT);
+}
+
+void Menu::exportRadioBrowserPlaylistM3U()
+{
+    M3UHandler m3uHandler;
+    bool done = m3uHandler.exportM3Ufile(RADIO_BROWSER);
+    if (done)
+        exportRadio(RADIO_BROWSER_M3U, M3U_FORMAT);
+    else
+        qDebug() << "M3U ERROR!!!";
+
 }
 
 void Menu::exortIceCastPlaylist()
 {
-    exportRadio(ICE_CAST);
+    exportRadio(ICE_CAST, TUNSCAPE_FORMAT);
 }
 
-void Menu::exportRadio(const QString &playlist)
+void Menu::exportRadio(const QString &playlist, QString format)
 {
     QFile inputFile(playlist);
     if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -113,7 +129,7 @@ void Menu::exportRadio(const QString &playlist)
     QString saveFilePath = QFileDialog::getSaveFileName(nullptr,
                                                         "Save playlist",
                                                         playlist,
-                                                        "Text file (*.txt);;All files (*.*)");
+                                                        format == "m3u" ? "M3U Playlist (*.m3u)" : "Text file (*.txt);;All files (*.*)");
     if (saveFilePath.isEmpty()) {
         return;
     }

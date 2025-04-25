@@ -77,7 +77,7 @@ bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &
 {
     QFile file(playlist);
 
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
         qDebug() << "Error";
         return false;
@@ -92,9 +92,10 @@ bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &
     return true;
 }
 
-bool M3UHandler::exportM3Ufile()
+bool M3UHandler::exportM3Ufile(const QString &playlist)
 {
-
+    bool createM3u = convertToM3Ufile(playlist);
+    return createM3u ? true : false;
 }
 
 bool M3UHandler::convertToM3Ufile(const QString &playlist)
@@ -110,7 +111,7 @@ bool M3UHandler::convertToM3Ufile(const QString &playlist)
     // Read favorite stations and convert them into a standard M3U format
     QFile m3uFile(RADIO_BROWSER_M3U);
 
-    if (!m3uFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
+    if (!m3uFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(nullptr, "File Error", "Cannot create file:\n" + playlist);
         qDebug() << "Error";
         return false;

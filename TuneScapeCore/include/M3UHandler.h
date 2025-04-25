@@ -17,15 +17,15 @@ public:
         QString stationUrl;
     };
 
+    void importM3Ufile(const QString path, const QString playlist);
+    bool exportM3Ufile(const QString &playlist);
 private:
     //Load pls
-    void importM3Ufile(const QString path, const QString playlist);
     bool isM3Ufile(const QString& path) const;
     bool isRadioInPlaylist(const QString &stationName, const QString &playlist);
     bool saveOnTuneScapeFile(const QString &stationName, const QString &streamAddress, const QString &playlist);
 
     //Export pls
-    bool exportM3Ufile();
     bool convertToM3Ufile(const QString &playlist);
 
     //Common

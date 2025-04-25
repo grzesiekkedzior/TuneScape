@@ -13,6 +13,7 @@ public:
 private slots:
     void importPlaylists();
     void exportRadioBrowserPlaylist();
+    void exportRadioBrowserPlaylistM3U();
     void exortIceCastPlaylist();
 
 private:
@@ -24,12 +25,17 @@ private:
     QMenu *exportPls = nullptr;
     QAction *importPls = nullptr;
     QAction *exportRadioBrowser = nullptr;
+    QAction *exportRadioBrowserM3U = nullptr;
     QAction *exportIceCastRadio = nullptr;
 
     const QString RADIO_BROWSER = "radiobrowser.txt";
+    const QString RADIO_BROWSER_M3U = "radiobrowser.m3u";
     const QString ICE_CAST = "icecast.txt";
 
-    void exportRadio(const QString &playlist);
+    const QString TUNSCAPE_FORMAT = "txt";
+    const QString M3U_FORMAT = "m3u";
+
+    void exportRadio(const QString &playlist, QString format);
 };
 
 #endif // MENU_H
