@@ -15,6 +15,7 @@ private slots:
     void exportRadioBrowserPlaylist();
     void exportRadioBrowserPlaylistM3U();
     void exortIceCastPlaylist();
+    void exportIceCastPlaylistM3U();
 
 private:
     Ui::MainWindow *ui = nullptr;
@@ -27,10 +28,12 @@ private:
     QAction *exportRadioBrowser = nullptr;
     QAction *exportRadioBrowserM3U = nullptr;
     QAction *exportIceCastRadio = nullptr;
+    QAction *exportIceCastRadioM3U = nullptr;
 
     const QString RADIO_BROWSER = "radiobrowser.txt";
     const QString RADIO_BROWSER_M3U = "radiobrowser.m3u";
     const QString ICE_CAST = "icecast.txt";
+    const QString ICE_CAST_M3U = "icecast.m3u";
 
     const QString TUNSCAPE_FORMAT = "txt";
     const QString M3U_FORMAT = "m3u";

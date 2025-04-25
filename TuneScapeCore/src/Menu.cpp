@@ -15,17 +15,23 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     importPls->setIcon(QIcon(":/images/img/download-20-32.png"));
     exportPls = new QMenu("export pls");
     exportPls->setIcon(QIcon(":/images/img/upload-20-32.png"));
+
     exportRadioBrowser = new QAction("Radio-Browser");
     exportRadioBrowserM3U = new QAction("Radio_Browser-M3U");
     exportRadioBrowser->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     exportRadioBrowserM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
+
     exportIceCastRadio = new QAction("IceCast");
+    //exportIceCastRadioM3U = new QAction("IceCast-M3U");
     exportIceCastRadio->setIcon(QIcon(":/images/img/playlist-27-32.png"));
+    //exportIceCastRadioM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     mainMenu->addAction(importPls);
     mainMenu->addMenu(exportPls);
     exportPls->addAction(exportRadioBrowser);
     exportPls->addAction(exportRadioBrowserM3U);
     exportPls->addAction(exportIceCastRadio);
+    exportPls->addAction(exportIceCastRadioM3U);
+
     ui->menuButton->setMenu(mainMenu);
     ui->menuButton->setPopupMode(QToolButton::InstantPopup);
 
@@ -33,6 +39,7 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     connect(exportRadioBrowser, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylist);
     connect(exportRadioBrowserM3U, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylistM3U);
     connect(exportIceCastRadio, &QAction::triggered, this, &Menu::exortIceCastPlaylist);
+    //connect(exportIceCastRadioM3U, &QAction::triggered, this, &Menu::exportIceCastPlaylistM3U);
 }
 
 void Menu::importPlaylists()
@@ -107,6 +114,16 @@ void Menu::exportRadioBrowserPlaylistM3U()
     else
         qDebug() << "M3U ERROR!!!";
 
+}
+
+void Menu::exportIceCastPlaylistM3U()
+{
+    M3UHandler m3uHandler;
+    bool done = m3uHandler.exportM3Ufile(ICE_CAST);
+    if (done)
+        exportRadio(ICE_CAST_M3U, M3U_FORMAT);
+    else
+        qDebug() << "M3U ERROR!!!";
 }
 
 void Menu::exortIceCastPlaylist()

@@ -34,6 +34,7 @@ private:
     const QString ICECAST_PLAYLIST = "icecast.txt";
     const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
     const QString RADIO_BROWSER_M3U = "radiobrowser.m3u";
+    const QString RADIO_ICECAST_M3U = "icecast.m3u";
 
 
 };

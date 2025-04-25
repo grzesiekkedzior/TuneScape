@@ -109,7 +109,11 @@ bool M3UHandler::convertToM3Ufile(const QString &playlist)
     }
 
     // Read favorite stations and convert them into a standard M3U format
-    QFile m3uFile(RADIO_BROWSER_M3U);
+    QFile m3uFile;
+    if (playlist == RADIO_BROWSER_PLAYLIST)
+        m3uFile.setFileName(RADIO_BROWSER_M3U);
+    else
+        m3uFile.setFileName(RADIO_ICECAST_M3U);
 
     if (!m3uFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::critical(nullptr, "File Error", "Cannot create file:\n" + playlist);
