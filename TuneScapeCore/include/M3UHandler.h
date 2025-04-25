@@ -26,13 +26,14 @@ private:
 
     //Export pls
     bool exportM3Ufile();
-    bool convertToM3Ufile();
+    bool convertToM3Ufile(const QString &playlist);
 
     //Common
     static bool fileExists(const QString path);
 
     const QString ICECAST_PLAYLIST = "icecast.txt";
     const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
+    const QString RADIO_BROWSER_M3U = "radiobrowser.m3u";
 
 
 };

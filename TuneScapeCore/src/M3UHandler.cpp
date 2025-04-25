@@ -97,9 +97,49 @@ bool M3UHandler::exportM3Ufile()
 
 }
 
-bool M3UHandler::convertToM3Ufile()
+bool M3UHandler::convertToM3Ufile(const QString &playlist)
 {
+    QFile file(playlist);
 
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
+        qDebug() << "Error";
+        return false;
+    }
+
+    // Read favorite stations and convert them into a standard M3U format
+    QFile m3uFile(RADIO_BROWSER_M3U);
+
+    if (!m3uFile.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        QMessageBox::critical(nullptr, "File Error", "Cannot create file:\n" + playlist);
+        qDebug() << "Error";
+        return false;
+    }
+
+    QTextStream in(&file);
+    QTextStream out(&m3uFile);
+
+    out << "#EXTM3U\n";
+
+    while (!in.atEnd()) {
+        QString line = in.readLine();
+        QStringList fields = line.split(',');
+
+        if (fields.size() >= 3) {
+            QString streamUrl = fields[1].trimmed();
+            QString stationName = fields[2].trimmed();
+
+            if (!streamUrl.isEmpty() && !stationName.isEmpty()) {
+                out << "#EXTINF:-1," << stationName << "\n";
+                out << streamUrl << "\n\n";
+            }
+        }
+    }
+
+    file.close();
+    m3uFile.close();
+
+    return true;
 }
 
 bool M3UHandler::fileExists(const QString path)
