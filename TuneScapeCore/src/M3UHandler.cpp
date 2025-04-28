@@ -77,20 +77,17 @@ bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &
 {
     QFile file(playlist);
 
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {  // <--- APPEND !!!
         QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
         qDebug() << "Error";
         return false;
     }
 
     QTextStream out(&file);
-
     out << "," << streamAddress << "," << stationName << "," << "," << "," << "\n" ;
-
-    file.close();
-
     return true;
 }
+
 
 bool M3UHandler::exportM3Ufile(const QString &playlist)
 {

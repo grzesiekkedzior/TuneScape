@@ -55,7 +55,9 @@ void Menu::importPlaylists()
         playlist = RADIO_BROWSER;
     } else if (fileName.contains(ICE_CAST)) {
         playlist = ICE_CAST;
-    } else {
+    } else if (fileName.contains(RADIO_BROWSER_M3U)) {
+        playlist = RADIO_BROWSER_M3U;
+    }else {
         QMessageBox::warning(nullptr, "Error", "This is not TuneScape playlist!");
         return;
     }
@@ -80,14 +82,23 @@ void Menu::importPlaylists()
     QTextStream in(&inputFile);
     QTextStream out(&outputFile);
 
-    out << in.readAll();
+    // For now only radiobrowser
+    if (fileName.endsWith(".m3u", Qt::CaseInsensitive)) {
+        inputFile.close();
+        outputFile.close();
+        M3UHandler m3uHandler;
+        m3uHandler.importM3Ufile(fileName, RADIO_BROWSER);
+    } else {
+        out << in.readAll();
+        inputFile.close();
+        outputFile.close();
+    }
 
-    inputFile.close();
-    outputFile.close();
+
 
     QMessageBox::information(nullptr, "Sukccess", "Playlist is imported successfully.");
 
-    if (playlist == RADIO_BROWSER) {
+    if (playlist == RADIO_BROWSER || playlist == RADIO_BROWSER_M3U) {
         radioList->setFavoriteStatons();
         radioList->setFavoriteLibrary();
     }
