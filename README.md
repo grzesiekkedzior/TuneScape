@@ -1,5 +1,9 @@
 
 # TuneScape   
+### **4.8.4 - experimental**   
+For now you can export an M3U playlist and listen to it on VLC or other compatible apps with the M3U standard. The second thing is that you can import playlists to TuneScape. For now, only RadioBrowser. 
+
+I highly encourage you to download the M3U playlist from https://www.radio-browser.info/ and choose your category or TAGS or everything else and load it to TuneScape.   
 ### **4.7.4**   
 The main icon is changed. The icon is from [iconduck.com](https://iconduck.com/icons/105034/radio) and is for [GPL v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) licence.   
 ### **4.7.3**   
