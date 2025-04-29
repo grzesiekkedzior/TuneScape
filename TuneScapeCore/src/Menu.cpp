@@ -55,7 +55,7 @@ void Menu::importPlaylists()
         playlist = RADIO_BROWSER;
     } else if (fileName.contains(ICE_CAST)) {
         playlist = ICE_CAST;
-    } else if (fileName.contains(RADIO_BROWSER_M3U)) {
+    } else if (fileName.contains(FORMAT_M3U)) {
         playlist = RADIO_BROWSER_M3U;
     }else {
         QMessageBox::warning(nullptr, "Error", "This is not TuneScape playlist!");

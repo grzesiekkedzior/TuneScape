@@ -43,7 +43,7 @@ public:
 
     void clearIconLabelColor();
     void clearTableViewColor();
-    void checkIsRadioOnPlaylist();
+    void checkIsRadioOnPlaylist(const QString &station);
     bool isAddressExists(const QString address, const QString playlist);
     void setFavoriteStatons();
 

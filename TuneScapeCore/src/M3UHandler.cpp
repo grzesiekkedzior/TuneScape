@@ -13,6 +13,7 @@ void M3UHandler::importM3Ufile(const QString path ,const QString playlist)
     bool extInf = false;
     QString stationName{};
     QString streamAddress{};
+    isClear = false;
 
     if(!isM3Ufile(path))
         return;
@@ -34,13 +35,13 @@ void M3UHandler::importM3Ufile(const QString path ,const QString playlist)
             stationName = line.section(',', 1).trimmed();
             qDebug() << "stationName " << stationName;
         } else if (extInf && line.startsWith("http")) {
-            if (!isRadioInPlaylist(stationName, playlist)) {
+            //if (!isRadioInPlaylist(stationName, playlist)) {
                 streamAddress = line;
                 qDebug() << "streamAddress " << streamAddress;
                 if (stationName.isEmpty() || streamAddress.isEmpty())
                     continue;
-                saveOnTuneScapeFile(stationName, streamAddress, playlist);
-            }
+                saveOnTuneScapeFile(stationName, streamAddress, playlist, isClear);
+            //}
 
             extInf = false;
         }
@@ -73,11 +74,26 @@ bool M3UHandler::isRadioInPlaylist(const QString& stationName, const QString& pl
     return false;
 }
 
-bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &streamAddress, const QString &playlist)
+void M3UHandler::clearTunescapePlaylist(const QString &playlist)
 {
     QFile file(playlist);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        file.close();
+    } else {
+        QMessageBox::critical(nullptr, "File Error", "Cannot clear file:\n" + playlist);
+    }
+}
 
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {  // <--- APPEND !!!
+
+bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &streamAddress, const QString &playlist, bool &isClear)
+{
+    if (!isClear) {
+        clearTunescapePlaylist(RADIO_BROWSER_PLAYLIST);
+        isClear = true;
+    }
+    QFile file(playlist);
+
+    if (!file.open(QIODevice::WriteOnly |QIODevice::Append | QIODevice::Text)) {  // <--- APPEND !!!
         QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
         qDebug() << "Error";
         return false;
