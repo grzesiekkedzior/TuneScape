@@ -628,7 +628,8 @@ bool RadioList::isRadioAdded(const QString data, const QString playlist)
     QTextStream in(&file);
     while (!in.atEnd()) {
         QString line = in.readLine();
-        if (line == data)
+
+        if (line.toLower().contains(data.toLower()))
             return true;
     }
 
@@ -649,10 +650,8 @@ void RadioList::removeRadio(const QString data, const QString playlist)
     QTextStream out(&outputFile);
 
     while (!in.atEnd()) {
-        QString line = in.readLine().trimmed(); // Usuwanie znaków białych
-        qDebug() << data;
-        qDebug() << line;
-        if (line != data) {
+        QString line = in.readLine().trimmed();
+        if (!line.toLower().contains(data.toLower())) {
             out << line << "\n";
         }
     }
@@ -668,7 +667,7 @@ void RadioList::removeRadio(const QString data, const QString playlist)
     }
 }
 
-bool RadioList::isAddressExists(const QString address, const QString playlist)
+bool RadioList::isAddressExists(const QString station, const QString playlist)
 {
     QFile file(playlist);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -677,11 +676,11 @@ bool RadioList::isAddressExists(const QString address, const QString playlist)
     }
 
     QTextStream in(&file);
-    const QString lowerCaseAddress = address.toLower();
+    const QString lowerCaseStation = station.toLower();
 
     while (!in.atEnd()) {
         QString line = in.readLine();
-        if (line.toLower().contains(lowerCaseAddress)) {
+        if (line.toLower().contains(lowerCaseStation)) {
             file.close();
             qDebug() << "true";
             return true;
@@ -884,9 +883,9 @@ void RadioList::getSongTitle(const QString &url)
     streamReader.startStreaming(url);
 }
 
-void RadioList::checkIsRadioOnPlaylist()
+void RadioList::checkIsRadioOnPlaylist(const QString &station)
 {
-    if (isAddressExists(currentRadioPlayingAddress, RADIO_BROWSER_PLAYLIST)) {
+    if (isAddressExists(station, RADIO_BROWSER_PLAYLIST)) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     } else {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
@@ -929,7 +928,8 @@ void RadioList::playStream(int radioNumber)
     radioIndexCurrentPlaying = radioNumber;
     radioPlaylistCurrentPlaying = currentPlaylistIndex;
     currentRadioPlayingAddress = jsonListProcesor.getStreamAddresses(radioNumber);
-    checkIsRadioOnPlaylist();
+    QString curentStation = jsonListProcesor.getTableRows().at(radioNumber).station;
+    checkIsRadioOnPlaylist(curentStation);
     getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
     radioManager.loadStream(streamUrl);
@@ -1180,7 +1180,6 @@ void RadioList::startRadioBrowserStream()
     /***************************************************/
     markIconPlayingStation(newIndex.row());
     setIsPlaying(true);
-    qDebug() << "+++++++++++++++++++++++++++++++++++++++++++++";
     country.setCurrentIndexPlaying(-1);
 }
 
@@ -1369,10 +1368,10 @@ void RadioList::addRadioToFavorite()
                       + allTableRows[radioPlaylistCurrentPlaying]
                             .at(radioIndexCurrentPlaying)
                             .stationUrl;
-
-                if (isRadioAdded(data, RADIO_BROWSER_PLAYLIST)) {
+                QString stationName = allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).station;
+                if (isRadioAdded(stationName, RADIO_BROWSER_PLAYLIST)) {
                     qDebug() << "remove";
-                    removeRadio(data, RADIO_BROWSER_PLAYLIST);
+                    removeRadio(stationName, RADIO_BROWSER_PLAYLIST);
                     ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
                 } else if (!data.isEmpty()) {
                     QFile file(RADIO_BROWSER_PLAYLIST);
@@ -1395,10 +1394,10 @@ void RadioList::addRadioToFavorite()
             QString data = country.dtoFavorite.icon + "," + country.dtoFavorite.stream + ","
                            + country.dtoFavorite.station + "," + country.dtoFavorite.country + ","
                            + country.dtoFavorite.genre + "," + country.dtoFavorite.stationUrl;
-
-            if (isRadioAdded(data, RADIO_BROWSER_PLAYLIST)) {
+            QString stationName = country.dtoFavorite.station;
+            if (isRadioAdded(stationName, RADIO_BROWSER_PLAYLIST)) {
                 qDebug() << "remove";
-                removeRadio(data, RADIO_BROWSER_PLAYLIST);
+                removeRadio(stationName, RADIO_BROWSER_PLAYLIST);
                 ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
             } else if (!data.isEmpty()) {
                 QFile file(RADIO_BROWSER_PLAYLIST);
