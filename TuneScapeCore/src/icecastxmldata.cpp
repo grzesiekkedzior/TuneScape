@@ -177,7 +177,7 @@ void IceCastXmlData::setFavoriteStations()
             auto it = std::find_if(iceCastStationTableRows.begin(),
                                    iceCastStationTableRows.end(),
                                    [line](const IceCastTableRow &row) {
-                                       return row.station == line;
+                                       return line.contains(row.station);
                                    });
 
             if (it != iceCastStationTableRows.end()) {

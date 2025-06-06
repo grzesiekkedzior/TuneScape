@@ -22,9 +22,9 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     exportRadioBrowserM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
 
     exportIceCastRadio = new QAction("IceCast");
-    //exportIceCastRadioM3U = new QAction("IceCast-M3U");
+    exportIceCastRadioM3U = new QAction("IceCast-M3U");
     exportIceCastRadio->setIcon(QIcon(":/images/img/playlist-27-32.png"));
-    //exportIceCastRadioM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
+    exportIceCastRadioM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     mainMenu->addAction(importPls);
     mainMenu->addMenu(exportPls);
     exportPls->addAction(exportRadioBrowser);
@@ -39,7 +39,7 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     connect(exportRadioBrowser, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylist);
     connect(exportRadioBrowserM3U, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylistM3U);
     connect(exportIceCastRadio, &QAction::triggered, this, &Menu::exortIceCastPlaylist);
-    //connect(exportIceCastRadioM3U, &QAction::triggered, this, &Menu::exportIceCastPlaylistM3U);
+    connect(exportIceCastRadioM3U, &QAction::triggered, this, &Menu::exportIceCastPlaylistM3U);
 }
 
 void Menu::importPlaylists()
