@@ -1,5 +1,8 @@
 
 # TuneScape   
+### **4.8.5 - experimental**   
+In version 4.8.5, a new feature has been added that allows exporting IceCast favorite stations to an M3U playlist.   
+
 ### **4.8.4 - experimental**   
 For now you can export an M3U playlist and listen to it on VLC or other compatible apps with the M3U standard. The second thing is that you can import playlists to TuneScape. For now, only RadioBrowser. 
 
