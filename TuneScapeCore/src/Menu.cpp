@@ -118,23 +118,13 @@ void Menu::exportRadioBrowserPlaylist()
 
 void Menu::exportRadioBrowserPlaylistM3U()
 {
-    M3UHandler m3uHandler;
-    bool done = m3uHandler.exportM3Ufile(RADIO_BROWSER);
-    if (done)
-        exportRadio(RADIO_BROWSER_M3U, M3U_FORMAT);
-    else
-        qDebug() << "M3U ERROR!!!";
+    generateM3Uplaylist(RADIO_BROWSER, RADIO_BROWSER_M3U);
 
 }
 
 void Menu::exportIceCastPlaylistM3U()
 {
-    M3UHandler m3uHandler;
-    bool done = m3uHandler.exportM3Ufile(ICE_CAST);
-    if (done)
-        exportRadio(ICE_CAST_M3U, M3U_FORMAT);
-    else
-        qDebug() << "M3U ERROR!!!";
+    generateM3Uplaylist(ICE_CAST, ICE_CAST_M3U);
 }
 
 void Menu::exortIceCastPlaylist()
@@ -173,4 +163,13 @@ void Menu::exportRadio(const QString &playlist, QString format)
     outputFile.close();
 
     QMessageBox::information(nullptr, "Sukccess", "Playlist is saved correctly.");
+}
+
+void Menu::generateM3Uplaylist(const QString &radio, const QString &radioM3u)
+{
+    M3UHandler m3uHandler;
+    if (m3uHandler.exportM3Ufile(radio))
+        exportRadio(radioM3u, M3U_FORMAT);
+    else
+        qDebug() << "M3U export failed for:" << radio;
 }

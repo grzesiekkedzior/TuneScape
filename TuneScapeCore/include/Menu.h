@@ -40,6 +40,7 @@ private:
     const QString M3U_FORMAT = "m3u";
 
     void exportRadio(const QString &playlist, QString format);
+    void generateM3Uplaylist(const QString &radio, const QString &radioM3u);
 };
 
 #endif // MENU_H
