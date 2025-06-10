@@ -1326,6 +1326,10 @@ void RadioList::addRadioToFavorite()
                                   ->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
                                   .station;
 
+            QString streamUrl = iceCastXmlData
+                                  ->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
+                                  .listen_url;
+
             if (isRadioAdded(station, ICECAST_PLAYLIST)) {
                 removeRadio(station, ICECAST_PLAYLIST);
                 ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
@@ -1338,7 +1342,7 @@ void RadioList::addRadioToFavorite()
                 }
 
                 QTextStream out(&file);
-                out << station << "\n";
+                out << "," << streamUrl << "," << station << ",,," << "\n";
                 file.close();
                 ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
                 iceCastXmlData->addToFavoriteStations();
