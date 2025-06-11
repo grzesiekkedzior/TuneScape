@@ -268,6 +268,7 @@ private:
 
     void createTrashButton(QList<QStandardItem *> &rowItems);
     void setTrashHeader();
+    void onTrashIconCliced(const QModelIndex &index);
 };
 
 #endif // RADIOLIST_H

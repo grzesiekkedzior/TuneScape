@@ -68,6 +68,9 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
 
+    //trash header signal
+    connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTrashIconCliced);
+
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
     header->setSectionResizeMode(QHeaderView::Interactive);
@@ -599,6 +602,14 @@ void RadioList::setTrashHeader()
 
     if (item == FAVORITE) {
         ui->tableView->setColumnWidth(1, 16);
+    }
+}
+
+void RadioList::onTrashIconCliced(const QModelIndex &index)
+{
+    qDebug() << "Trash" << index.column();
+    if (index.column() == 1) {
+        //TODO
     }
 }
 
