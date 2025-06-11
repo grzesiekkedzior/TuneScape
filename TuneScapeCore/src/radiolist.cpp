@@ -591,14 +591,30 @@ void RadioList::loadRadioList()
     if (rowCount > 0 && treeItem != "Search") {
         model->removeRows(0, rowCount);
     }
-    model->setHorizontalHeaderLabels(headers);
+    //model->setHorizontalHeaderLabels(headers);
     int dataSize = jsonListProcesor.getTableRows().size();
     //int batchSize = 50;
     //    for (int row = 0; row < qMin(loadedStationsCount + batchSize, dataSize);
     //         ++row)
+
+    if ((headers.size() == 4 && (item == FAVORITE))) {
+        headers.clear();
+        headers << STATION << "-" << COUNTRY << GENRE << HOMEPAGE;
+        header->setSectionResizeMode(QHeaderView::Interactive);
+        model->setHorizontalHeaderLabels(headers);
+        ui->tableView->setColumnWidth(1, 16);
+    } else {
+        headers.clear();
+        headers << STATION << COUNTRY << GENRE << HOMEPAGE;
+        header->setSectionResizeMode(QHeaderView::Interactive);
+        model->setHorizontalHeaderLabels(headers);
+    }
     for (int row = 0; row < dataSize; ++row) {
         QList<QStandardItem *> rowItems;
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));
+        if (item == FAVORITE)
+            createTrashButton(rowItems);
+
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).country));
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).genre));
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).stationUrl));
@@ -606,9 +622,20 @@ void RadioList::loadRadioList()
     }
 
     ui->tableView->setModel(model);
+
     //this->treeItem = "Search";
     //ui->tableView->resizeRowsToContents();
     //loadedStationsCount += batchSize;
+}
+
+void RadioList::createTrashButton(QList<QStandardItem *> &rowItems)
+{
+    QStandardItem *deleteItem = new QStandardItem();
+    deleteItem->setIcon(QIcon(":/images/img/trash-can-lined-24.png"));
+    deleteItem->setEditable(false);
+    deleteItem->setTextAlignment(Qt::AlignCenter);
+    rowItems.append(deleteItem);
+
 }
 
 void RadioList::setTopListOnStart()

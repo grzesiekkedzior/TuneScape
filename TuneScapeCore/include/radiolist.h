@@ -265,6 +265,8 @@ private:
     void updatePlayPauseIcons();
     void switchToDefaultTabIfNoCountryStationPlaying();
     void resetImageIfStopped();
+
+    void createTrashButton(QList<QStandardItem *> &rowItems);
 };
 
 #endif // RADIOLIST_H
