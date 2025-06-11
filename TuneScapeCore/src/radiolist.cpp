@@ -584,6 +584,24 @@ void RadioList::handleNetworkReply(QNetworkReply *reply, int row)
     reply->deleteLater();
 }
 
+void RadioList::setTrashHeader()
+{
+    headers.clear();
+
+    if (item == FAVORITE) {
+        headers << STATION << "-" << COUNTRY << GENRE << HOMEPAGE;
+    } else {
+        headers << STATION << COUNTRY << GENRE << HOMEPAGE;
+    }
+
+    header->setSectionResizeMode(QHeaderView::Interactive);
+    model->setHorizontalHeaderLabels(headers);
+
+    if (item == FAVORITE) {
+        ui->tableView->setColumnWidth(1, 16);
+    }
+}
+
 void RadioList::loadRadioList()
 {
     int rowCount = model->rowCount();
@@ -597,18 +615,7 @@ void RadioList::loadRadioList()
     //    for (int row = 0; row < qMin(loadedStationsCount + batchSize, dataSize);
     //         ++row)
 
-    if ((headers.size() == 4 && (item == FAVORITE))) {
-        headers.clear();
-        headers << STATION << "-" << COUNTRY << GENRE << HOMEPAGE;
-        header->setSectionResizeMode(QHeaderView::Interactive);
-        model->setHorizontalHeaderLabels(headers);
-        ui->tableView->setColumnWidth(1, 16);
-    } else {
-        headers.clear();
-        headers << STATION << COUNTRY << GENRE << HOMEPAGE;
-        header->setSectionResizeMode(QHeaderView::Interactive);
-        model->setHorizontalHeaderLabels(headers);
-    }
+    setTrashHeader();
     for (int row = 0; row < dataSize; ++row) {
         QList<QStandardItem *> rowItems;
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));

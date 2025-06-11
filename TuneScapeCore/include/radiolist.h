@@ -267,6 +267,7 @@ private:
     void resetImageIfStopped();
 
     void createTrashButton(QList<QStandardItem *> &rowItems);
+    void setTrashHeader();
 };
 
 #endif // RADIOLIST_H
