@@ -20,7 +20,9 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/fft.h \
            $$PWD/TuneScapeCore/include/miniplayer.h \
            $$PWD/TuneScapeCore/include/Country.h \
-           $$PWD/TuneScapeCore/include/M3UHandler.h
+           $$PWD/TuneScapeCore/include/M3UHandler.h \
+           $$PWD/TuneScapeCore/include/PlaylistEditor.h \
+           $$PWD/TuneScapeCore/include/RadioBrowserPlaylistEditor.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/Menu.cpp \
@@ -42,7 +44,8 @@ SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/fft.cpp \
            $$PWD/TuneScapeCore/src/miniplayer.cpp \
            $$PWD/TuneScapeCore/src/Country.cpp \
-           $$PWD/TuneScapeCore/src/M3UHandler.cpp
+           $$PWD/TuneScapeCore/src/M3UHandler.cpp \
+           $$PWD/TuneScapeCore/src/RadioBrowserPlaylistEditor.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui \

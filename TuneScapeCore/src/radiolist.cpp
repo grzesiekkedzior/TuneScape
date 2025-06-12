@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QScrollBar>
+#include "include/RadioBrowserPlaylistEditor.h"
 #include "qpainter.h"
 
 RadioList::RadioList(QObject *parent)
@@ -26,6 +27,8 @@ RadioList::RadioList(Ui::MainWindow *ui)
     iceCastXmlData->setRadioInfo(radioInfo);
     iceCastXmlData->makeShareStreamRecorder(streamRecorder);
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
+
+    playlistEditor.reset(new RadioBrowserPlaylistEditor(*this));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     // for list

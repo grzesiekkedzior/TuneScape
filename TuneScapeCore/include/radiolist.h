@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include "../ui_mainwindow.h"
 #include "Country.h"
+#include "PlaylistEditor.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "icecastxmldata.h"
@@ -96,6 +97,8 @@ public:
     void setIsStopClicked(bool newIsStopClicked);
 
     void resetTreeItemIfSearch();
+
+    QScopedPointer<PlaylistEditor> playlistEditor;
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);

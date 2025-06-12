@@ -14,6 +14,8 @@ SOURCES += \
     src/IceCastXmlData.cpp \
     src/M3UHandler.cpp \
     src/Menu.cpp \
+    src/PlaylistEditor.cpp \
+    src/RadioBrowserPlaylistEditor.cpp \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
     src/TrayIcon.cpp \
@@ -38,7 +40,9 @@ HEADERS += \
     include/IceCastXmlData.h \
     include/M3UHandler.h \
     include/Menu.h \
+    include/PlaylistEditor.h \
     include/RadioBrowserApi.h \
+    include/RadioBrowserPlaylistEditor.h \
     include/StreamRecorder.h \
     include/Theme.h \
     include/TrayIcon.h \
