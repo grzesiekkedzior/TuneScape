@@ -236,6 +236,16 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+int RadioList::getCurrentStationIndex() const
+{
+    return currentStationIndex;
+}
+
+void RadioList::setCurrentStationIndex(int newCurrentStationIndex)
+{
+    currentStationIndex = newCurrentStationIndex;
+}
+
 void RadioList::setRadioIndexNumber(int newRadioIndexNumber)
 {
     radioIndexNumber = newRadioIndexNumber;
@@ -635,8 +645,8 @@ void RadioList::setTrashHeader()
 
 void RadioList::onTrashIconCliced(const QModelIndex &index)
 {
-    qDebug() << "Trash" << index.column();
-    if (index.column() == 1) {
+    qDebug() << "Trash" << index.column() << " tree " << item;
+    if (item == FAVORITE && index.column() == 1) {
         if (playlistEditor) {
             bool success = playlistEditor->remove(index);
             if (!success) {

@@ -7,7 +7,7 @@ RadioBrowserPlaylistEditor::RadioBrowserPlaylistEditor(RadioList &radiolist) : r
 
 bool RadioBrowserPlaylistEditor::remove(const QModelIndex &index)
 {
-    radioIndex = index.row();
+    radioIndex = radioList.getRadioIndexNumber();
     updateFile(index.row());
     refreshUI();
     return true;
@@ -19,8 +19,14 @@ bool RadioBrowserPlaylistEditor::updateFile(int radioPosition)
     if (radioPosition < 0 || radioPosition >= radioList.getAllTableRows().at(FAVORITE_VECTOR).size()) {
         return false;
     }
-    auto favoriteVector = radioList.getAllTableRows().at(FAVORITE_VECTOR);
+    const auto& favoriteVector = radioList.getAllTableRows().at(FAVORITE_VECTOR);
     QString stationName = favoriteVector.at(radioPosition).station;
+    if (radioIndex > radioPosition) {
+        radioIndex -= 1;
+    } else if (radioIndex == radioPosition) {
+        radioIndex = -1;
+    }
+    radioList.setRadioIndexNumber(radioIndex);
     radioList.removeRadio(stationName, RADIO_BROWSER);
     return true;
 }
@@ -35,4 +41,6 @@ void RadioBrowserPlaylistEditor::refreshUI()
 
     radioList.loadRadioList();
     radioList.loadRadioIconList();
+    radioList.updateStationColoring();
+
 }

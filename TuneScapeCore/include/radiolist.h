@@ -116,6 +116,9 @@ public:
 
     void setRadioIndexNumber(int newRadioIndexNumber);
 
+    int getCurrentStationIndex() const;
+    void setCurrentStationIndex(int newCurrentStationIndex);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
