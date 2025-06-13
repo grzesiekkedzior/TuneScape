@@ -7,7 +7,7 @@ public:
     virtual ~PlaylistEditor() = default;
 
     virtual bool remove(const QModelIndex &index) = 0;
-    virtual bool updateFile() = 0;
+    virtual bool updateFile(int radioPosition) = 0;
     virtual void refreshUI() = 0;
 };
 

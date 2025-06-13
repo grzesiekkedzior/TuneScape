@@ -100,6 +100,22 @@ public:
 
     QScopedPointer<PlaylistEditor> playlistEditor;
 
+    // Add and remove the playlists!!!
+    bool isRadioAdded(const QString data, const QString playlist);
+    void removeRadio(const QString data, const QString playlist);
+    void loadRadioIconList();
+    void updateStationColoring();
+
+    Ui::MainWindow *getUi() const;
+
+    QStandardItemModel *getModel() const;
+
+    QVector<QVector<QString> > getAllStreamAddresses() const;
+
+    QVector<QVector<QString> > getAllIconsAddresses() const;
+
+    void setRadioIndexNumber(int newRadioIndexNumber);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -203,9 +219,7 @@ private:
     void setVectorsOfStation(const QString endpoint);
     void setTopListOnStart();
 
-    // Add and remove the playlists!!!
-    bool isRadioAdded(const QString data, const QString playlist);
-    void removeRadio(const QString data, const QString playlist);
+
 
     void setRadioListVectors(Stations s);
     void clearFlowLayout();
@@ -223,7 +237,7 @@ private:
     QWidget *createItemContainer(QPushButton *button, int row);
     QPushButton *createButton(int row);
     void addToButtonCache();
-    void loadRadioIconList();
+
     void clearAll();
     void handleIconPlayButtonDoubleClick(int radioNumber);
     QList<QNetworkReply *> networkReplies;
@@ -250,7 +264,6 @@ private:
     void readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses);
     void switchToPlaylist(Stations station);
     void switchToIceCastTab(bool favorite);
-    void updateStationColoring();
     void loadRadioIconsFromNetwork(int dataSize);
     void clearRadioDataVectors();
     void prepareRestoredConnectionMessage();

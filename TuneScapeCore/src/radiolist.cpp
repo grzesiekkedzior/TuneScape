@@ -236,6 +236,31 @@ void RadioList::onAllIconsLoaded()
     }
 }
 
+void RadioList::setRadioIndexNumber(int newRadioIndexNumber)
+{
+    radioIndexNumber = newRadioIndexNumber;
+}
+
+QVector<QVector<QString> > RadioList::getAllIconsAddresses() const
+{
+    return allIconsAddresses;
+}
+
+QVector<QVector<QString> > RadioList::getAllStreamAddresses() const
+{
+    return allStreamAddresses;
+}
+
+QStandardItemModel *RadioList::getModel() const
+{
+    return model;
+}
+
+Ui::MainWindow *RadioList::getUi() const
+{
+    return ui;
+}
+
 bool RadioList::shouldUpdateIcon() const
 {
     bool isSamePlaylist = (currentPlayListPlaying == currentPlaylistIndex);
@@ -612,7 +637,12 @@ void RadioList::onTrashIconCliced(const QModelIndex &index)
 {
     qDebug() << "Trash" << index.column();
     if (index.column() == 1) {
-        //TODO
+        if (playlistEditor) {
+            bool success = playlistEditor->remove(index);
+            if (!success) {
+                qDebug() << "Error!!!";
+            }
+        }
     }
 }
 
