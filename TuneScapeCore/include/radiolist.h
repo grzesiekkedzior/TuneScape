@@ -123,14 +123,14 @@ signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
     void sendTitleToTray(QString title);
+public slots:
+    void onStopButtonClicked();
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
     void onTableViewDoubleClicked(const QModelIndex &index);
-
     void onNextButtonClicked();
     void onPrevButtonClicked();
-    void onStopButtonClicked();
     void onTableViewClicked(const QModelIndex &index);
     void tableViewActivated(const QModelIndex &index);
     void addRadioToFavorite();
