@@ -7,8 +7,10 @@ RadioBrowserPlaylistEditor::RadioBrowserPlaylistEditor(RadioList &radiolist) : r
 
 void RadioBrowserPlaylistEditor::checkIfStationIsPlaying(const QModelIndex &index)
 {
-    if (radioList.getRadioIndexNumber() == index.row())
+    if (radioList.getRadioIndexNumber() == index.row()) {
         radioList.onStopButtonClicked();
+        radioIndex = 0;
+    }
 }
 
 bool RadioBrowserPlaylistEditor::remove(const QModelIndex &index)
