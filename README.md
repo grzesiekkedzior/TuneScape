@@ -1,5 +1,9 @@
 
 # TuneScape   
+### **4.9.0 - experimental**   
+From now on, you can remove radio stations from your favorites list.   
+![delete](https://github.com/user-attachments/assets/466260ba-a7f3-4fed-870a-4b5778bdee53)   
+
 ### **4.8.5 - experimental**   
 In version 4.8.5, a new feature has been added that allows exporting IceCast favorite stations to an M3U playlist.   
 
