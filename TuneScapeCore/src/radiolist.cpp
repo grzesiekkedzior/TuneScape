@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QScrollBar>
+#include "include/RadioBrowserPlaylistEditor.h"
 #include "qpainter.h"
 
 RadioList::RadioList(QObject *parent)
@@ -26,6 +27,8 @@ RadioList::RadioList(Ui::MainWindow *ui)
     iceCastXmlData->setRadioInfo(radioInfo);
     iceCastXmlData->makeShareStreamRecorder(streamRecorder);
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
+
+    playlistEditor.reset(new RadioBrowserPlaylistEditor(*this));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     // for list
@@ -67,6 +70,9 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
+
+    //trash header signal
+    connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTrashIconCliced);
 
     header = ui->tableView->horizontalHeader();
     headers << STATION << COUNTRY << GENRE << HOMEPAGE;
@@ -228,6 +234,41 @@ void RadioList::onAllIconsLoaded()
     if (getIsPlaying()) {
         handleIconUpdate();
     }
+}
+
+int RadioList::getCurrentStationIndex() const
+{
+    return currentStationIndex;
+}
+
+void RadioList::setCurrentStationIndex(int newCurrentStationIndex)
+{
+    currentStationIndex = newCurrentStationIndex;
+}
+
+void RadioList::setRadioIndexNumber(int newRadioIndexNumber)
+{
+    radioIndexNumber = newRadioIndexNumber;
+}
+
+QVector<QVector<QString> > RadioList::getAllIconsAddresses() const
+{
+    return allIconsAddresses;
+}
+
+QVector<QVector<QString> > RadioList::getAllStreamAddresses() const
+{
+    return allStreamAddresses;
+}
+
+QStandardItemModel *RadioList::getModel() const
+{
+    return model;
+}
+
+Ui::MainWindow *RadioList::getUi() const
+{
+    return ui;
 }
 
 bool RadioList::shouldUpdateIcon() const
@@ -584,6 +625,37 @@ void RadioList::handleNetworkReply(QNetworkReply *reply, int row)
     reply->deleteLater();
 }
 
+void RadioList::setTrashHeader()
+{
+    headers.clear();
+
+    if (item == FAVORITE) {
+        headers << STATION << "-" << COUNTRY << GENRE << HOMEPAGE;
+    } else {
+        headers << STATION << COUNTRY << GENRE << HOMEPAGE;
+    }
+
+    header->setSectionResizeMode(QHeaderView::Interactive);
+    model->setHorizontalHeaderLabels(headers);
+
+    if (item == FAVORITE) {
+        ui->tableView->setColumnWidth(1, 16);
+    }
+}
+
+void RadioList::onTrashIconCliced(const QModelIndex &index)
+{
+    qDebug() << "Trash" << index.column() << " tree " << item;
+    if (item == FAVORITE && index.column() == 1) {
+        if (playlistEditor) {
+            bool success = playlistEditor->remove(index);
+            if (!success) {
+                qDebug() << "Error!!!";
+            }
+        }
+    }
+}
+
 void RadioList::loadRadioList()
 {
     int rowCount = model->rowCount();
@@ -591,14 +663,19 @@ void RadioList::loadRadioList()
     if (rowCount > 0 && treeItem != "Search") {
         model->removeRows(0, rowCount);
     }
-    model->setHorizontalHeaderLabels(headers);
+    //model->setHorizontalHeaderLabels(headers);
     int dataSize = jsonListProcesor.getTableRows().size();
     //int batchSize = 50;
     //    for (int row = 0; row < qMin(loadedStationsCount + batchSize, dataSize);
     //         ++row)
+
+    setTrashHeader();
     for (int row = 0; row < dataSize; ++row) {
         QList<QStandardItem *> rowItems;
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));
+        if (item == FAVORITE)
+            createTrashButton(rowItems);
+
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).country));
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).genre));
         rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).stationUrl));
@@ -606,9 +683,20 @@ void RadioList::loadRadioList()
     }
 
     ui->tableView->setModel(model);
+
     //this->treeItem = "Search";
     //ui->tableView->resizeRowsToContents();
     //loadedStationsCount += batchSize;
+}
+
+void RadioList::createTrashButton(QList<QStandardItem *> &rowItems)
+{
+    QStandardItem *deleteItem = new QStandardItem();
+    deleteItem->setIcon(QIcon(":/images/img/trash-can-lined-24.png"));
+    deleteItem->setEditable(false);
+    deleteItem->setTextAlignment(Qt::AlignCenter);
+    rowItems.append(deleteItem);
+
 }
 
 void RadioList::setTopListOnStart()

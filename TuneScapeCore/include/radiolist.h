@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include "../ui_mainwindow.h"
 #include "Country.h"
+#include "PlaylistEditor.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "icecastxmldata.h"
@@ -97,18 +98,39 @@ public:
 
     void resetTreeItemIfSearch();
 
+    QScopedPointer<PlaylistEditor> playlistEditor;
+
+    // Add and remove the playlists!!!
+    bool isRadioAdded(const QString data, const QString playlist);
+    void removeRadio(const QString data, const QString playlist);
+    void loadRadioIconList();
+    void updateStationColoring();
+
+    Ui::MainWindow *getUi() const;
+
+    QStandardItemModel *getModel() const;
+
+    QVector<QVector<QString> > getAllStreamAddresses() const;
+
+    QVector<QVector<QString> > getAllIconsAddresses() const;
+
+    void setRadioIndexNumber(int newRadioIndexNumber);
+
+    int getCurrentStationIndex() const;
+    void setCurrentStationIndex(int newCurrentStationIndex);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
     void sendTitleToTray(QString title);
+public slots:
+    void onStopButtonClicked();
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
     void onTableViewDoubleClicked(const QModelIndex &index);
-
     void onNextButtonClicked();
     void onPrevButtonClicked();
-    void onStopButtonClicked();
     void onTableViewClicked(const QModelIndex &index);
     void tableViewActivated(const QModelIndex &index);
     void addRadioToFavorite();
@@ -200,9 +222,7 @@ private:
     void setVectorsOfStation(const QString endpoint);
     void setTopListOnStart();
 
-    // Add and remove the playlists!!!
-    bool isRadioAdded(const QString data, const QString playlist);
-    void removeRadio(const QString data, const QString playlist);
+
 
     void setRadioListVectors(Stations s);
     void clearFlowLayout();
@@ -220,7 +240,7 @@ private:
     QWidget *createItemContainer(QPushButton *button, int row);
     QPushButton *createButton(int row);
     void addToButtonCache();
-    void loadRadioIconList();
+
     void clearAll();
     void handleIconPlayButtonDoubleClick(int radioNumber);
     QList<QNetworkReply *> networkReplies;
@@ -247,7 +267,6 @@ private:
     void readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses);
     void switchToPlaylist(Stations station);
     void switchToIceCastTab(bool favorite);
-    void updateStationColoring();
     void loadRadioIconsFromNetwork(int dataSize);
     void clearRadioDataVectors();
     void prepareRestoredConnectionMessage();
@@ -265,6 +284,10 @@ private:
     void updatePlayPauseIcons();
     void switchToDefaultTabIfNoCountryStationPlaying();
     void resetImageIfStopped();
+
+    void createTrashButton(QList<QStandardItem *> &rowItems);
+    void setTrashHeader();
+    void onTrashIconCliced(const QModelIndex &index);
 };
 
 #endif // RADIOLIST_H

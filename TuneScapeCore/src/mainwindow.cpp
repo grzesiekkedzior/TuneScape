@@ -111,7 +111,7 @@ void MainWindow::infoDialogApp()
 
     aboutTuneScape = new QLabel;
     aboutTuneScape->setText(
-        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 4.8.5</p>"
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 4.9.0</p>"
         "This is a free and Open Source online radio player based on "
         "<a href=\"https://www.radio-browser.info\">radio-browser service </a> "
         "and <a href=\"https://www.icecast.org/\">Ice-Cast service.</a>"
@@ -120,7 +120,9 @@ void MainWindow::infoDialogApp()
         "or send me an email at <b>grzesiekkedzior@gmail.com</b>"
         "If you enjoy using TuneScape and would like to support its development,"
         "you can make a donation via.\n"
-        "<a href=\"https://www.paypal.com/donate/?hosted_button_id=MW4VMJ8YHSZF2\"><u><b>PayPal</u><b></a>");
+        "<a "
+        "href=\"https://www.paypal.com/donate/?hosted_button_id=MW4VMJ8YHSZF2\"><u><b>PayPal</"
+        "u><b></a>");
     aboutTuneScape->setOpenExternalLinks(true);
     aboutTuneScape->setWordWrap(true);
 
