@@ -40,25 +40,25 @@ class IceCastXmlData : public QObject
     Q_OBJECT
 public:
     IceCastXmlData();
-    IceCastXmlData(Ui::MainWindow *ui);
+    IceCastXmlData(Ui::MainWindow* ui);
     ~IceCastXmlData();
 
     void setUi();
     void setPlaying(bool b);
     void loadXmlData();
     void loadXmlToTable();
-    void addRowToTable(const IceCastTableRow &row);
+    void addRowToTable(const IceCastTableRow& row);
     void loadXmlAsync();
-    void setJsonListProcessor(JsonListProcessor &jsonListProcesor);
-    void setRadioAudioManager(RadioAudioManager &radioAudioManager);
-    void setRadioList(RadioList *radioList);
-    void setRadioInfo(RadioInfo *radioInfo);
-    void setTableProperty(Ui::MainWindow *ui);
+    void setJsonListProcessor(JsonListProcessor& jsonListProcesor);
+    void setRadioAudioManager(RadioAudioManager& radioAudioManager);
+    void setRadioList(RadioList* radioList);
+    void setRadioInfo(RadioInfo* radioInfo);
+    void setTableProperty(Ui::MainWindow* ui);
     void clearTableViewColor();
 
     void clearInfoData();
     bool getPlaying();
-    void playStreamOnStart(const QModelIndex &index);
+    void playStreamOnStart(const QModelIndex& index);
 
     bool getIsStationsLoaded() const;
     void setIsStationsLoaded(bool newIsStationsLoaded);
@@ -67,7 +67,7 @@ public:
     void setCurrentPlayingStation(int newCurrentPlayingStation);
 
     QVector<IceCastTableRow> getIceCastStationTableRows() const;
-    void setIceCastStationTableRows(const QVector<IceCastTableRow> &newIceCastStationTableRows);
+    void setIceCastStationTableRows(const QVector<IceCastTableRow>& newIceCastStationTableRows);
 
     IceCastTableRow getIceCastTableRow(int index);
     void addToFavoriteStations();
@@ -83,32 +83,32 @@ public:
 
     bool getIsFavoritePlaying() const;
     void setIsFavoritePlaying(bool newIsFavoritePlaying);
-    void setIndexColor(const QModelIndex &index);
+    void setIndexColor(const QModelIndex& index);
 
     QModelIndex getIndexPlayingStation() const;
-    void setIndexPlayingStation(const QModelIndex &newIndexPlayingStation);
+    void setIndexPlayingStation(const QModelIndex& newIndexPlayingStation);
 
     void makeShareStreamRecorder(QSharedPointer<StreamRecorder> streamRecorder);
     void playPauseIcon();
     bool getIsDownloadFinish() const;
     void setIsDownloadFinish(bool newIsDownloadFinish);
 
-    TrayIcon *getTrayIcon() const;
-    void setTryIcon(TrayIcon *newTrayIcon);
+    TrayIcon* getTrayIcon() const;
+    void setTryIcon(TrayIcon* newTrayIcon);
 
 private slots:
-    void onDoubleListClicked(const QModelIndex &index);
+    void onDoubleListClicked(const QModelIndex& index);
     void updateProgressBar(int progress);
-    void showErrorMessageBox(const QString &errorMessage);
-    void tableViewActivated(const QModelIndex &index);
+    void showErrorMessageBox(const QString& errorMessage);
+    void tableViewActivated(const QModelIndex& index);
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow* ui;
     DOM dom;
-    RadioAudioManager *radioAudioManager;
-    JsonListProcessor *jsonListProcesor;
-    RadioList *radioList = nullptr;
-    RadioInfo *radioInfo = nullptr;
+    RadioAudioManager* radioAudioManager;
+    JsonListProcessor* jsonListProcesor;
+    RadioList* radioList = nullptr;
+    RadioInfo* radioInfo = nullptr;
     QSharedPointer<StreamRecorder> streamRecorder;
     bool isDownloadFinish = false;
     bool isPlaying = false;
@@ -125,12 +125,12 @@ private:
     void checkIsRadioOnPlaylist();
     void setIceCastInfo(int index);
 
-    QSharedPointer<CustomColorDelegate> customColor{nullptr};
+    QSharedPointer<CustomColorDelegate> customColor{ nullptr };
 
-    TrayIcon *trayIcon = nullptr;
-    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
-    miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
-    Country &country = SingletonContainer::getSingleton().getInstance<Country>();
+    TrayIcon* trayIcon = nullptr;
+    AudioProcessor& audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
+    miniplayer& miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
+    Country& country = SingletonContainer::getSingleton().getInstance<Country>();
 
     const QString RADIO_ICON = ":/images/img/radio96x96.png";
 };
