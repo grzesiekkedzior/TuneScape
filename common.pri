@@ -22,7 +22,10 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/Country.h \
            $$PWD/TuneScapeCore/include/M3UHandler.h \
            $$PWD/TuneScapeCore/include/PlaylistEditor.h \
-           $$PWD/TuneScapeCore/include/RadioBrowserPlaylistEditor.h
+           $$PWD/TuneScapeCore/include/RadioBrowserPlaylistEditor.h \
+           $$PWD/TuneScapeCore/include/music_data/clients/MusicBrainzClient.h \
+           $$PWD/TuneScapeCore/include/music_data/services/ResolverService.h \
+           $$PWD/TuneScapeCore/include/music_data/clients/CoverArtClient.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/Menu.cpp \
@@ -45,7 +48,10 @@ SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/miniplayer.cpp \
            $$PWD/TuneScapeCore/src/Country.cpp \
            $$PWD/TuneScapeCore/src/M3UHandler.cpp \
-           $$PWD/TuneScapeCore/src/RadioBrowserPlaylistEditor.cpp
+           $$PWD/TuneScapeCore/src/RadioBrowserPlaylistEditor.cpp \
+           $$PWD/TuneScapeCore/src/music_data/clients/MusicBrainzClient.cpp \
+           $$PWD/TuneScapeCore/src/music_data/services/ResolverService.cpp \
+           $$PWD/TuneScapeCore/src/music_data/clients/CoverArtClient.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui \

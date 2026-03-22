@@ -60,6 +60,7 @@ HEADERS += \
     include/music_data/clients/MusicBrainzClient.h \
     include/music_data/clients/WikipediaClient.h \
     include/music_data/models/Artist.h \
+    include/music_data/models/QueryData.h \
     include/music_data/models/Track.h \
     include/music_data/services/ResolverService.h \
     include/radioinfo.h \

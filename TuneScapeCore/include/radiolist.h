@@ -20,6 +20,8 @@
 #include <QObject>
 #include <QStandardItemModel>
 #include <QStringList>
+#include "include/music_data/clients/MusicBrainzClient.h"
+#include "include/music_data/services/ResolverService.h"
 #include "miniplayer.h"
 
 enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
@@ -168,6 +170,10 @@ private:
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
+
+    music_data::MusicBrainzClient *m_musicBrainzCient;
+    music_data::ResolverService *m_resolverService;
+    music_data::CoverArtClient *m_coverArtClient;
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;
