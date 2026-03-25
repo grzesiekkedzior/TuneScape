@@ -22,7 +22,10 @@ RadioList::RadioList(Ui::MainWindow *ui)
 
     m_musicBrainzCient = new music_data::MusicBrainzClient;
     m_coverArtClient = new music_data::CoverArtClient;
-    m_resolverService = new music_data::ResolverService(m_musicBrainzCient, m_coverArtClient);
+    m_externalLinksClient = new music_data::ExternalLinksClient;
+    m_resolverService = new music_data::ResolverService(m_musicBrainzCient,
+                                                        m_coverArtClient,
+                                                        m_externalLinksClient);
 
     streamRecorder->setUI(ui);
     iceCastXmlData = new IceCastXmlData(ui);

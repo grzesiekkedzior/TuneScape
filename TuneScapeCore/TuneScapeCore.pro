@@ -25,8 +25,8 @@ SOURCES += \
     src/flowlayout.cpp \
     src/miniplayer.cpp \
     src/music_data/clients/CoverArtClient.cpp \
+    src/music_data/clients/ExternalLinksClient.cpp \
     src/music_data/clients/MusicBrainzClient.cpp \
-    src/music_data/clients/WikipediaClient.cpp \
     src/music_data/services/ResolverService.cpp \
     src/radioinfo.cpp \
     src/streamReader.cpp \
@@ -57,8 +57,8 @@ HEADERS += \
     include/flowlayout.h \
     include/miniplayer.h \
     include/music_data/clients/CoverArtClient.h \
+    include/music_data/clients/ExternalLinksClient.h \
     include/music_data/clients/MusicBrainzClient.h \
-    include/music_data/clients/WikipediaClient.h \
     include/music_data/models/Artist.h \
     include/music_data/models/QueryData.h \
     include/music_data/models/Track.h \
