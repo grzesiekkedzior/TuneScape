@@ -99,7 +99,7 @@
           <x>0</x>
           <y>0</y>
           <width>180</width>
-          <height>405</height>
+          <height>480</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -571,7 +571,7 @@
           <x>0</x>
           <y>0</y>
           <width>779</width>
-          <height>405</height>
+          <height>480</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -609,7 +609,7 @@
 selection-color: rgb(4, 4, 4);</string>
            </property>
            <property name="currentIndex">
-            <number>0</number>
+            <number>4</number>
            </property>
            <widget class="QWidget" name="listTab">
             <attribute name="title">
@@ -683,7 +683,7 @@ selection-color: rgb(4, 4, 4);</string>
                   <x>0</x>
                   <y>0</y>
                   <width>749</width>
-                  <height>348</height>
+                  <height>423</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -846,6 +846,99 @@ QProgressBar::chunk {
                 </widget>
                </item>
               </layout>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QWidget" name="musicTab">
+            <attribute name="title">
+             <string>Page</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_8">
+             <item>
+              <widget class="QWidget" name="topSection" native="true">
+               <layout class="QVBoxLayout" name="verticalLayout_11">
+                <item>
+                 <widget class="QScrollArea" name="scrollArea_2">
+                  <property name="widgetResizable">
+                   <bool>true</bool>
+                  </property>
+                  <widget class="QWidget" name="scrollAreaWidgetContents_2">
+                   <property name="geometry">
+                    <rect>
+                     <x>0</x>
+                     <y>0</y>
+                     <width>727</width>
+                     <height>401</height>
+                    </rect>
+                   </property>
+                   <layout class="QVBoxLayout" name="verticalLayout_12">
+                    <item>
+                     <widget class="QSplitter" name="splitter_2">
+                      <property name="orientation">
+                       <enum>Qt::Orientation::Horizontal</enum>
+                      </property>
+                      <widget class="QLabel" name="cover">
+                       <property name="text">
+                        <string>TextLabel</string>
+                       </property>
+                      </widget>
+                      <widget class="QWidget" name="metaContainer" native="true">
+                       <layout class="QVBoxLayout" name="verticalLayout_10">
+                        <item>
+                         <widget class="QLabel" name="title">
+                          <property name="text">
+                           <string>TextLabel</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="artist">
+                          <property name="text">
+                           <string>TextLabel</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="album">
+                          <property name="text">
+                           <string>TextLabel</string>
+                          </property>
+                         </widget>
+                        </item>
+                        <item>
+                         <widget class="QLabel" name="year">
+                          <property name="text">
+                           <string>TextLabel</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QTextBrowser" name="description">
+                      <property name="enabled">
+                       <bool>false</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="license">
+                      <property name="text">
+                       <string>TextLabel</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QTextBrowser" name="textBrowser"/>
+                    </item>
+                   </layout>
+                  </widget>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
              </item>
             </layout>
            </widget>
