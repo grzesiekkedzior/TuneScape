@@ -5,7 +5,7 @@ Version 5.0.0 brings a major step forward for TuneScape. A new track info panel 
 cover art and artist biographies fetched live from MusicBrainz, Cover Art Archive and Wikipedia.
 A dedicated Licenses & Attribution page has also been added to properly credit all the open
 services and communities that make TuneScape possible.   
-![cover](https://github.com/user-attachments/assets/79afaaa6-926c-40c0-8b71-82bce94de533")   
+![cover](https://github.com/user-attachments/assets/79afaaa6-926c-40c0-8b71-82bce94de533)   
 
 ### **4.9.0 - experimental**   
 From now on, you can remove radio stations from your favorites list.   
