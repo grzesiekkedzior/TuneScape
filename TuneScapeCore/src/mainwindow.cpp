@@ -18,6 +18,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->previous->hide();
     ui->next->hide();
+    ui->licencesTextBrowser->setSource(QUrl("qrc:/src/files/licenses_qtextbrowser.html"));
+    ui->licencesTextBrowser->setOpenExternalLinks(true);
     set_icon_btn();
     start();
     m_musicBrainzCient = new music_data::MusicBrainzClient(this);
@@ -39,6 +41,11 @@ MainWindow::MainWindow(QWidget *parent)
             &music_data::ResolverService::trackReady,
             trackView,
             &TrackView::setTrack);
+    connect(ui->tableView, &QTableView::doubleClicked, trackView, &TrackView::clear);
+    connect(ui->stop, &QPushButton::clicked, trackView, &TrackView::clear);
+    connect(ui->icecastTable, &QTableView::doubleClicked, trackView, &TrackView::clear);
+    connect(ui->tableOfCoutries, &QTableView::doubleClicked, trackView, &TrackView::clear);
+    connect(radioList, &RadioList::playIconButtonDoubleClicked, trackView, &TrackView::clear);
 }
 
 MainWindow::~MainWindow()
