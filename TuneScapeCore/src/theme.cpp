@@ -19,7 +19,7 @@ Theme::Theme()
         app->setStyleSheet(style);
         isDark = true;
     } else {
-        app->setStyleSheet(lightDarkMode);
+        app->setStyleSheet(lightThm);
         isDark = false;
     }
 }

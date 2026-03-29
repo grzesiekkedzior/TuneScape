@@ -61,6 +61,7 @@
         <file>img/radio120x120.png</file>
         <file>img/TuneScape.ico</file>
         <file>img/trash-can-lined-24.png</file>
+        <file>img/cover.png</file>
     </qresource>
     <qresource prefix="/src">
         <file>files/license.txt</file>

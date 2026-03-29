@@ -3,9 +3,9 @@
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QPainter>
 #include <QScrollBar>
 #include "include/RadioBrowserPlaylistEditor.h"
-#include "qpainter.h"
 
 RadioList::RadioList(QObject *parent)
     : QObject{parent}
@@ -19,13 +19,6 @@ RadioList::RadioList(Ui::MainWindow *ui)
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
     flowLayout = new FlowLayout(ui->iconTiles);
-
-    m_musicBrainzCient = new music_data::MusicBrainzClient;
-    m_coverArtClient = new music_data::CoverArtClient;
-    m_externalLinksClient = new music_data::ExternalLinksClient;
-    m_resolverService = new music_data::ResolverService(m_musicBrainzCient,
-                                                        m_coverArtClient,
-                                                        m_externalLinksClient);
 
     streamRecorder->setUI(ui);
     iceCastXmlData = new IceCastXmlData(ui);
@@ -1528,10 +1521,9 @@ void RadioList::handleDataReceived(const QString &data)
         qDebug() << title;
         ui->infoData->clear();
         ui->infoData->setText(title);
-        m_resolverService->resolveTrack(title);
         miniPlayer.getMui()->radioText->clear();
         miniPlayer.getMui()->radioText->setText(title);
-
+        emit trackTitleReceived(title);
         emit sendTitleToTray(title);
     }
     //metaData = "";

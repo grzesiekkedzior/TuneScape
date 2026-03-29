@@ -21,9 +21,13 @@ signals:
 
 private:
     QNetworkAccessManager *m_man;
-    const QString USER_AGENT_HEADER = "TuneScape/5.0.0 (grzesiekkedzior@gmail.com)";
+    const QString USER_AGENT_HEADER
+        = "TuneScape/5.0.0 ( https://github.com/grzesiekkedzior/TuneScape; "
+          "grzesiekkedzior@gmail.com )";
     const QString RECORDING_API = "https://musicbrainz.org/ws/2/recording";
     const QString ARTIST_API = "https://musicbrainz.org/ws/2/artist";
+
+    int m_lastRequestTime;
 
     QueryData extractData(const QString &rawData);
     QString cleanRawData(const QString &raw);

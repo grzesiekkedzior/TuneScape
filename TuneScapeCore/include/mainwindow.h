@@ -5,10 +5,13 @@
 #include <QResizeEvent>
 #include "Country.h"
 #include "include/Menu.h"
+#include "include/music_data/clients/MusicBrainzClient.h"
+#include "include/music_data/services/ResolverService.h"
 #include "include/radioexplorer.h"
 #include "include/radioinfo.h"
 #include "include/radiolist.h"
 #include "include/trayicon.h"
+#include "view/TrackView.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -40,6 +43,13 @@ private:
     QScrollArea *scrollArea;
     TrayIcon *trayIcon;
     Menu *appMenu;
+    TrackView *trackView;
+
+    music_data::MusicBrainzClient *m_musicBrainzCient;
+    music_data::ResolverService *m_resolverService;
+    music_data::CoverArtClient *m_coverArtClient;
+    music_data::ExternalLinksClient *m_externalLinksClient;
+
     void set_icon_btn();
     void start();
     void resizeEvent(QResizeEvent *event);

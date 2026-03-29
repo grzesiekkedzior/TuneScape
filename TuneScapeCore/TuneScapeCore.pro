@@ -36,7 +36,8 @@ SOURCES += \
     src/radioaudiomanager.cpp \
     src/radioexplorer.cpp \
     src/radiolist.cpp \
-    src/radiostations.cpp
+    src/radiostations.cpp \
+    src/view/TrackView.cpp
 
 HEADERS += \
     include/AppConfig.h \
@@ -70,7 +71,8 @@ HEADERS += \
     include/radioaudiomanager.h \
     include/radioexplorer.h \
     include/radiolist.h \
-    include/radiostations.h
+    include/radiostations.h \
+    include/view/TrackView.h
 
 
 FORMS += \

@@ -5,6 +5,7 @@
 music_data::MusicBrainzClient::MusicBrainzClient(QObject *parent)
     : QObject(parent)
     , m_man(new QNetworkAccessManager(this))
+    , m_lastRequestTime(0)
 {
 }
 
@@ -17,12 +18,19 @@ void music_data::MusicBrainzClient::searchRecording(const QString &rawquery)
         return;
     }
 
+    qint64 now = QDateTime::currentMSecsSinceEpoch();
+    if (now - m_lastRequestTime < 1000) {
+        qDebug() << "Rate limited, skipping request";
+        return;
+    }
+    m_lastRequestTime = now;
+
     QUrl url(RECORDING_API);
     QUrlQuery query;
 
     QString queryStr;
     if (!data.artist.isEmpty()) {
-        queryStr = QString("recording:%1 AND artist:%2").arg(data.title).arg(data.artist);
+        queryStr = QString("recording:%1 AND artist:%2").arg(data.title, data.artist);
     } else {
         queryStr = QString("recording:%1").arg(data.title);
     }
@@ -32,15 +40,35 @@ void music_data::MusicBrainzClient::searchRecording(const QString &rawquery)
     query.addQueryItem("limit", "5");
     url.setQuery(query);
 
-    qDebug() << "Url-> " << url.toString();
-
     QNetworkRequest request;
     request.setUrl(url);
     request.setHeader(QNetworkRequest::UserAgentHeader, USER_AGENT_HEADER);
 
     auto reply = m_man->get(request);
+
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+        if (reply->error() != QNetworkReply::NoError) {
+            qDebug() << "Network error:" << reply->errorString();
+            reply->deleteLater();
+            return;
+        }
+
+        int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (status != 200) {
+            qDebug() << "HTTP error:" << status;
+            reply->deleteLater();
+            return;
+        }
+
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(reply->readAll(), &err);
+
+        if (err.error != QJsonParseError::NoError) {
+            qDebug() << "JSON parse error:" << err.errorString();
+            reply->deleteLater();
+            return;
+        }
+
         emit searchFinished(doc.object());
         reply->deleteLater();
     });

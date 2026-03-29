@@ -18,10 +18,10 @@
 
 #include <QHeaderView>
 #include <QObject>
+#include <QPixmap>
 #include <QStandardItemModel>
 #include <QStringList>
-#include "include/music_data/clients/MusicBrainzClient.h"
-#include "include/music_data/services/ResolverService.h"
+
 #include "miniplayer.h"
 
 enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
@@ -125,8 +125,10 @@ signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
     void sendTitleToTray(QString title);
+    void trackTitleReceived(const QString &title);
 public slots:
     void onStopButtonClicked();
+
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
     void loadMoreStationsIfNeeded();
@@ -170,11 +172,6 @@ private:
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
-
-    music_data::MusicBrainzClient *m_musicBrainzCient;
-    music_data::ResolverService *m_resolverService;
-    music_data::CoverArtClient *m_coverArtClient;
-    music_data::ExternalLinksClient *m_externalLinksClient;
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;

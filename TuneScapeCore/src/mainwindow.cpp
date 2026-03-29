@@ -20,7 +20,25 @@ MainWindow::MainWindow(QWidget *parent)
     ui->next->hide();
     set_icon_btn();
     start();
+    m_musicBrainzCient = new music_data::MusicBrainzClient(this);
+    m_coverArtClient = new music_data::CoverArtClient(this);
+    m_externalLinksClient = new music_data::ExternalLinksClient(this);
+    trackView = new TrackView(ui, this);
+    m_resolverService = new music_data::ResolverService(m_musicBrainzCient,
+                                                        m_coverArtClient,
+                                                        m_externalLinksClient,
+                                                        this);
+    ui->license->hide();
+
     connect(ui->infoApp, &QPushButton::clicked, this, &MainWindow::info);
+    connect(radioList,
+            &RadioList::trackTitleReceived,
+            m_resolverService,
+            &music_data::ResolverService::resolveTrack);
+    connect(m_resolverService,
+            &music_data::ResolverService::trackReady,
+            trackView,
+            &TrackView::setTrack);
 }
 
 MainWindow::~MainWindow()
@@ -111,7 +129,7 @@ void MainWindow::infoDialogApp()
 
     aboutTuneScape = new QLabel;
     aboutTuneScape->setText(
-        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 4.9.0</p>"
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 5.0.0</p>"
         "This is a free and Open Source online radio player based on "
         "<a href=\"https://www.radio-browser.info\">radio-browser service </a> "
         "and <a href=\"https://www.icecast.org/\">Ice-Cast service.</a>"
