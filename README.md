@@ -1,5 +1,5 @@
 
-# TuneScape 🌐 [grzesiekkedzior.github.io/TuneScape-site](https://grzesiekkedzior.github.io/TuneScape-site/)
+# TuneScape 🌐 [HOMEPAGE](https://grzesiekkedzior.github.io/TuneScape-site/)   
 ### **5.0.0 - experimental**
 Version 5.0.0 brings a major step forward for TuneScape. A new track info panel now displays
 cover art and artist biographies fetched live from MusicBrainz, Cover Art Archive and Wikipedia.
