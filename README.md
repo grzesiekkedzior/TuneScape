@@ -1,7 +1,7 @@
 
 # TuneScape 🌐 [HOMEPAGE](https://grzesiekkedzior.github.io/TuneScape-site/)   
 
-### **5.0.1 – stability patch**   
+### **5.0.1 - stability patch**   
 Version 5.0.1 focuses on stability improvements and internal fixes.
 Resolved a crash occurring on application shutdown caused by incorrect memory management in the system tray component.
 The fix aligns object lifecycle handling with Qt’s parent–child ownership model, eliminating double deletion issues.   
