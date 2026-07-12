@@ -27,7 +27,9 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/music_data/services/ResolverService.h \
            $$PWD/TuneScapeCore/include/music_data/clients/CoverArtClient.h \
            $$PWD/TuneScapeCore/include/music_data/clients/ExternalLinksClient.h \
-           $$PWD/TuneScapeCore/include/view/TrackView.h
+           $$PWD/TuneScapeCore/include/view/TrackView.h \
+           $$PWD/TuneScapeCore/include/data/RadioStation.h \
+           $$PWD/TuneScapeCore/include/model/RadioStationsModel.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/Menu.cpp \
@@ -55,7 +57,8 @@ SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/music_data/services/ResolverService.cpp \
            $$PWD/TuneScapeCore/src/music_data/clients/CoverArtClient.cpp \
            $$PWD/TuneScapeCore/src/music_data/clients/ExternalLinksClient.cpp \
-           $$PWD/TuneScapeCore/src/view/TrackView.cpp
+           $$PWD/TuneScapeCore/src/view/TrackView.cpp \
+           $$PWD/TuneScapeCore/src/model/RadioStationsModel.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui \
