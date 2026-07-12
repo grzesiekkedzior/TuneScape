@@ -2,6 +2,7 @@
 #define JSONLISTPROCESSOR_H
 
 #include "../ui_mainwindow.h"
+#include "data/RadioStation.h"
 #include "include/radiostations.h"
 
 #include <QEventLoop>
@@ -51,6 +52,8 @@ public:
     QJsonDocument createJasonDocument(QNetworkReply *reply);
 
     QMessageBox messagebox;
+    const QVector<RadioStation> getStations() const;
+
 signals:
     void connectionLost();
 
@@ -79,6 +82,8 @@ private:
 
     void retryInternetConnection();
     void setConnection(QNetworkReply *connectionReply);
+
+    QVector<RadioStation> stations;
 };
 
 #endif // JSONLISTPROCESSOR_H

@@ -13,6 +13,7 @@
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
+#include "model/RadioStationsModel.h"
 #include "streamreader.h"
 #include "streamrecorder.h"
 
@@ -120,6 +121,9 @@ public:
 
     int getCurrentStationIndex() const;
     void setCurrentStationIndex(int newCurrentStationIndex);
+    //new model
+    QVector<QVector<RadioStation>> allStations;
+    RadioStationsModel *radioStationsModel;
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);

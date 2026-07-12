@@ -74,3 +74,12 @@ QVariant RadioStationsModel::headerData(int section, Qt::Orientation orientation
         return {};
     }
 }
+
+void RadioStationsModel::setStations(const QVector<RadioStation> &stations)
+{
+    beginResetModel();
+
+    m_stations = stations;
+
+    endResetModel();
+}
