@@ -77,6 +77,11 @@ void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
     }
 }
 
+const QVector<RadioStation> JsonListProcessor::getStations() const
+{
+    return stations;
+}
+
 bool JsonListProcessor::checkInternetConnection()
 {
     isConnected = false;
@@ -149,40 +154,55 @@ JsonListProcessor::~JsonListProcessor()
 
 void JsonListProcessor::processJsonQuery()
 {
+    stations.clear();
     tableRows.clear();
     streamAddresses.clear();
     iconAddresses.clear();
+
     if (reply)
         doc = createJasonDocument(reply);
 
-    if (doc.isArray()) {
-        QJsonArray stationsArray = doc.array();
+    if (!doc.isArray())
+        return;
 
-        for (const QJsonValue &value : stationsArray) {
-            QJsonObject stationObject = value.toObject();
-            QString stationName = stationObject[NAME].toString();
-            QString genre = stationObject[GENRE].toString();
-            QString country = stationObject[COUNTRY].toString();
-            QString stationUrl = stationObject[URL].toString();
+    QJsonArray stationsArray = doc.array();
 
-            stationName = stationName.trimmed().replace(QRegularExpression("^[\\s?_.-]+"), "");
-            genre = genre.left(genre.indexOf(',')).trimmed();
-            country = country.trimmed();
-            stationUrl = stationUrl.trimmed();
+    for (const QJsonValue &value : stationsArray) {
+        QJsonObject stationObject = value.toObject();
 
-            TableRow row;
-            row.station = stationName;
-            row.genre = genre;
-            row.country = country;
-            row.stationUrl = stationUrl;
+        QString stationName = stationObject[NAME].toString().trimmed().replace(QRegularExpression(
+                                                                                   "^[\\s?_.-]+"),
+                                                                               "");
+        QString genre = stationObject[GENRE].toString();
+        genre = genre.left(genre.indexOf(',')).trimmed();
 
-            tableRows.append(row);
+        QString country = stationObject[COUNTRY].toString().trimmed();
+        QString stationUrl = stationObject[URL].toString().trimmed();
 
-            QString streamUrl = stationObject[URL_RESOLVED].toString();
-            QString iconUrl = stationObject[FAVICON].toString();
-            this->streamAddresses.push_back(streamUrl);
-            this->iconAddresses.push_back(iconUrl);
-        }
+        QString streamUrl = stationObject[URL_RESOLVED].toString();
+        QString iconUrl = stationObject[FAVICON].toString();
+
+        // New model
+        RadioStation station;
+        station.station = stationName;
+        station.genre = genre;
+        station.country = country;
+        station.homepage = stationUrl;
+        station.streamUrl = streamUrl;
+        station.iconUrl = iconUrl;
+
+        stations.push_back(station);
+
+        // Legacy model (temporary)
+        TableRow row;
+        row.station = stationName;
+        row.genre = genre;
+        row.country = country;
+        row.stationUrl = stationUrl;
+
+        tableRows.push_back(row);
+        streamAddresses.push_back(streamUrl);
+        iconAddresses.push_back(iconUrl);
     }
 }
 

@@ -18,6 +18,8 @@ public:
     QVariant data(const QModelIndex &index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
+    void setStations(const QVector<RadioStation> &stations);
+
 private:
     QVector<RadioStation> m_stations;
     Column column = Column::ColumnCount;

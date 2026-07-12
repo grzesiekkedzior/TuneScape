@@ -12,7 +12,8 @@ RadioList::RadioList(QObject *parent)
 {}
 
 RadioList::RadioList(Ui::MainWindow *ui)
-    : ui(ui)
+    : radioStationsModel(new RadioStationsModel{this})
+    , ui(ui)
     , model(new QStandardItemModel(this))
 {
     jsonListProcesor.setUi(ui);
@@ -683,7 +684,7 @@ void RadioList::loadRadioList()
         model->appendRow(rowItems);
     }
 
-    ui->tableView->setModel(model);
+    ui->tableView->setModel(radioStationsModel);
 
     //this->treeItem = "Search";
     //ui->tableView->resizeRowsToContents();
@@ -940,6 +941,7 @@ void RadioList::switchToPlaylist(Stations station)
 {
     resetTreeItemIfSearch();
     setRadioListVectors(station);
+    radioStationsModel->setStations(allStations[station]);
     currentPlaylistIndex = station;
 }
 
@@ -1569,6 +1571,9 @@ void RadioList::setVectorsOfStation(const QString endpoint)
     allTableRows.push_back(tableRows);
     allStreamAddresses.push_back(streamAddresses);
     allIconsAddresses.push_back(iconAddresses);
+
+    //new model
+    allStations.push_back(jsonListProcesor.getStations());
 }
 
 void RadioList::searchStations()
