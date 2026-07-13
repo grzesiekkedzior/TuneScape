@@ -19,6 +19,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
     void setStations(const QVector<RadioStation> &stations);
+    const RadioStation &station(int row) const;
 
 private:
     QVector<RadioStation> m_stations;

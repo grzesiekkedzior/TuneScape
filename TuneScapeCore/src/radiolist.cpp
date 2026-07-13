@@ -493,7 +493,7 @@ void RadioList::loadRadioIconsFromNetwork(int dataSize)
 {
     for (int row = 0; row < dataSize; ++row) {
         if (dataSize > row) {
-            QString imageUrl = jsonListProcesor.getIconAddresses().at(row);
+            QString imageUrl = radioStationsModel->station(row).iconUrl;
             QNetworkRequest request(imageUrl);
             QNetworkReply *reply = networkManager->get(request);
             networkReplies.append(reply);
@@ -550,7 +550,7 @@ QWidget * RadioList::createIconButtonWithLabel(int row)
 
 QLabel * RadioList::createLabelForRow(int row)
 {
-    QString description = jsonListProcesor.getTableRows().at(row).station;
+    QString description = radioStationsModel->station(row).station;
     QLabel *label = new QLabel(description);
     label->setFixedWidth(120);
     label->setWordWrap(true);
@@ -1018,7 +1018,7 @@ void RadioList::playStream(int radioNumber)
 {
     radioIndexCurrentPlaying = radioNumber;
     radioPlaylistCurrentPlaying = currentPlaylistIndex;
-    currentRadioPlayingAddress = jsonListProcesor.getStreamAddresses(radioNumber);
+    currentRadioPlayingAddress = radioStationsModel->station(radioNumber).streamUrl;
     QString curentStation = jsonListProcesor.getTableRows().at(radioNumber).station;
     checkIsRadioOnPlaylist(curentStation);
     getSongTitle(currentRadioPlayingAddress);
@@ -1048,7 +1048,7 @@ void RadioList::setRadioImage(const QModelIndex &index)
     if (!jsonListProcesor.isConnected || jsonListProcesor.getIconAddresses().isEmpty())
         return;
 
-    QUrl imageUrl(jsonListProcesor.getIconAddresses(index.row()));
+    QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
     QPixmap pixmap = downloadImageSync(imageUrl);
     setImageToUI(pixmap);
     qDebug() << "Image is loaded.";
@@ -1123,7 +1123,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         isStopClicked = false;
         ui->infoData->clear();
         if (isPlaying) {
-            radioInfo->loadEndpoint(jsonListProcesor.getTableRows().at(currentStationIndex).station);
+            radioInfo->loadEndpoint(radioStationsModel->station(currentStationIndex).station);
             radioInfo->processInfoJsonQuery();
             radioInfo->setDataOnTable();
         }
@@ -1260,7 +1260,7 @@ void RadioList::startRadioBrowserStream()
 {
     currentPlayListPlaying = currentPlaylistIndex;
     playStream(radioIndexNumber);
-    radioInfo->loadEndpoint(jsonListProcesor.getTableRows().at(radioIndexNumber).station);
+    radioInfo->loadEndpoint(radioStationsModel->station(radioEnterIndexNumber).station);
     radioInfo->processInfoJsonQuery();
     radioInfo->setDataOnTable();
     QModelIndex newIndex = ui->tableView->model()->index(0, 0);
