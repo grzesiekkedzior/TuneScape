@@ -659,35 +659,8 @@ void RadioList::onTrashIconCliced(const QModelIndex &index)
 
 void RadioList::loadRadioList()
 {
-    int rowCount = model->rowCount();
-    qDebug() << "loadRadioList" << treeItem;
-    if (rowCount > 0 && treeItem != "Search") {
-        model->removeRows(0, rowCount);
-    }
-    //model->setHorizontalHeaderLabels(headers);
-    int dataSize = radioStationsModel->size();
-    //int batchSize = 50;
-    //    for (int row = 0; row < qMin(loadedStationsCount + batchSize, dataSize);
-    //         ++row)
-
     setTrashHeader();
-    for (int row = 0; row < dataSize; ++row) {
-        QList<QStandardItem *> rowItems;
-        rowItems.append(new QStandardItem(radioStationsModel->station(row).station));
-        if (item == FAVORITE)
-            createTrashButton(rowItems);
-
-        rowItems.append(new QStandardItem(radioStationsModel->station(row).country));
-        rowItems.append(new QStandardItem(radioStationsModel->station(row).genre));
-        rowItems.append(new QStandardItem(radioStationsModel->station(row).streamUrl));
-        model->appendRow(rowItems);
-    }
-
     ui->tableView->setModel(radioStationsModel);
-
-    //this->treeItem = "Search";
-    //ui->tableView->resizeRowsToContents();
-    //loadedStationsCount += batchSize;
 }
 
 void RadioList::createTrashButton(QList<QStandardItem *> &rowItems)
@@ -831,9 +804,12 @@ void RadioList::loadAllData()
                              JSON_ENDPOINT_POPULAR,
                              JSON_ENDPOINT_NEW};
 
-    for (const QString &endpoint : endpoints) {
-        setVectorsOfStation(endpoint);
-    }
+    // for (const QString &endpoint : endpoints) {
+    //     setVectorsOfStation(endpoint);
+    // }
+    setVectorsOfStation(JSON_ENDPOINT_TOP, Stations::TOP);
+    setVectorsOfStation(JSON_ENDPOINT_POPULAR, Stations::POPULAR);
+    setVectorsOfStation(JSON_ENDPOINT_NEW, Stations::NEW);
 
     if (!iceCastXmlData->getIsStationsLoaded()) {
         iceCastXmlData->loadXmlAsync();
@@ -939,7 +915,6 @@ void RadioList::resetTreeItemIfSearch()
 void RadioList::switchToPlaylist(Stations station)
 {
     resetTreeItemIfSearch();
-    setRadioListVectors(station);
     radioStationsModel->setStations(allStations[station]);
     currentPlaylistIndex = station;
 }
@@ -1555,7 +1530,7 @@ QString RadioList::getCurrentStreamUrl() const
         .listen_url;
 }
 
-void RadioList::setVectorsOfStation(const QString endpoint)
+void RadioList::setVectorsOfStation(const QString &endpoint, Stations station)
 {
     jsonListProcesor.loadEndpoint(endpoint);
     jsonListProcesor.processJsonQuery();
@@ -1571,7 +1546,12 @@ void RadioList::setVectorsOfStation(const QString endpoint)
     allIconsAddresses.push_back(iconAddresses);
 
     //new model
-    allStations.push_back(jsonListProcesor.getStations());
+    if (allStations.size() > station)
+        allStations[station] = jsonListProcesor.getStations();
+    else
+        allStations.push_back(jsonListProcesor.getStations());
+    qDebug() << "station =" << static_cast<int>(station);
+    qDebug() << "size after =" << allStations.size();
 }
 
 void RadioList::searchStations()
@@ -1591,10 +1571,10 @@ void RadioList::searchStations()
     QString data = ui->serachInput->text();
     const QString endpoint = JSON_ENDPOINT_SEARCH + data;
     qDebug() << allTableRows.size();
-
-    setVectorsOfStation(endpoint);
-
-    setRadioListVectors(Stations::SEARCH);
+    qDebug() << "size before setStations =" << allStations.size();
+    setVectorsOfStation(endpoint, Stations::SEARCH);
+    qDebug() << "allStations.size() =" << allStations.size();
+    radioStationsModel->setStations(allStations[Stations::SEARCH]);
     currentPlaylistIndex = Stations::SEARCH;
 
     if (jsonListProcesor.checkInternetConnection()) {

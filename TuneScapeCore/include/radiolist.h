@@ -227,7 +227,7 @@ private:
     void searchStations();
 
     void clearRadioInfoLabel();
-    void setVectorsOfStation(const QString endpoint);
+    void setVectorsOfStation(const QString &endpoint, Stations station);
     void setTopListOnStart();
 
 
