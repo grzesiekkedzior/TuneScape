@@ -20,6 +20,8 @@ public:
 
     void setStations(const QVector<RadioStation> &stations);
     const RadioStation &station(int row) const;
+    int size() const;
+    bool isEmpty() const;
 
 private:
     QVector<RadioStation> m_stations;

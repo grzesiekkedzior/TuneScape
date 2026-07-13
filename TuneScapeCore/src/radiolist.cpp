@@ -129,9 +129,8 @@ void RadioList::markIconPlayingStation(int radioNumber)
 
     qDebug() << "nullptr " << radioNumber;
     qDebug() << "flowLayout->count() " << flowLayout->count();
-    qDebug() << "allIconsAddresses.size() " << jsonListProcesor.getIconAddresses().size();
-    if (buttonCache.size() >= radioNumber
-        && flowLayout->count() == jsonListProcesor.getIconAddresses().size()) {
+    qDebug() << "allIconsAddresses.size() " << radioStationsModel->size();
+    if (buttonCache.size() >= radioNumber && flowLayout->count() == radioStationsModel->size()) {
         buttonContainer = buttonCache.at(radioNumber);
         label = buttonContainer->findChild<QLabel *>();
     }
@@ -463,7 +462,7 @@ void RadioList::loadRadioIconList()
     if (!jsonListProcesor.isConnected)
         return;
     clearAll();
-    int dataSize = jsonListProcesor.getTableRows().size();
+    int dataSize = radioStationsModel->size();
     qDebug() << "datasize: " << dataSize;
     ui->progressBar->setRange(0, dataSize);
 
@@ -666,7 +665,7 @@ void RadioList::loadRadioList()
         model->removeRows(0, rowCount);
     }
     //model->setHorizontalHeaderLabels(headers);
-    int dataSize = jsonListProcesor.getTableRows().size();
+    int dataSize = radioStationsModel->size();
     //int batchSize = 50;
     //    for (int row = 0; row < qMin(loadedStationsCount + batchSize, dataSize);
     //         ++row)
@@ -674,13 +673,13 @@ void RadioList::loadRadioList()
     setTrashHeader();
     for (int row = 0; row < dataSize; ++row) {
         QList<QStandardItem *> rowItems;
-        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).station));
+        rowItems.append(new QStandardItem(radioStationsModel->station(row).station));
         if (item == FAVORITE)
             createTrashButton(rowItems);
 
-        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).country));
-        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).genre));
-        rowItems.append(new QStandardItem(jsonListProcesor.getTableRows().at(row).stationUrl));
+        rowItems.append(new QStandardItem(radioStationsModel->station(row).country));
+        rowItems.append(new QStandardItem(radioStationsModel->station(row).genre));
+        rowItems.append(new QStandardItem(radioStationsModel->station(row).streamUrl));
         model->appendRow(rowItems);
     }
 
@@ -1019,7 +1018,7 @@ void RadioList::playStream(int radioNumber)
     radioIndexCurrentPlaying = radioNumber;
     radioPlaylistCurrentPlaying = currentPlaylistIndex;
     currentRadioPlayingAddress = radioStationsModel->station(radioNumber).streamUrl;
-    QString curentStation = jsonListProcesor.getTableRows().at(radioNumber).station;
+    QString curentStation = radioStationsModel->station(radioNumber).station;
     checkIsRadioOnPlaylist(curentStation);
     getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
@@ -1045,7 +1044,7 @@ void RadioList::sliderMoved(int move)
 
 void RadioList::setRadioImage(const QModelIndex &index)
 {
-    if (!jsonListProcesor.isConnected || jsonListProcesor.getIconAddresses().isEmpty())
+    if (!jsonListProcesor.isConnected || radioStationsModel->isEmpty())
         return;
 
     QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
@@ -1172,8 +1171,7 @@ void RadioList::onPlayPauseButtonCliced()
             returnRadioBrowserToPlay();
         } else if(!country.getIsPlaying() && country.getCurrentIndexPlaying() != -1) {
             playCountryStream();
-        } else if (currentRadioPlayingAddress.isEmpty()
-                   && !jsonListProcesor.getTableRows().isEmpty()) {
+        } else if (currentRadioPlayingAddress.isEmpty() && !radioStationsModel->isEmpty()) {
             startRadioBrowserStream();
         } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == ""
                    && ui->tableView->currentIndex().row() > 0) {
@@ -1299,7 +1297,7 @@ void RadioList::resetImageIfStopped()
 void RadioList::onNextButtonClicked()
 {
     if (radioManager.getMediaPlayer()->isPlaying()
-        && radioIndexNumber < jsonListProcesor.getTableRows().size() - 1) {
+        && radioIndexNumber < radioStationsModel->size() - 1) {
         ++radioIndexNumber;
         clearTableViewColor();
         setIndexColor();
