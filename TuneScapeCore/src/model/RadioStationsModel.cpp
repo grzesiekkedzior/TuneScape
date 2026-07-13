@@ -83,3 +83,8 @@ void RadioStationsModel::setStations(const QVector<RadioStation> &stations)
 
     endResetModel();
 }
+
+const RadioStation &RadioStationsModel::station(int row) const
+{
+    return m_stations.at(row);
+}
