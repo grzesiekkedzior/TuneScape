@@ -88,3 +88,13 @@ const RadioStation &RadioStationsModel::station(int row) const
 {
     return m_stations.at(row);
 }
+
+int RadioStationsModel::size() const
+{
+    return m_stations.size();
+}
+
+bool RadioStationsModel::isEmpty() const
+{
+    return m_stations.isEmpty();
+}
