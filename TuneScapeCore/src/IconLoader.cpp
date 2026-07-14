@@ -85,6 +85,41 @@ QWidget *IconLoader::addButton(int row, const QString &stationName)
     return itemContainer;
 }
 
+void IconLoader::handleNetworkReply(QNetworkReply *reply, int row)
+{
+    if (row >= buttonCount()) {
+        reply->deleteLater();
+        return;
+    }
+
+    QWidget *itemContainer = button(row);
+    if (!itemContainer) {
+        reply->deleteLater();
+        return;
+    }
+
+    QPushButton *button = qobject_cast<QPushButton *>(itemContainer->layout()->itemAt(0)->widget());
+    if (!button) {
+        reply->deleteLater();
+        return;
+    }
+
+    if (reply->error() == QNetworkReply::NoError) {
+        QByteArray imageData = reply->readAll();
+        QPixmap pixmap;
+        pixmap.loadFromData(imageData);
+        QSize buttonSize = button->size();
+
+        pixmap = pixmap.scaled(buttonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        button->setIcon(QIcon(pixmap));
+        button->setIconSize(buttonSize);
+    } else {
+        qDebug() << reply->errorString();
+    }
+
+    reply->deleteLater();
+}
+
 QVector<QWidget *> IconLoader::getButtonCache() const
 {
     return buttonCache;

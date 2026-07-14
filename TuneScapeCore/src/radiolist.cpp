@@ -467,7 +467,9 @@ void RadioList::loadRadioIconsFromNetwork(int dataSize)
             QNetworkReply *reply = networkManager->get(request);
             networkReplies.append(reply);
 
-            connect(reply, &QNetworkReply::finished, [=]() { handleNetworkReply(reply, row); });
+            connect(reply, &QNetworkReply::finished, [=]() {
+                iconLoader->handleNetworkReply(reply, row);
+            });
         }
     }
 }
@@ -513,41 +515,6 @@ void RadioList::updateLayoutOrProgress()
     }
 }
 //end
-
-void RadioList::handleNetworkReply(QNetworkReply *reply, int row)
-{
-    if (row >= iconLoader->buttonCount()) {
-        reply->deleteLater();
-        return;
-    }
-
-    QWidget *itemContainer = iconLoader->button(row);
-    if (!itemContainer) {
-        reply->deleteLater();
-        return;
-    }
-
-    QPushButton *button = qobject_cast<QPushButton *>(itemContainer->layout()->itemAt(0)->widget());
-    if (!button) {
-        reply->deleteLater();
-        return;
-    }
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QByteArray imageData = reply->readAll();
-        QPixmap pixmap;
-        pixmap.loadFromData(imageData);
-        QSize buttonSize = button->size();
-
-        pixmap = pixmap.scaled(buttonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        button->setIcon(QIcon(pixmap));
-        button->setIconSize(buttonSize);
-    } else {
-        qDebug() << reply->errorString();
-    }
-
-    reply->deleteLater();
-}
 
 void RadioList::updateFavoriteColumnLayout()
 {
