@@ -76,6 +76,15 @@ void IconLoader::clearCache()
     buttonCache.clear();
 }
 
+QWidget *IconLoader::addButton(int row, const QString &stationName)
+{
+    QWidget *itemContainer = createIconButtonWithLabel(row, stationName);
+
+    if (row < buttonCount())
+        setButton(row, itemContainer);
+    return itemContainer;
+}
+
 QVector<QWidget *> IconLoader::getButtonCache() const
 {
     return buttonCache;

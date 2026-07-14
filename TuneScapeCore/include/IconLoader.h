@@ -20,6 +20,7 @@ public:
     bool containsEmptyButton() const;
     int buttonCount() const;
     void clearCache();
+    QWidget *addButton(int row, const QString &stationName);
 
     QVector<QWidget *> getButtonCache() const;
 
