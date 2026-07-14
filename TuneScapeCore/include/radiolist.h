@@ -8,6 +8,7 @@
 #include "audioprocessor.h"
 #include "container.h"
 #include "icecastxmldata.h"
+#include "include/IconLoader.h"
 #include "include/customcolordelegate.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
@@ -163,6 +164,8 @@ private:
     QMessageBox message;
     QMainWindow *mainWindow = nullptr;
 
+    IconLoader *iconLoader;
+
     //Singletons
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
@@ -255,11 +258,8 @@ private:
     void updateThemeAppearance(bool darkMode);
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
-    QPushButton * createIconButton(int row);
     void handleIconClick(int row);
     void updateLayoutOrProgress();
-    QLabel * createLabelForRow(int row);
-    QWidget * createIconButtonWithLabel(int row);
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
     void switchToPlaylist(Stations station);
     void switchToIceCastTab(bool favorite);

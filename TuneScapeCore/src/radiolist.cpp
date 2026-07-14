@@ -14,6 +14,7 @@ RadioList::RadioList(QObject *parent)
 RadioList::RadioList(Ui::MainWindow *ui)
     : radioStationsModel(new RadioStationsModel{this})
     , ui(ui)
+    , iconLoader(new IconLoader(this))
 {
     jsonListProcesor.setUi(ui);
     jsonListProcesor.setRadioList(this);
@@ -60,6 +61,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
+    connect(iconLoader, &IconLoader::iconClicked, this, &RadioList::handleIconClick);
 
     //trash header signal
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTrashIconCliced);
@@ -492,55 +494,13 @@ void RadioList::handleIconClick(int row)
 //main function
 void RadioList::addEmptyIconButton(int row)
 {
-    QWidget *itemContainer = createIconButtonWithLabel(row);
+    QWidget *itemContainer
+        = iconLoader->createIconButtonWithLabel(row, radioStationsModel->station(row).station);
 
     if (row < buttonCache.size())
         buttonCache[row] = itemContainer;
 
     updateLayoutOrProgress();
-}
-
-QWidget * RadioList::createIconButtonWithLabel(int row)
-{
-    QWidget *itemContainer = new QWidget;
-    QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
-
-    QLabel *label = createLabelForRow(row);
-
-    QPushButton *button = createIconButton(row);
-
-    itemLayout->addWidget(button);
-    itemLayout->addWidget(label);
-
-    return itemContainer;
-}
-
-QLabel * RadioList::createLabelForRow(int row)
-{
-    QString description = radioStationsModel->station(row).station;
-    QLabel *label = new QLabel(description);
-    label->setFixedWidth(120);
-    label->setWordWrap(true);
-    label->setAlignment(Qt::AlignCenter);
-
-    return label;
-}
-
-QPushButton * RadioList::createIconButton(int row)
-{
-    QPushButton *button = new QPushButton;
-    button->setFixedSize(120, 120);
-    QIcon icon(TUNESCAPE_ICON);
-
-    button->setIcon(icon);
-    button->setIconSize(QSize(100, 100));
-    // For now double clicked solution
-    connect(button, &QPushButton::clicked, this, [=]() {
-        // Static to prevent variable state loss!!!
-        handleIconClick(row);
-    });
-
-    return button;
 }
 
 void RadioList::updateLayoutOrProgress()
