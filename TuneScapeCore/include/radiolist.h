@@ -156,7 +156,6 @@ private:
     QTimer searchTimer;
     RadioInfo *radioInfo;
     FlowLayout *flowLayout = nullptr;
-    QVector<QWidget *> buttonCache;
 
     QString currentRadioPlayingAddress = "";
     QString item = "";

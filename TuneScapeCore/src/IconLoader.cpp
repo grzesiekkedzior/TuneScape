@@ -41,3 +41,42 @@ QWidget *IconLoader::createIconButtonWithLabel(int row, const QString &stationNa
 
     return itemContainer;
 }
+
+void IconLoader::resizeCache(int size)
+{
+    buttonCache.resize(size, nullptr);
+}
+
+void IconLoader::setButton(int row, QWidget *button)
+{
+    if (row < buttonCache.size())
+        buttonCache[row] = button;
+}
+
+QWidget *IconLoader::button(int row) const
+{
+    if (row < 0 || row >= buttonCache.size())
+        return nullptr;
+
+    return buttonCache[row];
+}
+
+bool IconLoader::containsEmptyButton() const
+{
+    return buttonCache.contains(nullptr);
+}
+
+int IconLoader::buttonCount() const
+{
+    return buttonCache.size();
+}
+
+void IconLoader::clearCache()
+{
+    buttonCache.clear();
+}
+
+QVector<QWidget *> IconLoader::getButtonCache() const
+{
+    return buttonCache;
+}
