@@ -98,3 +98,8 @@ bool RadioStationsModel::isEmpty() const
 {
     return m_stations.isEmpty();
 }
+
+const QVector<RadioStation> &RadioStationsModel::stations() const
+{
+    return m_stations;
+}

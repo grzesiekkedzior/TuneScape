@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QPushButton>
 #include <QVector>
+#include "data/RadioStation.h"
 
 class IconLoader : public QObject
 {
@@ -23,6 +24,7 @@ public:
     void clearCache();
     QWidget *addButton(int row, const QString &stationName);
     void handleNetworkReply(QNetworkReply *reply, int row);
+    void loadRadioIcons(const QVector<RadioStation> &stations);
 
     QVector<QWidget *> getButtonCache() const;
 
@@ -32,6 +34,8 @@ signals:
 private:
     const QString TUNESCAPE_ICON = ":/images/img/TuneScape.ico";
     QVector<QWidget *> buttonCache;
+    QNetworkAccessManager *networkManager = nullptr;
+    QList<QNetworkReply *> networkReplies;
 };
 
 #endif // ICONLOADER_H

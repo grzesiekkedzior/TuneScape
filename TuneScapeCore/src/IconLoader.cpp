@@ -1,7 +1,11 @@
 #include "include/IconLoader.h"
 #include <QVBoxLayout>
 
-IconLoader::IconLoader(QObject *parent) {}
+IconLoader::IconLoader(QObject *parent)
+    : QObject(parent)
+{
+    networkManager = new QNetworkAccessManager(this);
+}
 
 QLabel *IconLoader::createLabel(const QString &text)
 {
@@ -74,6 +78,7 @@ int IconLoader::buttonCount() const
 void IconLoader::clearCache()
 {
     buttonCache.clear();
+    networkReplies.clear();
 }
 
 QWidget *IconLoader::addButton(int row, const QString &stationName)
@@ -118,6 +123,20 @@ void IconLoader::handleNetworkReply(QNetworkReply *reply, int row)
     }
 
     reply->deleteLater();
+}
+
+void IconLoader::loadRadioIcons(const QVector<RadioStation> &stations)
+{
+    for (int row = 0; row < stations.size(); ++row) {
+        QNetworkRequest request(stations[row].iconUrl);
+        QNetworkReply *reply = networkManager->get(request);
+
+        networkReplies.append(reply);
+
+        connect(reply, &QNetworkReply::finished, this, [this, reply, row]() {
+            handleNetworkReply(reply, row);
+        });
+    }
 }
 
 QVector<QWidget *> IconLoader::getButtonCache() const
