@@ -494,12 +494,7 @@ void RadioList::handleIconClick(int row)
 //main function
 void RadioList::addEmptyIconButton(int row)
 {
-    QWidget *itemContainer
-        = iconLoader->createIconButtonWithLabel(row, radioStationsModel->station(row).station);
-
-    if (row < iconLoader->buttonCount())
-        iconLoader->setButton(row, itemContainer);
-
+    iconLoader->addButton(row, radioStationsModel->station(row).station);
     updateLayoutOrProgress();
 }
 
