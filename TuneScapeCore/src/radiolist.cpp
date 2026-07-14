@@ -92,12 +92,12 @@ void RadioList::clearAll()
     progressLoading = 1;
     clearFlowLayout();
     networkReplies.clear();
-    buttonCache.clear();
+    iconLoader->clearCache();
 }
 
 void RadioList::clearIconLabelColor()
 {
-    for (QWidget *buttonContainer : buttonCache) {
+    for (QWidget *buttonContainer : iconLoader->getButtonCache()) {
         if (buttonContainer) {
             QLabel *label = buttonContainer->findChild<QLabel *>();
             if (label) {
@@ -114,9 +114,9 @@ void RadioList::markIconPlayingStation(int radioNumber)
     QWidget *buttonContainer = nullptr;
     QLabel *label = nullptr;
     clearIconLabelColor();
-    if (radioNumber >= 0 && radioNumber < buttonCache.size()
+    if (radioNumber >= 0 && radioNumber < iconLoader->buttonCount()
         && flowLayout->count() == radioStationsModel->size()) {
-        buttonContainer = buttonCache.at(radioNumber);
+        buttonContainer = iconLoader->button(radioNumber);
         label = buttonContainer->findChild<QLabel *>();
     }
 
@@ -252,13 +252,13 @@ bool RadioList::shouldUpdateIcon() const
     bool isSamePlaylist = (currentPlayListPlaying == currentPlaylistIndex);
     bool isLayoutFull = isIconFlowlayoutFull;
     bool isNotSearchMode = (treeItem != SEARCH);
-    bool isValidIndex = (radioIndexNumber < buttonCache.size());
+    bool isValidIndex = (radioIndexNumber < iconLoader->buttonCount());
     return isSamePlaylist && isLayoutFull && isNotSearchMode && isValidIndex;
 }
 
 void RadioList::handleIconUpdate()
 {
-    QWidget *buttonContainer = buttonCache.at(radioIndexNumber);
+    QWidget *buttonContainer = iconLoader->button(radioIndexNumber);
     if (buttonContainer) {
         QLabel *label = buttonContainer->findChild<QLabel *>();
         if (label) {
@@ -439,7 +439,7 @@ void RadioList::loadRadioIconList()
     if (dataSize > 0)
         ui->progressBar->show();
 
-    buttonCache.resize(dataSize, nullptr);
+    iconLoader->resizeCache(dataSize);
 
     if (!networkManager) {
         networkManager = new QNetworkAccessManager(this);
@@ -497,16 +497,16 @@ void RadioList::addEmptyIconButton(int row)
     QWidget *itemContainer
         = iconLoader->createIconButtonWithLabel(row, radioStationsModel->station(row).station);
 
-    if (row < buttonCache.size())
-        buttonCache[row] = itemContainer;
+    if (row < iconLoader->buttonCount())
+        iconLoader->setButton(row, itemContainer);
 
     updateLayoutOrProgress();
 }
 
 void RadioList::updateLayoutOrProgress()
 {
-    if (!buttonCache.contains(nullptr)) {
-        for (QWidget *button : buttonCache) {
+    if (!iconLoader->containsEmptyButton()) {
+        for (QWidget *button : iconLoader->getButtonCache()) {
             flowLayout->addWidget(button);
         }
         isIconFlowlayoutFull = true;
@@ -521,12 +521,12 @@ void RadioList::updateLayoutOrProgress()
 
 void RadioList::handleNetworkReply(QNetworkReply *reply, int row)
 {
-    if (row >= buttonCache.size()) {
+    if (row >= iconLoader->buttonCount()) {
         reply->deleteLater();
         return;
     }
 
-    QWidget *itemContainer = buttonCache[row];
+    QWidget *itemContainer = iconLoader->button(row);
     if (!itemContainer) {
         reply->deleteLater();
         return;
