@@ -43,8 +43,6 @@ public:
     void startSearchTimer();
     void onInternetConnectionRestored();
 
-    void handleNetworkReply(QNetworkReply *reply, int row);
-
     void clearIconLabelColor();
     void clearTableViewColor();
     void checkIsRadioOnPlaylist(const QString &station);

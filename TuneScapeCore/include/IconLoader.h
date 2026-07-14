@@ -1,6 +1,7 @@
 #ifndef ICONLOADER_H
 #define ICONLOADER_H
 #include <QLabel>
+#include <QNetworkReply>
 #include <QObject>
 #include <QPushButton>
 #include <QVector>
@@ -21,6 +22,7 @@ public:
     int buttonCount() const;
     void clearCache();
     QWidget *addButton(int row, const QString &stationName);
+    void handleNetworkReply(QNetworkReply *reply, int row);
 
     QVector<QWidget *> getButtonCache() const;
 
