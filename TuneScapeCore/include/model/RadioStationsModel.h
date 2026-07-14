@@ -23,6 +23,8 @@ public:
     int size() const;
     bool isEmpty() const;
 
+    const QVector<RadioStation> &stations() const;
+
 private:
     QVector<RadioStation> m_stations;
     Column column = Column::ColumnCount;

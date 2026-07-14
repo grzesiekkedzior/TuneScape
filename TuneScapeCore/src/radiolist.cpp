@@ -91,7 +91,6 @@ void RadioList::clearAll()
 {
     progressLoading = 1;
     clearFlowLayout();
-    networkReplies.clear();
     iconLoader->clearCache();
 }
 
@@ -431,9 +430,13 @@ void RadioList::loadRadioIconList()
 {
     if (!jsonListProcesor.isConnected)
         return;
+
     clearAll();
-    int dataSize = radioStationsModel->size();
-    qDebug() << "datasize: " << dataSize;
+
+    const int dataSize = radioStationsModel->size();
+
+    qDebug() << "datasize:" << dataSize;
+
     ui->progressBar->setRange(0, dataSize);
 
     if (dataSize > 0)
@@ -441,37 +444,11 @@ void RadioList::loadRadioIconList()
 
     iconLoader->resizeCache(dataSize);
 
-    if (!networkManager) {
-        networkManager = new QNetworkAccessManager(this);
-    }
-
-    // Load buttons with empty icons first
     for (int row = 0; row < dataSize; ++row) {
-        // Without this condition app will crash?! Some check analyzer suggest that it's unnecessary
-        if (dataSize > row) {
-            addEmptyIconButton(row);
-        }
+        addEmptyIconButton(row);
     }
 
-    // Load icons from the internet
-    loadRadioIconsFromNetwork(dataSize);
-
-}
-
-void RadioList::loadRadioIconsFromNetwork(int dataSize)
-{
-    for (int row = 0; row < dataSize; ++row) {
-        if (dataSize > row) {
-            QString imageUrl = radioStationsModel->station(row).iconUrl;
-            QNetworkRequest request(imageUrl);
-            QNetworkReply *reply = networkManager->get(request);
-            networkReplies.append(reply);
-
-            connect(reply, &QNetworkReply::finished, [=]() {
-                iconLoader->handleNetworkReply(reply, row);
-            });
-        }
-    }
+    iconLoader->loadRadioIcons(radioStationsModel->stations());
 }
 
 void RadioList::handleIconClick(int row)

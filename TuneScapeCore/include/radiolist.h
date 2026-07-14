@@ -239,8 +239,6 @@ private:
 
     void clearAll();
     void handleIconPlayButtonDoubleClick(int radioNumber);
-    QList<QNetworkReply *> networkReplies;
-    QNetworkAccessManager *networkManager = nullptr;
     void markIconPlayingStation(int radioNumber);
     void clearInfoData(int stationIndex);
     void setDarkMode();
