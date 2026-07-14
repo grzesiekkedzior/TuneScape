@@ -23,33 +23,29 @@ bool RadioBrowserPlaylistEditor::remove(const QModelIndex &index)
     return true;
 }
 
-
 bool RadioBrowserPlaylistEditor::updateFile(int radioPosition)
 {
-    if (radioPosition < 0 || radioPosition >= radioList.getAllTableRows().at(FAVORITE_VECTOR).size()) {
+    const auto &favoriteStations = radioList.stations(Stations::FAVORITE);
+
+    if (radioPosition < 0 || radioPosition >= favoriteStations.size()) {
         return false;
     }
-    const auto& favoriteVector = radioList.getAllTableRows().at(FAVORITE_VECTOR);
-    QString stationName = favoriteVector.at(radioPosition).station;
+
+    QString stationName = favoriteStations.at(radioPosition).station;
+
     if (radioIndex > radioPosition) {
-        radioIndex -= 1;
+        --radioIndex;
     }
 
     radioList.setRadioIndexNumber(radioIndex);
     radioList.removeRadio(stationName, RADIO_BROWSER);
+
     return true;
 }
 
 void RadioBrowserPlaylistEditor::refreshUI()
 {
     radioList.setFavoriteStatons();
-    radioList.getModel()->clear();
-    radioList.getJsonListProcessor()->setTableRows(radioList.getAllTableRows().at(FAVORITE_VECTOR));
-    radioList.getJsonListProcessor()->setStreamAddresses(radioList.getAllStreamAddresses().at(FAVORITE_VECTOR));
-    radioList.getJsonListProcessor()->setIconAddresses(radioList.getAllIconsAddresses().at(FAVORITE_VECTOR));
-
-    radioList.loadRadioList();
     radioList.loadRadioIconList();
     radioList.updateStationColoring();
-
 }

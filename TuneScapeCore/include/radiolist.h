@@ -34,7 +34,6 @@ public:
     explicit RadioList(QObject *parent = nullptr);
     RadioList(Ui::MainWindow *ui);
 
-    void loadRadioList();
     void loadAllData();
     void setLoadedStationsCount(int num);
     void getSongTitle(const QString &url);
@@ -70,8 +69,6 @@ public:
     void setIsBrowseStationLoaded(bool newIsBrowseStationLoaded);
 
     JsonListProcessor *getJsonListProcessor();
-
-    QVector<QVector<TableRow>> getAllTableRows() const;
 
     void onTrayViewItemClicked(const QModelIndex &index);
     void onTrayClickedandPlay(const QModelIndex &index);
@@ -111,12 +108,6 @@ public:
 
     Ui::MainWindow *getUi() const;
 
-    QStandardItemModel *getModel() const;
-
-    QVector<QVector<QString> > getAllStreamAddresses() const;
-
-    QVector<QVector<QString> > getAllIconsAddresses() const;
-
     void setRadioIndexNumber(int newRadioIndexNumber);
 
     int getCurrentStationIndex() const;
@@ -124,6 +115,8 @@ public:
     //new model
     QVector<QVector<RadioStation>> allStations;
     RadioStationsModel *radioStationsModel;
+
+    const QVector<RadioStation> &stations(Stations station) const;
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -135,7 +128,6 @@ public slots:
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
-    void loadMoreStationsIfNeeded();
     void onTableViewDoubleClicked(const QModelIndex &index);
     void onNextButtonClicked();
     void onPrevButtonClicked();
@@ -151,7 +143,6 @@ private:
     int currentPlayListPlaying = -1;
     bool isPlaying = false;
     Ui::MainWindow *ui = nullptr;
-    QStandardItemModel *model = nullptr;
     QHeaderView *header = nullptr;
     QStringList headers;
     QString treeItem;
@@ -230,9 +221,6 @@ private:
     void setVectorsOfStation(const QString &endpoint, Stations station);
     void setTopListOnStart();
 
-
-
-    void setRadioListVectors(Stations s);
     void clearFlowLayout();
     void setImageButton(int row);
     void loadAndSetImageForItem(const QString &imageUrl,
@@ -272,7 +260,7 @@ private:
     void updateLayoutOrProgress();
     QLabel * createLabelForRow(int row);
     QWidget * createIconButtonWithLabel(int row);
-    void readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses);
+    void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
     void switchToPlaylist(Stations station);
     void switchToIceCastTab(bool favorite);
     void loadRadioIconsFromNetwork(int dataSize);
@@ -293,8 +281,7 @@ private:
     void switchToDefaultTabIfNoCountryStationPlaying();
     void resetImageIfStopped();
 
-    void createTrashButton(QList<QStandardItem *> &rowItems);
-    void setTrashHeader();
+    void updateFavoriteColumnLayout();
     void onTrashIconCliced(const QModelIndex &index);
 };
 

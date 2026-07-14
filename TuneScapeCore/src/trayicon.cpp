@@ -113,19 +113,20 @@ void TrayIcon::setNotifications(bool isNotificationEnabled)
 
 void TrayIcon::loadTrayLists()
 {
-    int size = radioList->getJsonListProcessor()->getTableRows().size();
+    const auto &topStations = radioList->stations(Stations::TOP);
+    const auto &popularStations = radioList->stations(Stations::POPULAR);
+    const auto &newStations = radioList->stations(Stations::NEW);
+
+    int size = topStations.size();
 
     topVector.resize(size);
     popularVector.resize(size);
     newRadioVector.resize(size);
 
-    for (int i = 0; i < size; i++) {
-        QString topStation = radioList->getAllTableRows().at(radioTable.TOP).at(i).station;
-        QString popularStation = radioList->getAllTableRows().at(radioTable.POPULAR).at(i).station;
-        QString newStation = radioList->getAllTableRows().at(radioTable.NEWRADIO).at(i).station;
-        topVector[i] = top->addAction(topStation);
-        popularVector[i] = popular->addAction(popularStation);
-        newRadioVector[i] = newRadio->addAction(newStation);
+    for (int i = 0; i < size; ++i) {
+        topVector[i] = top->addAction(topStations[i].station);
+        popularVector[i] = popular->addAction(popularStations[i].station);
+        newRadioVector[i] = newRadio->addAction(newStations[i].station);
     }
 }
 
