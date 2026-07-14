@@ -14,7 +14,6 @@ RadioList::RadioList(QObject *parent)
 RadioList::RadioList(Ui::MainWindow *ui)
     : radioStationsModel(new RadioStationsModel{this})
     , ui(ui)
-    , model(new QStandardItemModel(this))
 {
     jsonListProcesor.setUi(ui);
     jsonListProcesor.setRadioList(this);
@@ -33,17 +32,6 @@ RadioList::RadioList(Ui::MainWindow *ui)
     playlistEditor.reset(new RadioBrowserPlaylistEditor(*this));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
-    // for list
-    //    connect(ui->tableView->verticalScrollBar(),
-    //            &QScrollBar::valueChanged,
-    //            this,
-    //            &RadioList::loadMoreStationsIfNeeded);
-    //    // for icons
-    //    connect(ui->scrollArea->verticalScrollBar(),
-    //            &QScrollBar::valueChanged,
-    //            this,
-    //            &RadioList::loadMoreStationsIfNeeded);
-    //connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::onTableViewDoubleClicked);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
     connect(ui->tableView, &QTableView::activated, this, &RadioList::setRadioImage);
 
@@ -75,11 +63,9 @@ RadioList::RadioList(Ui::MainWindow *ui)
 
     //trash header signal
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTrashIconCliced);
-
+    ui->tableView->setModel(radioStationsModel);
     header = ui->tableView->horizontalHeader();
-    headers << STATION << COUNTRY << GENRE << HOMEPAGE;
     header->setSectionResizeMode(QHeaderView::Interactive);
-    model->setHorizontalHeaderLabels(headers);
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
     audioProcessor.setUi(ui);
@@ -126,11 +112,8 @@ void RadioList::markIconPlayingStation(int radioNumber)
     QWidget *buttonContainer = nullptr;
     QLabel *label = nullptr;
     clearIconLabelColor();
-
-    qDebug() << "nullptr " << radioNumber;
-    qDebug() << "flowLayout->count() " << flowLayout->count();
-    qDebug() << "allIconsAddresses.size() " << radioStationsModel->size();
-    if (buttonCache.size() >= radioNumber && flowLayout->count() == radioStationsModel->size()) {
+    if (radioNumber >= 0 && radioNumber < buttonCache.size()
+        && flowLayout->count() == radioStationsModel->size()) {
         buttonContainer = buttonCache.at(radioNumber);
         label = buttonContainer->findChild<QLabel *>();
     }
@@ -247,24 +230,14 @@ void RadioList::setCurrentStationIndex(int newCurrentStationIndex)
     currentStationIndex = newCurrentStationIndex;
 }
 
+const QVector<RadioStation> &RadioList::stations(Stations station) const
+{
+    return allStations[station];
+}
+
 void RadioList::setRadioIndexNumber(int newRadioIndexNumber)
 {
     radioIndexNumber = newRadioIndexNumber;
-}
-
-QVector<QVector<QString> > RadioList::getAllIconsAddresses() const
-{
-    return allIconsAddresses;
-}
-
-QVector<QVector<QString> > RadioList::getAllStreamAddresses() const
-{
-    return allStreamAddresses;
-}
-
-QStandardItemModel *RadioList::getModel() const
-{
-    return model;
 }
 
 Ui::MainWindow *RadioList::getUi() const
@@ -289,7 +262,7 @@ void RadioList::handleIconUpdate()
         if (label) {
             label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
         } else {
-            qDebug() << "Error!!!";
+            qWarning() << "Icon label not found";
         }
     }
 }
@@ -369,11 +342,6 @@ void RadioList::setIsTreeClicked(bool newIsTreeClicked)
     isTreeClicked = newIsTreeClicked;
 }
 
-QVector<QVector<TableRow> > RadioList::getAllTableRows() const
-{
-    return allTableRows;
-}
-
 void RadioList::onTrayViewItemClicked(const QModelIndex &index)
 {
     if (index.isValid()) {
@@ -450,7 +418,7 @@ void RadioList::setIsPlaying(bool newIsPlaying)
 
 void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
 {
-    QModelIndex index = model->index(radioNumber, 0);
+    QModelIndex index = radioStationsModel->index(radioNumber, 0);
     setRadioImage(index);
     onTableViewDoubleClicked(index);
     markIconPlayingStation(radioNumber);
@@ -620,28 +588,18 @@ void RadioList::handleNetworkReply(QNetworkReply *reply, int row)
         button->setIcon(QIcon(pixmap));
         button->setIconSize(buttonSize);
     } else {
-        // Handle error...
+        qDebug() << reply->errorString();
     }
 
     reply->deleteLater();
 }
 
-void RadioList::setTrashHeader()
+void RadioList::updateFavoriteColumnLayout()
 {
-    headers.clear();
-
-    if (item == FAVORITE) {
-        headers << STATION << "-" << COUNTRY << GENRE << HOMEPAGE;
-    } else {
-        headers << STATION << COUNTRY << GENRE << HOMEPAGE;
-    }
-
     header->setSectionResizeMode(QHeaderView::Interactive);
-    model->setHorizontalHeaderLabels(headers);
 
-    if (item == FAVORITE) {
+    if (item == FAVORITE)
         ui->tableView->setColumnWidth(1, 16);
-    }
 }
 
 void RadioList::onTrashIconCliced(const QModelIndex &index)
@@ -655,22 +613,6 @@ void RadioList::onTrashIconCliced(const QModelIndex &index)
             }
         }
     }
-}
-
-void RadioList::loadRadioList()
-{
-    setTrashHeader();
-    ui->tableView->setModel(radioStationsModel);
-}
-
-void RadioList::createTrashButton(QList<QStandardItem *> &rowItems)
-{
-    QStandardItem *deleteItem = new QStandardItem();
-    deleteItem->setIcon(QIcon(":/images/img/trash-can-lined-24.png"));
-    deleteItem->setEditable(false);
-    deleteItem->setTextAlignment(Qt::AlignCenter);
-    rowItems.append(deleteItem);
-
 }
 
 void RadioList::setTopListOnStart()
@@ -755,58 +697,47 @@ bool RadioList::isAddressExists(const QString station, const QString playlist)
 
 void RadioList::setFavoriteStatons()
 {
-    QVector<TableRow> tableRows;
-    QVector<QString> streamAddresses;
-    QVector<QString> iconAddresses;
-    // Read favorite radio from file
-    readFavoriteStationsFromFile(tableRows, iconAddresses, streamAddresses);
+    QVector<RadioStation> favoriteStations;
 
-    // I think here is better solution to do
-    if (allTableRows.size() > Stations::FAVORITE) {
-        allTableRows[Stations::FAVORITE] = tableRows;
-        allStreamAddresses[Stations::FAVORITE] = streamAddresses;
-        allIconsAddresses[Stations::FAVORITE] = iconAddresses;
-    } else {
-        allTableRows.push_back(tableRows);
-        allStreamAddresses.push_back(streamAddresses);
-        allIconsAddresses.push_back(iconAddresses);
-    }
+    readFavoriteStationsFromFile(favoriteStations);
+
+    if (allStations.size() > Stations::FAVORITE)
+        allStations[Stations::FAVORITE] = favoriteStations;
+    else
+        allStations.push_back(favoriteStations);
 }
 
-void RadioList::readFavoriteStationsFromFile(QVector<TableRow> &tableRows, QVector<QString> &iconAddresses, QVector<QString> &streamAddresses)
+void RadioList::readFavoriteStationsFromFile(QVector<RadioStation> &stations)
 {
     QFile file(RADIO_BROWSER_PLAYLIST);
+
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
+
         while (!in.atEnd()) {
             QString line = in.readLine();
-            // divide line and add to vectors
             QStringList fields = line.split(",");
+
             if (fields.size() >= 6) {
-                TableRow row;
-                row.station = fields[2];
-                row.country = fields[3];
-                row.genre = fields[4];
-                row.stationUrl = fields[5];
-                tableRows.append(row);
-                streamAddresses.push_back(fields[1]);
-                iconAddresses.push_back(fields[0]);
+                RadioStation station;
+
+                station.iconUrl = fields[0];
+                station.streamUrl = fields[1];
+                station.station = fields[2];
+                station.country = fields[3];
+                station.genre = fields[4];
+                station.homepage = fields[5];
+
+                stations.push_back(station);
             }
         }
+
         file.close();
     }
 }
 
 void RadioList::loadAllData()
 {
-    QStringList endpoints = {JSON_ENDPOINT_TOP,
-                             //JSON_ENDPOINT_DISCOVER,
-                             JSON_ENDPOINT_POPULAR,
-                             JSON_ENDPOINT_NEW};
-
-    // for (const QString &endpoint : endpoints) {
-    //     setVectorsOfStation(endpoint);
-    // }
     setVectorsOfStation(JSON_ENDPOINT_TOP, Stations::TOP);
     setVectorsOfStation(JSON_ENDPOINT_POPULAR, Stations::POPULAR);
     setVectorsOfStation(JSON_ENDPOINT_NEW, Stations::NEW);
@@ -830,41 +761,7 @@ void RadioList::setLoadedStationsCount(int num)
     this->loadedStationsCount = num;
 }
 
-void RadioList::loadMoreStationsIfNeeded()
-{
-    if (ui->tabRadioListWidget->currentIndex() == 0) {
-        QScrollBar *scrollBar = ui->tableView->verticalScrollBar();
-        int currentPosition = scrollBar->value();
-        int maximumPosition = scrollBar->maximum();
-        qDebug() << "Scrollup";
-        if (currentPosition >= maximumPosition * 0.8) {
-            loadRadioList();
-        }
-        if (currentPlayListPlaying == currentPlaylistIndex) {
-            setIndexColor();
-        }
-    } else {
-        QScrollBar *scrollIconBar = ui->scrollArea->verticalScrollBar();
-        int currentIconPosition = scrollIconBar->value();
-        int maximumIconPosition = scrollIconBar->maximum();
-        qDebug() << "Scrolldown";
-        if (currentIconPosition >= maximumIconPosition * 0.8) {
-            loadRadioList();
-        }
-        if (currentPlayListPlaying == currentPlaylistIndex) {
-            setIndexColor();
-        }
-    }
-}
-
 auto checkItem = [](const QString &item, const QString &target) { return item == target; };
-
-void RadioList::setRadioListVectors(Stations s)
-{
-    jsonListProcesor.setTableRows(allTableRows[s]);
-    jsonListProcesor.setStreamAddresses(allStreamAddresses[s]);
-    jsonListProcesor.setIconAddresses(allIconsAddresses[s]);
-}
 
 //Main function
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
@@ -898,8 +795,6 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         switchToIceCastTab(true);
     if (jsonListProcesor.checkInternetConnection()) {
         loadedStationsCount = 0;
-        model->clear();
-        loadRadioList();
         loadRadioIconList();
     }
 
@@ -983,9 +878,7 @@ void RadioList::prepareRestoredConnectionMessage()
 
 void RadioList::clearRadioDataVectors()
 {
-    allIconsAddresses.clear();
-    allStreamAddresses.clear();
-    allTableRows.clear();
+    allStations.clear();
 }
 
 void RadioList::playStream(int radioNumber)
@@ -1262,7 +1155,7 @@ void RadioList::switchToDefaultTabIfNoCountryStationPlaying()
 void RadioList::resetImageIfStopped()
 {
     if (isStopClicked) {
-        setRadioImage(model->index(0, 0));
+        setRadioImage(radioStationsModel->index(0, 0));
         isStopClicked = false;
     }
 }
@@ -1294,18 +1187,6 @@ void RadioList::onPrevButtonClicked()
 
 void RadioList::clearTableViewColor()
 {
-    // for (int row = 0; row < model->rowCount(); ++row) {
-    //     for (int column = 0; column < model->columnCount(); ++column) {
-    //         QModelIndex index = model->index(row, column);
-    //         if (isDarkMode) {
-    //             model->setData(index, QColor(60, 60, 60), Qt::BackgroundRole);
-    //             model->setData(index, QColor(Qt::white), Qt::ForegroundRole);
-    //         } else {
-    //             model->setData(index, QColor(Qt::white), Qt::BackgroundRole);
-    //         }
-    //         //model->setData(index, QColor(Qt::black), Qt::ForegroundRole);
-    //     }
-    // }
     if (customColor) {
         customColor->clearRowColor();
         ui->tableView->update();
@@ -1420,23 +1301,14 @@ void RadioList::addRadioToFavorite()
 
     } else if (getIsPlaying()) {
         if (radioManager.getMediaPlayer()->isPlaying()) {
-            if (radioPlaylistCurrentPlaying < allTableRows.size()
-                && radioIndexCurrentPlaying < allTableRows[radioPlaylistCurrentPlaying].size()) {
-                QString data
-                    = allIconsAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying)
-                      + ","
-                      + allStreamAddresses[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying)
-                      + ","
-                      + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).station
-                      + ","
-                      + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).country
-                      + ","
-                      + allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).genre
-                      + ","
-                      + allTableRows[radioPlaylistCurrentPlaying]
-                            .at(radioIndexCurrentPlaying)
-                            .stationUrl;
-                QString stationName = allTableRows[radioPlaylistCurrentPlaying].at(radioIndexCurrentPlaying).station;
+            if (radioPlaylistCurrentPlaying < allStations.size()
+                && radioIndexCurrentPlaying < allStations[radioPlaylistCurrentPlaying].size()) {
+                const RadioStation &station
+                    = allStations[radioPlaylistCurrentPlaying][radioIndexCurrentPlaying];
+                QString data = station.iconUrl + "," + station.streamUrl + "," + station.station
+                               + "," + station.country + "," + station.genre + ","
+                               + station.homepage;
+                QString stationName = station.station;
                 if (isRadioAdded(stationName, RADIO_BROWSER_PLAYLIST)) {
                     qDebug() << "remove";
                     removeRadio(stationName, RADIO_BROWSER_PLAYLIST);
@@ -1538,54 +1410,30 @@ void RadioList::setVectorsOfStation(const QString &endpoint, Stations station)
     // Wait for processing data
     QCoreApplication::processEvents();
 
-    QVector<TableRow> tableRows = jsonListProcesor.getTableRows();
-    QVector<QString> streamAddresses = jsonListProcesor.getStreamAddresses();
-    QVector<QString> iconAddresses = jsonListProcesor.getIconAddresses();
-    allTableRows.push_back(tableRows);
-    allStreamAddresses.push_back(streamAddresses);
-    allIconsAddresses.push_back(iconAddresses);
-
     //new model
     if (allStations.size() > station)
         allStations[station] = jsonListProcesor.getStations();
     else
         allStations.push_back(jsonListProcesor.getStations());
-    qDebug() << "station =" << static_cast<int>(station);
-    qDebug() << "size after =" << allStations.size();
 }
 
 void RadioList::searchStations()
 {
-    qDebug() << "Size list: " << allTableRows.size();
-    // This is ugly but I dont change it to don't complicate code
-    //**********************************************************
-    if (allTableRows.size() > 4 && allIconsAddresses.size() > 4 && allStreamAddresses.size() > 4) {
-        allTableRows.pop_back();
-        allIconsAddresses.pop_back();
-        allStreamAddresses.pop_back();
-    }
-    //**********************************************************
-    int rowCount = model->rowCount();
-    model->removeRows(0, rowCount);
-
-    QString data = ui->serachInput->text();
-    const QString endpoint = JSON_ENDPOINT_SEARCH + data;
-    qDebug() << allTableRows.size();
-    qDebug() << "size before setStations =" << allStations.size();
+    const QString endpoint = JSON_ENDPOINT_SEARCH + ui->serachInput->text();
     setVectorsOfStation(endpoint, Stations::SEARCH);
-    qDebug() << "allStations.size() =" << allStations.size();
+
     radioStationsModel->setStations(allStations[Stations::SEARCH]);
     currentPlaylistIndex = Stations::SEARCH;
 
     if (jsonListProcesor.checkInternetConnection()) {
         loadedStationsCount = 0;
-        loadRadioList();
         loadRadioIconList();
     }
 
-    this->treeItem = "Search";
-    this->item = "Search";
+    treeItem = "Search";
+    item = "Search";
     ui->tabRadioListWidget->setCurrentIndex(0);
-    this->clearIconLabelColor();
-    this->clearTableViewColor();
+
+    clearIconLabelColor();
+    clearTableViewColor();
 }
