@@ -9,6 +9,7 @@
 #include "container.h"
 #include "icecastxmldata.h"
 #include "include/IconLoader.h"
+#include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
 #include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
@@ -167,6 +168,7 @@ private:
     QMainWindow *mainWindow = nullptr;
 
     IconLoader *iconLoader;
+    RadioImageManager *imageManager = nullptr;
 
     //Singletons
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
@@ -266,8 +268,6 @@ private:
     void loadRadioIconsFromNetwork(int dataSize);
     void clearRadioDataVectors();
     void prepareRestoredConnectionMessage();
-    QPixmap downloadImageSync(const QUrl &url);
-    void setImageToUI(const QPixmap &pixmap);
     bool isIceCastTabOpen();
     bool isIceCastReadyToPlay();
     void startFirstIceCastStation();

@@ -17,6 +17,7 @@ SOURCES += \
     src/Menu.cpp \
     src/PlaylistEditor.cpp \
     src/RadioBrowserPlaylistEditor.cpp \
+    src/RadioImageManager.cpp \
     src/StreamRecorder.cpp \
     src/Theme.cpp \
     src/TrayIcon.cpp \
@@ -51,6 +52,7 @@ HEADERS += \
     include/PlaylistEditor.h \
     include/RadioBrowserApi.h \
     include/RadioBrowserPlaylistEditor.h \
+    include/RadioImageManager.h \
     include/StreamRecorder.h \
     include/Theme.h \
     include/TrayIcon.h \

@@ -74,6 +74,7 @@ RadioList::RadioList(Ui::MainWindow *ui)
     audioProcessor.setPlayer(radioManager.getMediaPlayer());
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
+    imageManager = new RadioImageManager{ui, &miniPlayer, this};
 }
 
 void RadioList::clearFlowLayout()
@@ -815,52 +816,11 @@ void RadioList::setRadioImage(const QModelIndex &index)
         return;
 
     QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
-    QPixmap pixmap = downloadImageSync(imageUrl);
-    setImageToUI(pixmap);
+    QPixmap pixmap = imageManager->downloadImageSync(imageUrl);
+    imageManager->setImageToUI(pixmap);
+
     qDebug() << "Image is loaded.";
 }
-
-QPixmap RadioList::downloadImageSync(const QUrl &url)
-{
-    QNetworkAccessManager manager;
-    QNetworkRequest request(url);
-    QNetworkReply *reply = manager.get(request);
-
-    QEventLoop loop;
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-
-    QPixmap pixmap;
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
-        if (contentType.startsWith("image/")) {
-            QByteArray imageData = reply->readAll();
-            pixmap.loadFromData(imageData);
-        }
-    } else {
-        qDebug() << "Image download error:" << reply->errorString();
-    }
-
-    reply->deleteLater();
-    return pixmap;
-}
-
-void RadioList::setImageToUI(const QPixmap &pixmap)
-{
-    QPixmap scaled = pixmap;
-    if (!scaled.isNull()) {
-        QSize imageSize(120, 120);
-        scaled = scaled.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
-    } else {
-        scaled = QPixmap(RADIO_ICON);
-    }
-
-    ui->infoLabel->setPixmap(scaled);
-    miniPlayer.getMui()->radioImage->setPixmap(scaled);
-    ui->infoLabel->show();
-}
-
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
