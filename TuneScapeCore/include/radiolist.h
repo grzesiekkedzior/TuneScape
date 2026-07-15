@@ -116,6 +116,11 @@ public:
     RadioStationsModel *radioStationsModel;
 
     const QVector<RadioStation> &stations(Stations station) const;
+    bool isIceCastFavoriteMode() const;
+    void handleIceCastFavorite();
+    void handleRadioBrowserFavorite();
+    void handleCountryFavorite();
+    void toggleFavorite(const QString &stationName, const QString &data, const QString &playlist);
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
