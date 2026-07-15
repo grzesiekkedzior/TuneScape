@@ -1161,98 +1161,128 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 void RadioList::addRadioToFavorite()
 {
     qDebug() << getIsPlaying();
-    if (getIsPlaying() == false
-        && (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying())) {
-        if (radioManager.getMediaPlayer()->isPlaying()
-            && iceCastXmlData->getCurrentPlayingStation()
-                   < iceCastXmlData->getIceCastStationTableRows().size()) {
-            QString station = iceCastXmlData
-                                  ->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
-                                  .station;
 
-            QString streamUrl = iceCastXmlData
-                                  ->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
-                                  .listen_url;
-
-            if (isRadioAdded(station, ICECAST_PLAYLIST)) {
-                removeRadio(station, ICECAST_PLAYLIST);
-                ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-            } else if (!station.isEmpty()) {
-                QFile file(ICECAST_PLAYLIST);
-
-                if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-                    qDebug() << "Error";
-                    return;
-                }
-
-                QTextStream out(&file);
-                out << "," << streamUrl << "," << station << ",,," << "\n";
-                file.close();
-                ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-                iceCastXmlData->addToFavoriteStations();
-            }
-            iceCastXmlData->setFavoriteStations();
-            iceCastXmlData->clearTableViewColor();
-        }
-        if (iceCastXmlData->getIsFavoriteOnTreeCliced())
-            iceCastXmlData->loadFavoriteIceCastStations();
-        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
-
+    if (isIceCastFavoriteMode()) {
+        handleIceCastFavorite();
     } else if (getIsPlaying()) {
-        if (radioManager.getMediaPlayer()->isPlaying()) {
-            if (radioPlaylistCurrentPlaying < allStations.size()
-                && radioIndexCurrentPlaying < allStations[radioPlaylistCurrentPlaying].size()) {
-                const RadioStation &station
-                    = allStations[radioPlaylistCurrentPlaying][radioIndexCurrentPlaying];
-                QString data = station.iconUrl + "," + station.streamUrl + "," + station.station
-                               + "," + station.country + "," + station.genre + ","
-                               + station.homepage;
-                QString stationName = station.station;
-                if (isRadioAdded(stationName, RADIO_BROWSER_PLAYLIST)) {
-                    qDebug() << "remove";
-                    removeRadio(stationName, RADIO_BROWSER_PLAYLIST);
-                    ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-                } else if (!data.isEmpty()) {
-                    QFile file(RADIO_BROWSER_PLAYLIST);
-
-                    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-                        qDebug() << "Error";
-                        return;
-                    }
-
-                    QTextStream out(&file);
-                    out << data << "\n";
-                    file.close();
-                    ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-                }
-            }
-            setFavoriteStatons();
-        }
+        handleRadioBrowserFavorite();
     } else if (country.getIsPlaying()) {
-        if (radioManager.getMediaPlayer()->isPlaying()) {
-            QString data = country.dtoFavorite.icon + "," + country.dtoFavorite.stream + ","
-                           + country.dtoFavorite.station + "," + country.dtoFavorite.country + ","
-                           + country.dtoFavorite.genre + "," + country.dtoFavorite.stationUrl;
-            QString stationName = country.dtoFavorite.station;
-            if (isRadioAdded(stationName, RADIO_BROWSER_PLAYLIST)) {
-                qDebug() << "remove";
-                removeRadio(stationName, RADIO_BROWSER_PLAYLIST);
-                ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-            } else if (!data.isEmpty()) {
-                QFile file(RADIO_BROWSER_PLAYLIST);
+        handleCountryFavorite();
+    }
+}
 
-                if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-                    qDebug() << "Error";
-                    return;
-                }
+bool RadioList::isIceCastFavoriteMode() const
+{
+    return !getIsPlaying()
+           && (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying());
+}
 
-                QTextStream out(&file);
-                out << data << "\n";
-                file.close();
-                ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-            }
+void RadioList::handleIceCastFavorite()
+{
+    if (!radioManager.getMediaPlayer()->isPlaying())
+        return;
+
+    if (iceCastXmlData->getCurrentPlayingStation()
+        >= iceCastXmlData->getIceCastStationTableRows().size())
+        return;
+
+    QString station = iceCastXmlData->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
+                          .station;
+
+    QString streamUrl
+        = iceCastXmlData->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation()).listen_url;
+
+    if (isRadioAdded(station, ICECAST_PLAYLIST)) {
+        removeRadio(station, ICECAST_PLAYLIST);
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+
+    } else if (!station.isEmpty()) {
+        QFile file(ICECAST_PLAYLIST);
+
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            qDebug() << "Error";
+            return;
         }
-        setFavoriteStatons();
+
+        QTextStream out(&file);
+        out << "," << streamUrl << "," << station << ",,," << "\n";
+
+        file.close();
+
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+
+        iceCastXmlData->addToFavoriteStations();
+    }
+
+    iceCastXmlData->setFavoriteStations();
+    iceCastXmlData->clearTableViewColor();
+
+    if (iceCastXmlData->getIsFavoriteOnTreeCliced())
+        iceCastXmlData->loadFavoriteIceCastStations();
+
+    iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
+}
+
+void RadioList::handleRadioBrowserFavorite()
+{
+    if (!radioManager.getMediaPlayer()->isPlaying())
+        return;
+
+    if (radioPlaylistCurrentPlaying >= allStations.size())
+        return;
+
+    if (radioIndexCurrentPlaying >= allStations[radioPlaylistCurrentPlaying].size())
+        return;
+
+    const RadioStation &station = allStations[radioPlaylistCurrentPlaying][radioIndexCurrentPlaying];
+
+    QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
+                   + station.country + "," + station.genre + "," + station.homepage;
+
+    QString stationName = station.station;
+
+    toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+
+    setFavoriteStatons();
+}
+
+void RadioList::handleCountryFavorite()
+{
+    if (!radioManager.getMediaPlayer()->isPlaying())
+        return;
+
+    QString data = country.dtoFavorite.icon + "," + country.dtoFavorite.stream + ","
+                   + country.dtoFavorite.station + "," + country.dtoFavorite.country + ","
+                   + country.dtoFavorite.genre + "," + country.dtoFavorite.stationUrl;
+
+    QString stationName = country.dtoFavorite.station;
+
+    toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    setFavoriteStatons();
+}
+
+void RadioList::toggleFavorite(const QString &stationName,
+                               const QString &data,
+                               const QString &playlist)
+{
+    if (isRadioAdded(stationName, playlist)) {
+        removeRadio(stationName, playlist);
+
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+
+    } else if (!data.isEmpty()) {
+        QFile file(playlist);
+
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+            qDebug() << "Error";
+            return;
+        }
+
+        QTextStream out(&file);
+        out << data << "\n";
+        file.close();
+
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     }
 }
 
