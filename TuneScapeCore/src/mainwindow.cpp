@@ -71,7 +71,8 @@ void MainWindow::set_icon_btn()
 void MainWindow::start()
 {
     radioExplorer = new RadioExplorer(ui);
-    radioList = new RadioList(ui);
+    favoriteManager = new FavoriteManager{ui, this};
+    radioList = new RadioList(ui, favoriteManager);
     radioInfo = new RadioInfo(ui);
     radioExplorer->createMenu();
     radioList->loadAllData();
@@ -85,6 +86,7 @@ void MainWindow::start()
     appMenu = new Menu(ui, radioList, radioList->getIceCastXmlData());
     country.setData(ui, radioList);
     country.load();
+    country.setFavoriteManager(favoriteManager);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

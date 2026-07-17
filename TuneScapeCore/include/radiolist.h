@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include "../ui_mainwindow.h"
 #include "Country.h"
+#include "FavoriteManager.h"
 #include "PlaylistEditor.h"
 #include "audioprocessor.h"
 #include "container.h"
@@ -34,7 +35,7 @@ class RadioList : public QObject
     Q_OBJECT
 public:
     explicit RadioList(QObject *parent = nullptr);
-    RadioList(Ui::MainWindow *ui);
+    RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager);
 
     void loadAllData();
     void setLoadedStationsCount(int num);
@@ -101,8 +102,6 @@ public:
     QScopedPointer<PlaylistEditor> playlistEditor;
 
     // Add and remove the playlists!!!
-    bool isRadioAdded(const QString data, const QString playlist);
-    void removeRadio(const QString data, const QString playlist);
     void loadRadioIconList();
     void updateStationColoring();
 
@@ -121,7 +120,6 @@ public:
     void handleIceCastFavorite();
     void handleRadioBrowserFavorite();
     void handleCountryFavorite();
-    void toggleFavorite(const QString &stationName, const QString &data, const QString &playlist);
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -169,6 +167,7 @@ private:
 
     IconLoader *iconLoader;
     RadioImageManager *imageManager = nullptr;
+    FavoriteManager *favoriteManager = nullptr;
 
     //Singletons
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();

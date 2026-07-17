@@ -11,7 +11,7 @@
 
 IceCastXmlData::IceCastXmlData() {}
 
-IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
+IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
 {
     this->ui = ui;
     ui->icecastTable->verticalHeader()->setDefaultSectionSize(18);
@@ -22,6 +22,7 @@ IceCastXmlData::IceCastXmlData(Ui::MainWindow *ui)
                      this,
                      &IceCastXmlData::onDoubleListClicked);
     ui->iceCastprogressBar->setFormat("Download. " + QString::number(0) + " bytes");
+    this->favoriteManager = favoriteManager;
 }
 
 void IceCastXmlData::loadXmlData()
@@ -391,8 +392,8 @@ void IceCastXmlData::setIndexColor(const QModelIndex &index)
 void IceCastXmlData::checkIsRadioOnPlaylist()
 {
     qDebug() << "Playing station:" << getIceCastTableRow(getCurrentPlayingStation()).station;
-    if (radioList->isAddressExists(getIceCastTableRow(getCurrentPlayingStation()).station,
-                                   "icecast.txt")) {
+    if (favoriteManager->isAddressExists(getIceCastTableRow(getCurrentPlayingStation()).station,
+                                         "icecast.txt")) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     } else {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));

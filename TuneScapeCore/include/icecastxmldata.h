@@ -3,6 +3,7 @@
 #include <QSharedPointer>
 #include <QUrl>
 #include "Country.h"
+#include "FavoriteManager.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "customcolordelegate.h"
@@ -40,7 +41,7 @@ class IceCastXmlData : public QObject
     Q_OBJECT
 public:
     IceCastXmlData();
-    IceCastXmlData(Ui::MainWindow* ui);
+    IceCastXmlData(Ui::MainWindow *ui, FavoriteManager *favoriteManager);
     ~IceCastXmlData();
 
     void setUi();
@@ -133,6 +134,7 @@ private:
     Country& country = SingletonContainer::getSingleton().getInstance<Country>();
 
     const QString RADIO_ICON = ":/images/img/radio96x96.png";
+    FavoriteManager *favoriteManager = nullptr;
 };
 
 #endif // ICECASTXMLDATA_H

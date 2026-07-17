@@ -1,9 +1,10 @@
 #include "include/RadioBrowserPlaylistEditor.h"
 
-RadioBrowserPlaylistEditor::RadioBrowserPlaylistEditor(RadioList &radiolist) : radioList {radiolist}
-{
-
-}
+RadioBrowserPlaylistEditor::RadioBrowserPlaylistEditor(RadioList &radiolist,
+                                                       FavoriteManager *favoriteManager)
+    : radioList{radiolist}
+    , favoriteManager{favoriteManager}
+{}
 
 void RadioBrowserPlaylistEditor::checkIfStationIsPlaying(const QModelIndex &index)
 {
@@ -38,7 +39,7 @@ bool RadioBrowserPlaylistEditor::updateFile(int radioPosition)
     }
 
     radioList.setRadioIndexNumber(radioIndex);
-    radioList.removeRadio(stationName, RADIO_BROWSER);
+    favoriteManager->removeRadio(stationName, RADIO_BROWSER);
 
     return true;
 }
