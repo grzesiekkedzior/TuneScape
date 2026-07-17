@@ -1,6 +1,7 @@
 #ifndef COUNTRY_H
 #define COUNTRY_H
 
+#include "FavoriteManager.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "customcolordelegate.h"
@@ -85,6 +86,9 @@ public:
     int getCurrentIndexPlaying() const;
     void setCurrentIndexPlaying(int newCourrentIndexPlaying);
 
+    FavoriteManager *getFavoriteManager() const;
+    void setFavoriteManager(FavoriteManager *newFavoriteManager);
+
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
 
@@ -118,6 +122,7 @@ private:
     void setRadioImage(const QModelIndex &index);
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
+    FavoriteManager *favoriteManager = nullptr;
 };
 
 #endif // COUNTRY_H

@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QResizeEvent>
 #include "Country.h"
+#include "include/FavoriteManager.h"
 #include "include/Menu.h"
 #include "include/music_data/clients/MusicBrainzClient.h"
 #include "include/music_data/services/ResolverService.h"
@@ -44,6 +45,7 @@ private:
     TrayIcon *trayIcon;
     Menu *appMenu;
     TrackView *trackView;
+    FavoriteManager *favoriteManager;
 
     music_data::MusicBrainzClient *m_musicBrainzCient;
     music_data::ResolverService *m_resolverService;

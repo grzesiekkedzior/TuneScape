@@ -31,7 +31,8 @@ HEADERS += $$PWD/TuneScapeCore/include/IceCastXmlData.h \
            $$PWD/TuneScapeCore/include/data/RadioStation.h \
            $$PWD/TuneScapeCore/include/model/RadioStationsModel.h \
            $$PWD/TuneScapeCore/include/IconLoader.h \
-           $$PWD/TuneScapeCore/include/RadioImageManager.h
+           $$PWD/TuneScapeCore/include/RadioImageManager.h \
+           $$PWD/TuneScapeCore/include/FavoriteManager.h
 
 SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/Menu.cpp \
@@ -62,7 +63,8 @@ SOURCES += $$PWD/TuneScapeCore/src/IceCastXmlData.cpp \
            $$PWD/TuneScapeCore/src/view/TrackView.cpp \
            $$PWD/TuneScapeCore/src/model/RadioStationsModel.cpp \
            $$PWD/TuneScapeCore/src/IconLoader.cpp \
-           $$PWD/TuneScapeCore/src/RadioImageManager.cpp
+           $$PWD/TuneScapeCore/src/RadioImageManager.cpp \
+           $$PWD/TuneScapeCore/src/FavoriteManager.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui \

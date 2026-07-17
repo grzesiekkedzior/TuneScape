@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     src/AppConfig.cpp \
     src/Country.cpp \
+    src/FavoriteManager.cpp \
     src/IceCastXmlData.cpp \
     src/IconLoader.cpp \
     src/M3UHandler.cpp \
@@ -45,6 +46,7 @@ SOURCES += \
 HEADERS += \
     include/AppConfig.h \
     include/Country.h \
+    include/FavoriteManager.h \
     include/IceCastXmlData.h \
     include/IconLoader.h \
     include/M3UHandler.h \

@@ -289,6 +289,16 @@ void Country::setRadioImage(const QModelIndex &index)
     reply->deleteLater();
 }
 
+FavoriteManager *Country::getFavoriteManager() const
+{
+    return favoriteManager;
+}
+
+void Country::setFavoriteManager(FavoriteManager *newFavoriteManager)
+{
+    favoriteManager = newFavoriteManager;
+}
+
 QString Country::getIconAddresses(int index) const
 {
     return this->iconAddresses[index];
@@ -313,7 +323,7 @@ void Country::clearTableColor()
 
 void Country::checkIsOnPlaylist(const QModelIndex &index, QString currentRadioPlayingAddress)
 {
-    if (radioList->isAddressExists(currentRadioPlayingAddress, RADIO_BROWSER_PLAYLIST)) {
+    if (favoriteManager->isAddressExists(currentRadioPlayingAddress, RADIO_BROWSER_PLAYLIST)) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     } else {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
