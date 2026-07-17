@@ -4,9 +4,8 @@
 #include <QIcon>
 #include <QTextStream>
 
-FavoriteManager::FavoriteManager(Ui::MainWindow *ui, QObject *parent)
+FavoriteManager::FavoriteManager(QObject *parent)
     : QObject{parent}
-    , m_ui{ui}
 {}
 
 bool FavoriteManager::isRadioAdded(const QString data, const QString playlist)
@@ -26,29 +25,29 @@ bool FavoriteManager::isRadioAdded(const QString data, const QString playlist)
     return false;
 }
 
-void FavoriteManager::toggleFavorite(const QString &stationName,
+bool FavoriteManager::toggleFavorite(const QString &stationName,
                                      const QString &data,
                                      const QString &playlist)
 {
     if (isRadioAdded(stationName, playlist)) {
         removeRadio(stationName, playlist);
-
-        m_ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-
-    } else if (!data.isEmpty()) {
-        QFile file(playlist);
-
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-            qDebug() << "Error";
-            return;
-        }
-
-        QTextStream out(&file);
-        out << data << "\n";
-        file.close();
-
-        m_ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+        return false;
     }
+
+    if (data.isEmpty())
+        return false;
+
+    QFile file(playlist);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        qDebug() << "Error";
+        return false;
+    }
+
+    QTextStream out(&file);
+    out << data << '\n';
+
+    return true;
 }
 
 void FavoriteManager::readFavoriteStationsFromFile(QVector<RadioStation> &stations)

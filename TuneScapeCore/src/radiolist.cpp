@@ -1101,9 +1101,18 @@ void RadioList::handleRadioBrowserFavorite()
 
     QString stationName = station.station;
 
-    favoriteManager->toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    bool isFavorite = favoriteManager->toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    updateFavoriteIcon(isFavorite);
 
     setFavoriteStatons();
+}
+
+void RadioList::updateFavoriteIcon(bool isFavorite)
+{
+    if (isFavorite)
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
+    else
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
 }
 
 void RadioList::handleCountryFavorite()
@@ -1117,7 +1126,8 @@ void RadioList::handleCountryFavorite()
 
     QString stationName = country.dtoFavorite.station;
 
-    favoriteManager->toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    bool isFavorite = favoriteManager->toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    updateFavoriteIcon(isFavorite);
     setFavoriteStatons();
 }
 

@@ -71,7 +71,7 @@ void MainWindow::set_icon_btn()
 void MainWindow::start()
 {
     radioExplorer = new RadioExplorer(ui);
-    favoriteManager = new FavoriteManager{ui, this};
+    favoriteManager = new FavoriteManager{this};
     radioList = new RadioList(ui, favoriteManager);
     radioInfo = new RadioInfo(ui);
     radioExplorer->createMenu();

@@ -121,6 +121,8 @@ public:
     void handleRadioBrowserFavorite();
     void handleCountryFavorite();
 
+    void updateFavoriteIcon(bool isFavorite);
+
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
