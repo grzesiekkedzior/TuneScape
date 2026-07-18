@@ -10,10 +10,10 @@ class FavoriteManager : public QObject
 public:
     explicit FavoriteManager(QObject *parent = nullptr);
 
-    bool isRadioAdded(const QString data, const QString playlist);
-    bool toggleFavorite(const QString &stationName, const QString &data, const QString &playlist);
+    bool isRadioAdded(const QString &streamUrl, const QString &playlist);
+    bool toggleFavorite(const QString &streamUrl, const QString &data, const QString &playlist);
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
-    void removeRadio(const QString data, const QString playlist);
+    void removeRadio(const QString &streamUrl, const QString &playlist);
     bool isAddressExists(const QString station, const QString playlist);
 
 private:

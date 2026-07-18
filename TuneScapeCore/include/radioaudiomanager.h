@@ -25,6 +25,7 @@ public:
 
     bool getIsPlaying() const;
     void setIsPlaying(bool newIsPlaying);
+    void play(const QUrl &url);
 
 signals:
 

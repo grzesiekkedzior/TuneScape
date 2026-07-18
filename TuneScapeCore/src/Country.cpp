@@ -171,7 +171,7 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         QString url = streamAddresses[index.row()];
         createDtoFavorites(index, url);
 
-        radioList->getRadioManager().loadStream(url);
+        radioList->getRadioManager().play(url);
         audioProcessor.start(url);
 
         radioList->getIceCastXmlData()->clearTableViewColor();
@@ -190,7 +190,7 @@ void Country::onDoubleListClicked(const QModelIndex &index)
             ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
             miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
         }
-        radioList->getRadioManager().playStream();
+
         setIsPlaying(true);
         if (isPlaying) {
             radioList->getRadioInfo()->loadEndpoint(tableRows[index.row()].station);

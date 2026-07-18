@@ -8,29 +8,31 @@ FavoriteManager::FavoriteManager(QObject *parent)
     : QObject{parent}
 {}
 
-bool FavoriteManager::isRadioAdded(const QString data, const QString playlist)
+bool FavoriteManager::isRadioAdded(const QString &streamUrl, const QString &playlist)
 {
     QFile file(playlist);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return false;
 
     QTextStream in(&file);
-    while (!in.atEnd()) {
-        QString line = in.readLine();
 
-        if (line.toLower().contains(data.toLower()))
+    while (!in.atEnd()) {
+        QStringList fields = in.readLine().split(',');
+
+        if (fields.size() >= 2 && fields[1].compare(streamUrl, Qt::CaseInsensitive) == 0) {
             return true;
+        }
     }
 
     return false;
 }
 
-bool FavoriteManager::toggleFavorite(const QString &stationName,
+bool FavoriteManager::toggleFavorite(const QString &streamUrl,
                                      const QString &data,
                                      const QString &playlist)
 {
-    if (isRadioAdded(stationName, playlist)) {
-        removeRadio(stationName, playlist);
+    if (isRadioAdded(streamUrl, playlist)) {
+        removeRadio(streamUrl, playlist);
         return false;
     }
 
@@ -79,7 +81,7 @@ void FavoriteManager::readFavoriteStationsFromFile(QVector<RadioStation> &statio
     }
 }
 
-void FavoriteManager::removeRadio(const QString data, const QString playlist)
+void FavoriteManager::removeRadio(const QString &streamUrl, const QString &playlist)
 {
     QFile inputFile(playlist);
     if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -94,9 +96,13 @@ void FavoriteManager::removeRadio(const QString data, const QString playlist)
 
     while (!in.atEnd()) {
         QString line = in.readLine().trimmed();
-        if (!line.toLower().contains(data.toLower())) {
-            out << line << "\n";
+        QStringList fields = line.split(',');
+
+        if (fields.size() >= 2 && fields[1].compare(streamUrl, Qt::CaseInsensitive) == 0) {
+            continue; // pomiń wpis do usunięcia
         }
+
+        out << line << '\n';
     }
 
     inputFile.close();
@@ -104,9 +110,9 @@ void FavoriteManager::removeRadio(const QString data, const QString playlist)
 
     // swap file
     if (QFile::remove(playlist) && QFile::rename("temp_playlist.txt", playlist)) {
-        qDebug() << "Correct" << data;
+        qDebug() << "Correct" << streamUrl;
     } else {
-        qDebug() << "Error " << data;
+        qDebug() << "Error" << streamUrl;
     }
 }
 

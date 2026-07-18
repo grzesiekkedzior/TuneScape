@@ -690,8 +690,7 @@ void RadioList::playStream(int radioNumber)
     checkIsRadioOnPlaylist(curentStation);
     getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
-    radioManager.loadStream(streamUrl);
-    radioManager.playStream();
+    radioManager.play(streamUrl);
     audioProcessor.start(currentRadioPlayingAddress);
 }
 
@@ -1101,7 +1100,9 @@ void RadioList::handleRadioBrowserFavorite()
 
     QString stationName = station.station;
 
-    bool isFavorite = favoriteManager->toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    bool isFavorite = favoriteManager->toggleFavorite(station.streamUrl,
+                                                      data,
+                                                      RADIO_BROWSER_PLAYLIST);
     updateFavoriteIcon(isFavorite);
 
     setFavoriteStatons();
@@ -1124,9 +1125,9 @@ void RadioList::handleCountryFavorite()
                    + country.dtoFavorite.station + "," + country.dtoFavorite.country + ","
                    + country.dtoFavorite.genre + "," + country.dtoFavorite.stationUrl;
 
-    QString stationName = country.dtoFavorite.station;
+    QString stationStream = country.dtoFavorite.stream;
 
-    bool isFavorite = favoriteManager->toggleFavorite(stationName, data, RADIO_BROWSER_PLAYLIST);
+    bool isFavorite = favoriteManager->toggleFavorite(stationStream, data, RADIO_BROWSER_PLAYLIST);
     updateFavoriteIcon(isFavorite);
     setFavoriteStatons();
 }
