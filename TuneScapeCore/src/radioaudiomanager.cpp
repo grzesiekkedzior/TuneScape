@@ -6,8 +6,8 @@ RadioAudioManager::RadioAudioManager()
     : logLineCount(0)
     , logFile("error_log.txt")
 {
-    player = new QMediaPlayer;
-    audioOutput = new QAudioOutput;
+    player = new QMediaPlayer(this);
+    audioOutput = new QAudioOutput(this);
     player->setAudioOutput(audioOutput);
     if (logFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&logFile);
@@ -32,6 +32,7 @@ RadioAudioManager::RadioAudioManager()
     // setenv("QT_MULTIMEDIA_PREFERRED_PLUGINS", "directshow", 1);
 
 #endif
+    connect(player, &QMediaPlayer::errorOccurred, this, &RadioAudioManager::logError);
 }
 
 RadioAudioManager::~RadioAudioManager()
@@ -49,7 +50,6 @@ void RadioAudioManager::loadStream(const QUrl &url)
 {
     streamReader.cleanupReplies();
 
-    connect(player, &QMediaPlayer::errorOccurred, this, &RadioAudioManager::logError);
     player->setSource(url);
 }
 
@@ -143,6 +143,12 @@ bool RadioAudioManager::getIsPlaying() const
 void RadioAudioManager::setIsPlaying(bool newIsPlaying)
 {
     isPlaying = newIsPlaying;
+}
+
+void RadioAudioManager::play(const QUrl &url)
+{
+    loadStream(url);
+    playStream();
 }
 
 bool SystemEventFilter::nativeEventFilter(const QByteArray &eventType,
