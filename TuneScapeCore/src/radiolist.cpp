@@ -1045,32 +1045,18 @@ void RadioList::handleIceCastFavorite()
         >= iceCastXmlData->getIceCastStationTableRows().size())
         return;
 
-    QString station = iceCastXmlData->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation())
-                          .station;
+    const IceCastTableRow &stationRow = iceCastXmlData->getIceCastTableRow(
+        iceCastXmlData->getCurrentPlayingStation());
 
-    QString streamUrl
-        = iceCastXmlData->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation()).listen_url;
+    QString data = "," + stationRow.listen_url + "," + stationRow.station + ",,,";
 
-    if (favoriteManager->isRadioAdded(streamUrl, ICECAST_PLAYLIST)) {
-        favoriteManager->removeRadio(streamUrl, ICECAST_PLAYLIST);
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
+    bool added = favoriteManager->toggleFavorite(stationRow.listen_url, data, ICECAST_PLAYLIST);
 
-    } else if (!station.isEmpty()) {
-        QFile file(ICECAST_PLAYLIST);
-
-        if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-            qDebug() << "Error";
-            return;
-        }
-
-        QTextStream out(&file);
-        out << "," << streamUrl << "," << station << ",,," << "\n";
-
-        file.close();
-
+    if (added) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-
         iceCastXmlData->addToFavoriteStations();
+    } else {
+        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
     }
 
     iceCastXmlData->setFavoriteStations();
