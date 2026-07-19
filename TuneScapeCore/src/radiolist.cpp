@@ -686,8 +686,8 @@ void RadioList::playStream(int radioNumber)
     radioIndexCurrentPlaying = radioNumber;
     radioPlaylistCurrentPlaying = currentPlaylistIndex;
     currentRadioPlayingAddress = radioStationsModel->station(radioNumber).streamUrl;
-    QString curentStation = radioStationsModel->station(radioNumber).station;
-    checkIsRadioOnPlaylist(curentStation);
+    QString stationUrl = radioStationsModel->station(radioNumber).streamUrl;
+    checkIsRadioOnPlaylist(stationUrl);
     getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
     radioManager.play(streamUrl);
@@ -1051,8 +1051,8 @@ void RadioList::handleIceCastFavorite()
     QString streamUrl
         = iceCastXmlData->getIceCastTableRow(iceCastXmlData->getCurrentPlayingStation()).listen_url;
 
-    if (favoriteManager->isRadioAdded(station, ICECAST_PLAYLIST)) {
-        favoriteManager->removeRadio(station, ICECAST_PLAYLIST);
+    if (favoriteManager->isRadioAdded(streamUrl, ICECAST_PLAYLIST)) {
+        favoriteManager->removeRadio(streamUrl, ICECAST_PLAYLIST);
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
 
     } else if (!station.isEmpty()) {

@@ -31,6 +31,7 @@ bool FavoriteManager::toggleFavorite(const QString &streamUrl,
                                      const QString &data,
                                      const QString &playlist)
 {
+    qDebug() << "Toggle:" << streamUrl;
     if (isRadioAdded(streamUrl, playlist)) {
         removeRadio(streamUrl, playlist);
         return false;
@@ -72,7 +73,9 @@ void FavoriteManager::readFavoriteStationsFromFile(QVector<RadioStation> &statio
                 station.country = fields[3];
                 station.genre = fields[4];
                 station.homepage = fields[5];
-
+                qDebug() << "Loaded:";
+                qDebug() << station.streamUrl;
+                qDebug() << station.station;
                 stations.push_back(station);
             }
         }
@@ -116,7 +119,7 @@ void FavoriteManager::removeRadio(const QString &streamUrl, const QString &playl
     }
 }
 
-bool FavoriteManager::isAddressExists(const QString station, const QString playlist)
+bool FavoriteManager::isAddressExists(const QString streamUrl, const QString playlist)
 {
     QFile file(playlist);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -125,7 +128,7 @@ bool FavoriteManager::isAddressExists(const QString station, const QString playl
     }
 
     QTextStream in(&file);
-    const QString lowerCaseStation = station.toLower();
+    const QString lowerCaseStation = streamUrl.toLower();
 
     while (!in.atEnd()) {
         QString line = in.readLine();
