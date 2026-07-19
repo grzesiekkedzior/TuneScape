@@ -173,12 +173,18 @@ void IceCastXmlData::setFavoriteStations()
         QTextStream in(&file);
         while (!in.atEnd()) {
             QString line = in.readLine();
-            // divide line and add to vectors
+
+            QStringList fields = line.split(',');
+
+            if (fields.size() < 2)
+                continue;
+
+            QString streamUrl = fields[1];
 
             auto it = std::find_if(iceCastStationTableRows.begin(),
                                    iceCastStationTableRows.end(),
-                                   [line](const IceCastTableRow &row) {
-                                       return line.contains(row.station);
+                                   [&streamUrl](const IceCastTableRow &row) {
+                                       return row.listen_url == streamUrl;
                                    });
 
             if (it != iceCastStationTableRows.end()) {
@@ -391,7 +397,8 @@ void IceCastXmlData::setIndexColor(const QModelIndex &index)
 void IceCastXmlData::checkIsRadioOnPlaylist()
 {
     qDebug() << "Playing station:" << getIceCastTableRow(getCurrentPlayingStation()).station;
-    if (favoriteManager->isAddressExists(getIceCastTableRow(getCurrentPlayingStation()).station,
+
+    if (favoriteManager->isAddressExists(getIceCastTableRow(getCurrentPlayingStation()).listen_url,
                                          "icecast.txt")) {
         ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
     } else {

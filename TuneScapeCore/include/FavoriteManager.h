@@ -14,7 +14,7 @@ public:
     bool toggleFavorite(const QString &streamUrl, const QString &data, const QString &playlist);
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
     void removeRadio(const QString &streamUrl, const QString &playlist);
-    bool isAddressExists(const QString station, const QString playlist);
+    bool isAddressExists(const QString streamUrl, const QString playlist);
 
 private:
     const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
