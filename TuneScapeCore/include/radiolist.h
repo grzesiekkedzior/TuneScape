@@ -176,6 +176,8 @@ private:
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
 
+    RadioStation currentPlayingStation;
+
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;
     int radioIndexCurrentPlaying = 0;
@@ -284,6 +286,7 @@ private:
 
     void updateFavoriteColumnLayout();
     void onTrashIconCliced(const QModelIndex &index);
+    void refreshFavoritePlaylist();
 };
 
 #endif // RADIOLIST_H

@@ -516,6 +516,15 @@ void RadioList::onTrashIconCliced(const QModelIndex &index)
     }
 }
 
+void RadioList::refreshFavoritePlaylist()
+{
+    setFavoriteStatons();
+
+    if (item == FAVORITE) {
+        radioStationsModel->setStations(allStations[Stations::FAVORITE]);
+    }
+}
+
 void RadioList::setTopListOnStart()
 {
     QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
@@ -685,7 +694,8 @@ void RadioList::playStream(int radioNumber)
 {
     radioIndexCurrentPlaying = radioNumber;
     radioPlaylistCurrentPlaying = currentPlaylistIndex;
-    currentRadioPlayingAddress = radioStationsModel->station(radioNumber).streamUrl;
+    currentPlayingStation = radioStationsModel->station(radioNumber);
+    currentRadioPlayingAddress = currentPlayingStation.streamUrl;
     QString stationUrl = radioStationsModel->station(radioNumber).streamUrl;
     checkIsRadioOnPlaylist(stationUrl);
     getSongTitle(currentRadioPlayingAddress);
@@ -1073,25 +1083,16 @@ void RadioList::handleRadioBrowserFavorite()
     if (!radioManager.getMediaPlayer()->isPlaying())
         return;
 
-    if (radioPlaylistCurrentPlaying >= allStations.size())
-        return;
+    QString data = currentPlayingStation.iconUrl + "," + currentPlayingStation.streamUrl + ","
+                   + currentPlayingStation.station + "," + currentPlayingStation.country + ","
+                   + currentPlayingStation.genre + "," + currentPlayingStation.homepage;
 
-    if (radioIndexCurrentPlaying >= allStations[radioPlaylistCurrentPlaying].size())
-        return;
-
-    const RadioStation &station = allStations[radioPlaylistCurrentPlaying][radioIndexCurrentPlaying];
-
-    QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
-                   + station.country + "," + station.genre + "," + station.homepage;
-
-    QString stationName = station.station;
-
-    bool isFavorite = favoriteManager->toggleFavorite(station.streamUrl,
+    bool isFavorite = favoriteManager->toggleFavorite(currentPlayingStation.streamUrl,
                                                       data,
                                                       RADIO_BROWSER_PLAYLIST);
-    updateFavoriteIcon(isFavorite);
 
-    setFavoriteStatons();
+    updateFavoriteIcon(isFavorite);
+    refreshFavoritePlaylist();
 }
 
 void RadioList::updateFavoriteIcon(bool isFavorite)
@@ -1115,7 +1116,7 @@ void RadioList::handleCountryFavorite()
 
     bool isFavorite = favoriteManager->toggleFavorite(stationStream, data, RADIO_BROWSER_PLAYLIST);
     updateFavoriteIcon(isFavorite);
-    setFavoriteStatons();
+    refreshFavoritePlaylist();
 }
 
 void RadioList::handleDataReceived(const QString &data)
