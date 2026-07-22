@@ -8,6 +8,7 @@
 #include "PlaylistEditor.h"
 #include "audioprocessor.h"
 #include "container.h"
+#include "controller/PlaybackController.h"
 #include "icecastxmldata.h"
 #include "include/IconLoader.h"
 #include "include/RadioImageManager.h"
@@ -175,6 +176,8 @@ private:
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
+    PlaybackController &playbackController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlaybackController>();
 
     RadioStation currentPlayingStation;
 
@@ -218,7 +221,7 @@ private:
     QVector<QVector<QString>> allStreamAddresses;
     QVector<QVector<QString>> allIconsAddresses;
 
-    void playStream(int radioNumber);
+    void playSelectedStation(int radioNumber);
     void setIndexColor();
     void sliderMoved(int move);
     void setRadioImage(const QModelIndex &index);

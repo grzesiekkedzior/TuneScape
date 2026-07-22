@@ -190,7 +190,7 @@ void RadioList::setMp3FileName()
     QString title = "";
     QString extension = "";
 
-    if (isPlaying) {
+    if (playbackController.isPlaying()) {
         title = ui->tableWidget->item(0, 1)->text();
         extension = ui->tableWidget->item(5, 1)->text().toLower();
     } else if (country.getIsPlaying()) {
@@ -218,7 +218,7 @@ void RadioList::onAllIconsLoaded()
     if (!shouldUpdateIcon())
         return;
 
-    if (getIsPlaying()) {
+    if (playbackController.isPlaying()) {
         handleIconUpdate();
     }
 }
@@ -637,7 +637,7 @@ void RadioList::switchToIceCastTab(bool favorite)
 void RadioList::updateStationColoring()
 {
     if (currentPlayListPlaying == currentPlaylistIndex) {
-        if (getIsPlaying())
+        if (playbackController.isPlaying())
             setIndexColor();
     } else {
         // Clear the color-marked station when changing tree items.
@@ -690,7 +690,7 @@ void RadioList::clearRadioDataVectors()
     allStations.clear();
 }
 
-void RadioList::playStream(int radioNumber)
+void RadioList::playSelectedStation(int radioNumber)
 {
     radioIndexCurrentPlaying = radioNumber;
     radioPlaylistCurrentPlaying = currentPlaylistIndex;
@@ -700,7 +700,7 @@ void RadioList::playStream(int radioNumber)
     checkIsRadioOnPlaylist(stationUrl);
     getSongTitle(currentRadioPlayingAddress);
     QUrl streamUrl(currentRadioPlayingAddress);
-    radioManager.play(streamUrl);
+    playbackController.play(streamUrl);
     audioProcessor.start(currentRadioPlayingAddress);
 }
 
@@ -739,7 +739,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         currentPlayListPlaying = currentPlaylistIndex;
 
         // change bookmark
-        playStream(radioIndexNumber);
+        playSelectedStation(radioIndexNumber);
         clearTableViewColor();
         iceCastXmlData->clearTableViewColor();
         country.clearTableColor();
@@ -748,16 +748,15 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         setIndexColor();
         markIconPlayingStation(index.row());
 
-        setIsPlaying(true);
         setIsBrowseStationLoaded(true);
-        if (getIsPlaying()) {
+        if (playbackController.isPlaying()) {
             ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
             miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/pause30.png"));
         }
 
         isStopClicked = false;
         ui->infoData->clear();
-        if (isPlaying) {
+        if (playbackController.isPlaying()) {
             radioInfo->loadEndpoint(radioStationsModel->station(currentStationIndex).station);
             radioInfo->processInfoJsonQuery();
             radioInfo->setDataOnTable();
@@ -781,13 +780,8 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 //Main function
 void RadioList::onPlayPauseButtonCliced()
 {
-    if (!isTreeClicked || !jsonListProcesor.isConnected) {
+    if (!isTreeClicked || !jsonListProcesor.isConnected)
         return;
-    }
-    if (getIsPause())
-        setIsPause(false);
-    else
-        setIsPause(true);
 
     if (country.getIsPlaying())
         country.setIsPlaying(false);
@@ -798,26 +792,30 @@ void RadioList::onPlayPauseButtonCliced()
         pauseIceCastStream();
     } else if (isIceCastReadyToPlay()) {
         returnIceCastStreamToPlay();
-        //radio browser station below
     } else {
-        if (radioManager.getMediaPlayer()->isPlaying()) {
-            stopRadioBrowserStream();
-        } else if (currentRadioPlayingAddress != ""
-                   && radioManager.getMediaPlayer()->isAvailable()) {
-            returnRadioBrowserToPlay();
-        } else if(!country.getIsPlaying() && country.getCurrentIndexPlaying() != -1) {
+        // ===== Radio Browser =====
+
+        if (playbackController.isPlaying()) {
+            playbackController.pause();
+            audioProcessor.getUpdateTimer()->stop();
+        } else if (playbackController.isPaused()) {
+            playbackController.resume();
+            audioProcessor.getUpdateTimer()->start();
+        } else if (!country.getIsPlaying() && country.getCurrentIndexPlaying() != -1) {
             playCountryStream();
         } else if (currentRadioPlayingAddress.isEmpty() && !radioStationsModel->isEmpty()) {
             startRadioBrowserStream();
-        } else if (!radioManager.getMediaPlayer()->isPlaying() && currentRadioPlayingAddress == ""
+        } else if (!playbackController.isPlaying() && currentRadioPlayingAddress != ""
+                   && radioManager.getMediaPlayer()->isAvailable()) {
+            playbackController.resume();
+            audioProcessor.getUpdateTimer()->start();
+        } else if (!playbackController.isPlaying() && currentRadioPlayingAddress.isEmpty()
                    && ui->tableView->currentIndex().row() > 0) {
-            playStream(radioIndexNumber);
-            setIsPlaying(true);
+            playSelectedStation(radioIndexNumber);
         }
 
-        if (currentPlayListPlaying == currentPlaylistIndex) {
+        if (currentPlayListPlaying == currentPlaylistIndex)
             setIndexColor();
-        }
 
         updatePlayPauseIcons();
 
@@ -827,7 +825,6 @@ void RadioList::onPlayPauseButtonCliced()
 
         resetImageIfStopped();
     }
-
 }
 
 bool RadioList::isIceCastTabOpen() {
@@ -871,15 +868,15 @@ void RadioList::returnIceCastStreamToPlay()
 void RadioList::stopRadioBrowserStream()
 {
     radioManager.stopStream();
+    playbackController.setPlaying(false);
     audioProcessor.getUpdateTimer()->stop();
-    setIsPlaying(false);
 }
 
 void RadioList::returnRadioBrowserToPlay()
 {
     radioManager.playStream();
     audioProcessor.getUpdateTimer()->start();
-    setIsPlaying(true);
+    playbackController.setPlaying(true);
 }
 
 void RadioList::playCountryStream()
@@ -887,13 +884,13 @@ void RadioList::playCountryStream()
     radioManager.playStream();
     audioProcessor.getUpdateTimer()->start();
     country.setIsPlaying(true);
-    setIsPlaying(true);
+    playbackController.setPlaying(true);
 }
 
 void RadioList::startRadioBrowserStream()
 {
     currentPlayListPlaying = currentPlaylistIndex;
-    playStream(radioIndexNumber);
+    playSelectedStation(radioIndexNumber);
     radioInfo->loadEndpoint(radioStationsModel->station(radioEnterIndexNumber).station);
     radioInfo->processInfoJsonQuery();
     radioInfo->setDataOnTable();
@@ -904,12 +901,12 @@ void RadioList::startRadioBrowserStream()
     miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
     /***************************************************/
     markIconPlayingStation(newIndex.row());
-    setIsPlaying(true);
     country.setCurrentIndexPlaying(-1);
 }
 
 void RadioList::updatePlayPauseIcons() {
-    QIcon icon(getIsPlaying() ? ":/images/img/pause30.png" : ":/images/img/play30.png");
+    QIcon icon(playbackController.isPlaying() ? ":/images/img/pause30.png"
+                                              : ":/images/img/play30.png");
     ui->playPause->setIcon(icon);
     miniPlayer.getMui()->play->setIcon(icon);
 }
@@ -937,7 +934,7 @@ void RadioList::onNextButtonClicked()
         ++radioIndexNumber;
         clearTableViewColor();
         setIndexColor();
-        playStream(radioIndexNumber);
+        playSelectedStation(radioIndexNumber);
     }
 }
 
@@ -946,7 +943,7 @@ void RadioList::onPrevButtonClicked()
 {
     if (radioManager.getMediaPlayer()->isPlaying() && radioIndexNumber > 0) {
         --radioIndexNumber;
-        playStream(radioIndexNumber);
+        playSelectedStation(radioIndexNumber);
 
         clearTableViewColor();
         setIndexColor();
@@ -964,54 +961,48 @@ void RadioList::clearTableViewColor()
 void RadioList::onStopButtonClicked()
 {
     // TODO when internet connection is lost then stop button is unable to turn off music!!!
-    // It can irritate some users but it is very rare case
-    if (radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected) {
+    if ((playbackController.isPlaying() || playbackController.isPaused())
+        && jsonListProcesor.isConnected) {
         isStopClicked = true;
-        if (radioManager.getMediaPlayer()->isPlaying()) {
-            ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
-            miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
-            radioManager.stopStream();
-            audioProcessor.stop();
-            currentRadioPlayingAddress = "";
-            if (isDarkMode) {
-                ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-                ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
-                miniPlayer.getMui()->radioImage->setPixmap(
-                    QPixmap(RADIO_ICON));
-            } else {
-                ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-                ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
-                miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
-            }
 
-            ui->infoLabel->show();
-            ui->infoData->clear();
-            QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-            ui->tableView->setCurrentIndex(newIndex);
-        } else {
-            ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
-            miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
-            currentRadioPlayingAddress = "";
-            QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-            ui->tableView->setCurrentIndex(newIndex);
-        }
+        ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
+        miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
+
+        playbackController.stop();
+        audioProcessor.stop();
+
+        currentRadioPlayingAddress.clear();
+
+        ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
+        ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
+        miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
+
+        ui->infoLabel->show();
+        ui->infoData->clear();
+
+        QModelIndex newIndex = ui->tableView->model()->index(0, 0);
+        ui->tableView->setCurrentIndex(newIndex);
+
         radioIndexNumber = 0;
+
         clearTableViewColor();
         clearIconLabelColor();
+
         radioInfo->clearInfo();
+
         iceCastXmlData->clearTableViewColor();
         iceCastXmlData->setPlaying(false);
         iceCastXmlData->setCurrentPlayingStation(-1);
-        setIsPlaying(false);
+
         setIsBrowseStationLoaded(false);
+
         if (streamRecorder->getIsRecording()) {
             streamRecorder->stopRecording();
             streamRecorder->setIsRecording(false);
         }
+
         country.clearTableColor();
         country.setCurrentIndexPlaying(-1);
-    } else {
-        return;
     }
 }
 
@@ -1029,11 +1020,11 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 
 void RadioList::addRadioToFavorite()
 {
-    qDebug() << getIsPlaying();
+    qDebug() << playbackController.isPlaying();
 
     if (isIceCastFavoriteMode()) {
         handleIceCastFavorite();
-    } else if (getIsPlaying()) {
+    } else if (playbackController.isPlaying()) {
         handleRadioBrowserFavorite();
     } else if (country.getIsPlaying()) {
         handleCountryFavorite();
@@ -1042,7 +1033,7 @@ void RadioList::addRadioToFavorite()
 
 bool RadioList::isIceCastFavoriteMode() const
 {
-    return !getIsPlaying()
+    return !playbackController.isPlaying()
            && (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying());
 }
 
@@ -1155,7 +1146,7 @@ void RadioList::startStopRecord()
 
 QString RadioList::getCurrentStreamUrl() const
 {
-    if (isPlaying)
+    if (playbackController.isPlaying())
         return currentRadioPlayingAddress;
     if (country.getIsPlaying())
         return country.dtoFavorite.stream;
