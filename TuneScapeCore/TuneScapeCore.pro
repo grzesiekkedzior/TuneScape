@@ -23,6 +23,7 @@ SOURCES += \
     src/Theme.cpp \
     src/TrayIcon.cpp \
     src/audioprocessor.cpp \
+    src/controller/PlaybackController.cpp \
     src/customcolordelegate.cpp \
     src/fft.cpp \
     src/flowlayout.cpp \
@@ -51,6 +52,7 @@ HEADERS += \
     include/IconLoader.h \
     include/M3UHandler.h \
     include/Menu.h \
+    include/PlaybackState.h \
     include/PlaylistEditor.h \
     include/RadioBrowserApi.h \
     include/RadioBrowserPlaylistEditor.h \
@@ -60,6 +62,7 @@ HEADERS += \
     include/TrayIcon.h \
     include/audioprocessor.h \
     include/container.h \
+    include/controller/PlaybackController.h \
     include/customcolordelegate.h \
     include/data/RadioStation.h \
     include/fft.h \
