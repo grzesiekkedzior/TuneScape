@@ -6,11 +6,11 @@ PlaybackController::PlaybackController(QObject *parent)
 
 void PlaybackController::play(const QUrl &streamUrl)
 {
+    audioManager.play(streamUrl);
+
     state.currentStreamUrl = streamUrl.toString();
     state.isPlaying = true;
     state.isPause = false;
-
-    audioManager.play(streamUrl);
 }
 
 void PlaybackController::pause()
@@ -27,4 +27,35 @@ void PlaybackController::stop()
     state.isPlaying = false;
     state.isPause = false;
     state.currentStreamUrl.clear();
+}
+
+void PlaybackController::resume()
+{
+    if (state.currentStreamUrl.isEmpty())
+        return;
+
+    audioManager.playStream();
+
+    state.isPlaying = true;
+    state.isPause = false;
+}
+
+bool PlaybackController::isPlaying() const
+{
+    return state.isPlaying;
+}
+
+bool PlaybackController::isPaused() const
+{
+    return state.isPause;
+}
+
+void PlaybackController::setPlaying(bool playing)
+{
+    state.isPlaying = playing;
+}
+
+void PlaybackController::setPaused(bool paused)
+{
+    state.isPause = paused;
 }

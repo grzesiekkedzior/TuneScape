@@ -1,27 +1,31 @@
 #ifndef PLAYBACKCONTROLLER_H
 #define PLAYBACKCONTROLLER_H
 #include <QObject>
-#include "PlaybackState.h"
-#include "audioprocessor.h"
-#include "container.h"
-#include "radioaudiomanager.h"
+#include "include/PlaybackState.h"
+#include "include/container.h"
+#include "include/radioaudiomanager.h"
 
 class PlaybackController : public QObject
 {
     Q_OBJECT
 public:
     explicit PlaybackController(QObject *parent = nullptr);
-    void play(const QUrl streamUrl);
+    void play(const QUrl &streamUrl);
     void pause();
     void stop();
+    void resume();
+
+    bool isPlaying() const;
+    bool isPaused() const;
+
+    void setPlaying(bool playing);
+    void setPaused(bool paused);
 
 private:
     PlaybackState &state = SingletonContainer::getSingleton().getInstance<PlaybackState>();
 
     RadioAudioManager &audioManager = SingletonContainer::getSingleton()
                                           .getInstance<RadioAudioManager>();
-
-    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
 };
 
 #endif // PLAYBACKCONTROLLER_H
