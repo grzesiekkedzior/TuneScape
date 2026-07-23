@@ -20,7 +20,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     jsonListProcesor.setUi(ui);
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
-    flowLayout = new FlowLayout(ui->iconTiles);
 
     streamRecorder->setUI(ui);
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
@@ -48,15 +47,10 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     connect(ui->record, &QPushButton::clicked, this, &RadioList::startStopRecord);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
-    connect(this,
-            &RadioList::playIconButtonDoubleClicked,
-            this,
-            &RadioList::handleIconPlayButtonDoubleClick);
-    connect(this, &RadioList::allIconsLoaded, this, &RadioList::onAllIconsLoaded);
+
     connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
-    connect(iconLoader, &IconLoader::iconClicked, this, &RadioList::handleIconClick);
 
     //trash header signal
     connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTrashIconCliced);
@@ -70,56 +64,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
     imageManager = new RadioImageManager{ui, &miniPlayer, this};
-}
-
-void RadioList::clearFlowLayout()
-{
-    QLayoutItem *item;
-    while ((item = flowLayout->takeAt(0)) != nullptr) {
-        while (QWidget *widget = item->widget()) {
-            delete widget;
-        }
-        delete item;
-    }
-}
-
-void RadioList::clearAll()
-{
-    progressLoading = 1;
-    clearFlowLayout();
-    iconLoader->clearCache();
-}
-
-void RadioList::clearIconLabelColor()
-{
-    for (QWidget *buttonContainer : iconLoader->getButtonCache()) {
-        if (buttonContainer) {
-            QLabel *label = buttonContainer->findChild<QLabel *>();
-            if (label) {
-                // Reset to normal style here
-                label->setStyleSheet(""); // This will clear any existing style
-            }
-        }
-    }
-    isIconFlowlayoutFull = false;
-}
-
-void RadioList::markIconPlayingStation(int radioNumber)
-{
-    QWidget *buttonContainer = nullptr;
-    QLabel *label = nullptr;
-    clearIconLabelColor();
-    if (radioNumber >= 0 && radioNumber < iconLoader->buttonCount()
-        && flowLayout->count() == radioStationsModel->size()) {
-        buttonContainer = iconLoader->button(radioNumber);
-        label = buttonContainer->findChild<QLabel *>();
-    }
-
-    if (label) {
-        label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
-    } else {
-        qDebug() << "All icons are not loaded";
-    }
 }
 
 void RadioList::setRawDarkRadioImage()
@@ -168,10 +112,6 @@ void RadioList::setDarkMode()
 {
     isDarkMode = !isDarkMode;
     updateThemeAppearance(isDarkMode);
-
-    loadRadioIconList();
-    if (radioIndexNumber != -1)
-        markIconPlayingStation(radioIndexNumber);
 }
 
 void RadioList::isDark() {}
@@ -192,17 +132,6 @@ void RadioList::setMp3FileName()
     }
     extension.replace("+", "");
     streamRecorder->setFileName(title, extension);
-}
-
-//main function
-void RadioList::onAllIconsLoaded()
-{
-    if (!shouldUpdateIcon())
-        return;
-
-    if (playbackController.isPlaying()) {
-        handleIconUpdate();
-    }
 }
 
 int RadioList::getCurrentStationIndex() const
@@ -229,29 +158,6 @@ Ui::MainWindow *RadioList::getUi() const
 {
     return ui;
 }
-
-bool RadioList::shouldUpdateIcon() const
-{
-    bool isSamePlaylist = (currentPlayListPlaying == currentPlaylistIndex);
-    bool isLayoutFull = isIconFlowlayoutFull;
-    bool isNotSearchMode = (treeItem != SEARCH);
-    bool isValidIndex = (radioIndexNumber < iconLoader->buttonCount());
-    return isSamePlaylist && isLayoutFull && isNotSearchMode && isValidIndex;
-}
-
-void RadioList::handleIconUpdate()
-{
-    QWidget *buttonContainer = iconLoader->button(radioIndexNumber);
-    if (buttonContainer) {
-        QLabel *label = buttonContainer->findChild<QLabel *>();
-        if (label) {
-            label->setStyleSheet("background-color: #deffdf; color: black; font-weight: bold;");
-        } else {
-            qWarning() << "Icon label not found";
-        }
-    }
-}
-//end
 
 bool RadioList::getIsStopClicked() const
 {
@@ -371,82 +277,6 @@ void RadioList::setIsDarkMode(bool newIsDarkMode)
     isDarkMode = newIsDarkMode;
 }
 
-void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
-{
-    QModelIndex index = radioStationsModel->index(radioNumber, 0);
-    setRadioImage(index);
-    onTableViewDoubleClicked(index);
-    markIconPlayingStation(radioNumber);
-}
-
-//Main function
-void RadioList::loadRadioIconList()
-{
-    if (!jsonListProcesor.isConnected)
-        return;
-
-    clearAll();
-
-    const int dataSize = radioStationsModel->size();
-
-    qDebug() << "datasize:" << dataSize;
-
-    ui->progressBar->setRange(0, dataSize);
-
-    if (dataSize > 0)
-        ui->progressBar->show();
-
-    iconLoader->resizeCache(dataSize);
-
-    for (int row = 0; row < dataSize; ++row) {
-        addEmptyIconButton(row);
-    }
-
-    iconLoader->loadRadioIcons(radioStationsModel->stations());
-}
-
-void RadioList::handleIconClick(int row)
-{
-    static QTimer timer;             // Timer to detect double-click
-    static int lastClickedRow = -1;  // Track last clicked row
-    static bool singleClick = false; // Track single click
-
-    if (singleClick && lastClickedRow == row) {
-        // Double-click detected
-        emit playIconButtonDoubleClicked(row);
-        singleClick = false;
-        timer.stop(); // Stop the timer
-    } else {
-        singleClick = true;
-        lastClickedRow = row;
-        // Start the timer to detect double-click
-        timer.singleShot(QApplication::doubleClickInterval(), [=]() { singleClick = false; });
-    }
-}
-
-//main function
-void RadioList::addEmptyIconButton(int row)
-{
-    iconLoader->addButton(row, radioStationsModel->station(row).station);
-    updateLayoutOrProgress();
-}
-
-void RadioList::updateLayoutOrProgress()
-{
-    if (!iconLoader->containsEmptyButton()) {
-        for (QWidget *button : iconLoader->getButtonCache()) {
-            flowLayout->addWidget(button);
-        }
-        isIconFlowlayoutFull = true;
-        ui->progressBar->hide();
-        emit allIconsLoaded();
-    } else {
-        ++progressLoading;
-        ui->progressBar->setValue(progressLoading);
-    }
-}
-//end
-
 void RadioList::updateFavoriteColumnLayout()
 {
     header->setSectionResizeMode(QHeaderView::Interactive);
@@ -528,14 +358,6 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
     if (checkItem(item, LIBRARY_TREE))
         return;
 
-    const int tabIndex = ui->tabRadioListWidget->currentIndex();
-
-    if ((!checkItem(item, "Discover") && tabIndex == 2)
-        || tabIndex == 3) {
-        resetTreeItemIfSearch();
-        ui->tabRadioListWidget->setCurrentIndex(0);
-    }
-
     if (checkItem(item, "Top"))
         switchToPlaylist(Stations::TOP);
     else if (checkItem(item, "Popular"))
@@ -544,13 +366,8 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         switchToPlaylist(Stations::NEW);
     else if (checkItem(item, "Favorite"))
         switchToPlaylist(Stations::FAVORITE);
-    // else if (checkItem(item, "Discover"))
-    //     switchToIceCastTab(false);
-    // else if (checkItem(item, "Ice-Favorite"))
-    //     switchToIceCastTab(true);
     if (jsonListProcesor.checkInternetConnection()) {
         loadedStationsCount = 0;
-        loadRadioIconList();
     }
 
     updateStationColoring();
@@ -679,7 +496,6 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         country.setIsPlaying(false);
         country.setCurrentIndexPlaying(-1);
         setIndexColor();
-        markIconPlayingStation(index.row());
 
         setIsBrowseStationLoaded(true);
         if (playbackController.isPlaying()) {
@@ -781,7 +597,6 @@ void RadioList::startRadioBrowserStream()
     /***************************************************/
     miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
     /***************************************************/
-    markIconPlayingStation(newIndex.row());
     country.setCurrentIndexPlaying(-1);
 }
 
@@ -866,7 +681,6 @@ void RadioList::onStopButtonClicked()
         radioIndexNumber = 0;
 
         clearTableViewColor();
-        clearIconLabelColor();
 
         radioInfo->clearInfo();
 
@@ -1011,13 +825,11 @@ void RadioList::searchStations()
 
     if (jsonListProcesor.checkInternetConnection()) {
         loadedStationsCount = 0;
-        loadRadioIconList();
     }
 
     treeItem = "Search";
     item = "Search";
     ui->tabRadioListWidget->setCurrentIndex(0);
 
-    clearIconLabelColor();
     clearTableViewColor();
 }

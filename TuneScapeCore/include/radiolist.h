@@ -12,7 +12,6 @@
 #include "include/IconLoader.h"
 #include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
-#include "include/flowlayout.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
@@ -45,7 +44,6 @@ public:
     void startSearchTimer();
     void onInternetConnectionRestored();
 
-    void clearIconLabelColor();
     void clearTableViewColor();
     void checkIsRadioOnPlaylist(const QString &station);
     bool isAddressExists(const QString address, const QString playlist);
@@ -94,7 +92,6 @@ public:
     QScopedPointer<PlaylistEditor> playlistEditor;
 
     // Add and remove the playlists!!!
-    void loadRadioIconList();
     void updateStationColoring();
 
     Ui::MainWindow *getUi() const;
@@ -131,7 +128,6 @@ private slots:
     void onTableViewClicked(const QModelIndex &index);
     void tableViewActivated(const QModelIndex &index);
     void addRadioToFavorite();
-    void onAllIconsLoaded();
 
 private:
     int loadedStationsCount = -1;
@@ -149,7 +145,6 @@ private:
         new StreamRecorder);
     QTimer searchTimer;
     RadioInfo *radioInfo;
-    FlowLayout *flowLayout = nullptr;
 
     QString currentRadioPlayingAddress = "";
     QString item = "";
@@ -221,8 +216,6 @@ private:
     void clearRadioInfoLabel();
     void setVectorsOfStation(const QString &endpoint, Stations station);
     void setTopListOnStart();
-
-    void clearFlowLayout();
     void setImageButton(int row);
     void loadAndSetImageForItem(const QString &imageUrl,
                                 QList<QStandardItem *> &rowItems,
@@ -238,9 +231,6 @@ private:
     QPushButton *createButton(int row);
     void addToButtonCache();
 
-    void clearAll();
-    void handleIconPlayButtonDoubleClick(int radioNumber);
-    void markIconPlayingStation(int radioNumber);
     void clearInfoData(int stationIndex);
     void setDarkMode();
     void isDark();
@@ -249,13 +239,9 @@ private:
     void showMiniplayer();
     void maximizeWindow();
     QString getCurrentStreamUrl() const;
-    bool shouldUpdateIcon() const;
-    void handleIconUpdate();
     void updateThemeAppearance(bool darkMode);
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
-    void handleIconClick(int row);
-    void updateLayoutOrProgress();
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
     void switchToPlaylist(Stations station);
     void loadRadioIconsFromNetwork(int dataSize);

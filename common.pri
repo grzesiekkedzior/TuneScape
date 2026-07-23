@@ -4,7 +4,6 @@ HEADERS += $$PWD/TuneScapeCore/include/Menu.h \
            $$PWD/TuneScapeCore/include/Theme.h \
            $$PWD/TuneScapeCore/include/TrayIcon.h \
            $$PWD/TuneScapeCore/include/customcolordelegate.h \
-           $$PWD/TuneScapeCore/include/flowlayout.h \
            $$PWD/TuneScapeCore/include/radioinfo.h \
            $$PWD/TuneScapeCore/include/streamReader.h \
            $$PWD/TuneScapeCore/include/jsonlistprocessor.h \
@@ -40,7 +39,6 @@ SOURCES += $$PWD/TuneScapeCore/src/Menu.cpp \
            $$PWD/TuneScapeCore/src/Theme.cpp \
            $$PWD/TuneScapeCore/src/TrayIcon.cpp \
            $$PWD/TuneScapeCore/src/customcolordelegate.cpp \
-           $$PWD/TuneScapeCore/src/flowlayout.cpp \
            $$PWD/TuneScapeCore/src/radioinfo.cpp \
            $$PWD/TuneScapeCore/src/streamReader.cpp \
            $$PWD/TuneScapeCore/src/jsonlistprocessor.cpp \
