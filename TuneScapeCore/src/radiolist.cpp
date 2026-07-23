@@ -23,11 +23,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     flowLayout = new FlowLayout(ui->iconTiles);
 
     streamRecorder->setUI(ui);
-    iceCastXmlData = new IceCastXmlData(ui, favoriteManager);
-    iceCastXmlData->setJsonListProcessor(jsonListProcesor);
-    iceCastXmlData->setRadioList(this);
-    iceCastXmlData->setRadioInfo(radioInfo);
-    iceCastXmlData->makeShareStreamRecorder(streamRecorder);
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
 
     playlistEditor.reset(new RadioBrowserPlaylistEditor(*this, favoriteManager));
@@ -160,12 +155,9 @@ void RadioList::setRawRadioImage()
 void RadioList::updateThemeAppearance(bool darkMode)
 {
     clearTableViewColor();
-    iceCastXmlData->clearTableViewColor();
 
     if (!isStopClicked)
         setIndexColor();
-
-    iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
 
     if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
         darkMode ? setRawDarkRadioImage() : setRawRadioImage();
@@ -195,15 +187,6 @@ void RadioList::setMp3FileName()
     } else if (country.getIsPlaying()) {
         title = country.dtoFavorite.station;
         extension = ui->tableWidget->item(5, 1)->text().toLower();
-    } else if (iceCastXmlData->getPlaying() || iceCastXmlData->getIsFavoritePlaying()) {
-        int stationIndex = iceCastXmlData->getCurrentPlayingStation();
-        title = ui->icecastTable->item(stationIndex, 0)
-                    ->text();
-        extension = ui->icecastTable
-                        ->item(stationIndex, 2)
-                        ->text()
-                        .toLower();
-        extension.remove(0, 6);
     } else {
         return;
     }
@@ -307,11 +290,6 @@ void RadioList::setFavoriteLibrary()
     } else {
         qDebug() << "Error";
     }
-}
-
-IceCastXmlData *RadioList::getIceCastXmlData() const
-{
-    return iceCastXmlData;
 }
 
 bool RadioList::getIsSearchTablelDoubleCliced() const
@@ -525,12 +503,6 @@ void RadioList::loadAllData()
     setVectorsOfStation(JSON_ENDPOINT_POPULAR, Stations::POPULAR);
     setVectorsOfStation(JSON_ENDPOINT_NEW, Stations::NEW);
 
-    if (!iceCastXmlData->getIsStationsLoaded()) {
-        iceCastXmlData->loadXmlAsync();
-        clearTableViewColor();
-        iceCastXmlData->clearTableViewColor();
-    }
-
     setFavoriteStatons();
     if (!isDarkMode) {
     }
@@ -572,10 +544,10 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         switchToPlaylist(Stations::NEW);
     else if (checkItem(item, "Favorite"))
         switchToPlaylist(Stations::FAVORITE);
-    else if (checkItem(item, "Discover"))
-        switchToIceCastTab(false);
-    else if (checkItem(item, "Ice-Favorite"))
-        switchToIceCastTab(true);
+    // else if (checkItem(item, "Discover"))
+    //     switchToIceCastTab(false);
+    // else if (checkItem(item, "Ice-Favorite"))
+    //     switchToIceCastTab(true);
     if (jsonListProcesor.checkInternetConnection()) {
         loadedStationsCount = 0;
         loadRadioIconList();
@@ -595,17 +567,6 @@ void RadioList::switchToPlaylist(Stations station)
     resetTreeItemIfSearch();
     radioStationsModel->setStations(allStations[station]);
     currentPlaylistIndex = station;
-}
-
-void RadioList::switchToIceCastTab(bool favorite)
-{
-    resetTreeItemIfSearch();
-    ui->tabRadioListWidget->setCurrentIndex(2);
-    iceCastXmlData->setIsFavoriteOnTreeCliced(favorite);
-    if (favorite)
-        iceCastXmlData->loadFavoriteIceCastStations();
-    else
-        iceCastXmlData->loadDiscoveryStations();
 }
 
 void RadioList::updateStationColoring()
@@ -644,7 +605,6 @@ void RadioList::onInternetConnectionRestored()
     clearTableViewColor();
 
     ui->treeView->clearSelection();
-    iceCastXmlData->clearTableViewColor();
     setIndexColor();
     loadAllData();
     if (getMainWindow()->isHidden())
@@ -715,7 +675,6 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         // change bookmark
         playSelectedStation(radioIndexNumber);
         clearTableViewColor();
-        iceCastXmlData->clearTableViewColor();
         country.clearTableColor();
         country.setIsPlaying(false);
         country.setCurrentIndexPlaying(-1);
@@ -737,7 +696,6 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         }
         radioIndexNumber = index.row();
         setIndexColor();
-        iceCastXmlData->setPlaying(false);
     }
 
     if (streamRecorder->getIsRecording()) {
@@ -760,83 +718,35 @@ void RadioList::onPlayPauseButtonCliced()
     if (country.getIsPlaying())
         country.setIsPlaying(false);
 
-    if (isIceCastTabOpen()) {
-        startFirstIceCastStation();
-    } else if (iceCastXmlData->getPlaying() && !getIsBrowseStationLoaded()) {
-        pauseIceCastStream();
-    } else if (isIceCastReadyToPlay()) {
-        returnIceCastStreamToPlay();
-    } else {
-        // ===== Radio Browser =====
+    if (playbackController.isPlaying()) {
+        playbackController.pause();
+        audioProcessor.getUpdateTimer()->stop();
 
-        if (playbackController.isPlaying()) {
-            playbackController.pause();
-            audioProcessor.getUpdateTimer()->stop();
-        } else if (playbackController.isPaused()) {
-            playbackController.resume();
-            audioProcessor.getUpdateTimer()->start();
-        } else if (!country.getIsPlaying() && country.getCurrentIndexPlaying() != -1) {
-            playCountryStream();
-        } else if (currentRadioPlayingAddress.isEmpty() && !radioStationsModel->isEmpty()) {
-            startRadioBrowserStream();
-        } else if (!playbackController.isPlaying() && currentRadioPlayingAddress != ""
-                   && playbackController.isAvailable()) {
-            playbackController.resume();
-            audioProcessor.getUpdateTimer()->start();
-        } else if (!playbackController.isPlaying() && currentRadioPlayingAddress.isEmpty()
-                   && ui->tableView->currentIndex().row() > 0) {
-            playSelectedStation(radioIndexNumber);
-        }
+    } else if (playbackController.isPaused()) {
+        playbackController.resume();
+        audioProcessor.getUpdateTimer()->start();
 
-        if (currentPlayListPlaying == currentPlaylistIndex)
-            setIndexColor();
+    } else if (country.getCurrentIndexPlaying() != -1) {
+        playCountryStream();
 
-        updatePlayPauseIcons();
+    } else if (currentRadioPlayingAddress.isEmpty() && !radioStationsModel->isEmpty()) {
+        startRadioBrowserStream();
 
-        setIsBrowseStationLoaded(true);
+    } else if (playbackController.isAvailable()) {
+        playbackController.resume();
+        audioProcessor.getUpdateTimer()->start();
 
-        switchToDefaultTabIfNoCountryStationPlaying();
-
-        resetImageIfStopped();
+    } else if (ui->tableView->currentIndex().isValid()) {
+        playSelectedStation(radioIndexNumber);
     }
-}
 
-bool RadioList::isIceCastTabOpen() {
-    return ui->tabRadioListWidget->currentIndex() == 2 && !iceCastXmlData->getPlaying()
-           && iceCastXmlData->getCurrentPlayingStation() == -1 && !getIsBrowseStationLoaded()
-           && iceCastXmlData->getIsDownloadFinish();
-}
+    if (currentPlayListPlaying == currentPlaylistIndex)
+        setIndexColor();
 
-bool RadioList::isIceCastReadyToPlay() {
-    return !iceCastXmlData->getPlaying() && iceCastXmlData->getCurrentPlayingStation() != -1
-           && !getIsBrowseStationLoaded();
-}
-
-void RadioList::startFirstIceCastStation()
-{
-    qDebug() << "1";
-    QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-    iceCastXmlData->setPlaying(true);
-    iceCastXmlData->playStreamOnStart(newIndex);
-}
-
-
-void RadioList::pauseIceCastStream()
-{
-    qDebug() << "2";
-    iceCastXmlData->setPlaying(false);
-    iceCastXmlData->playPauseIcon();
-    playbackController.pause();
-    audioProcessor.getUpdateTimer()->stop();
-}
-
-void RadioList::returnIceCastStreamToPlay()
-{
-    qDebug() << "3";
-    playbackController.resume();
-    audioProcessor.getUpdateTimer()->start();
-    iceCastXmlData->setPlaying(true);
-    iceCastXmlData->playPauseIcon();
+    updatePlayPauseIcons();
+    setIsBrowseStationLoaded(true);
+    switchToDefaultTabIfNoCountryStationPlaying();
+    resetImageIfStopped();
 }
 
 void RadioList::stopRadioBrowserStream()
@@ -960,10 +870,6 @@ void RadioList::onStopButtonClicked()
 
         radioInfo->clearInfo();
 
-        iceCastXmlData->clearTableViewColor();
-        iceCastXmlData->setPlaying(false);
-        iceCastXmlData->setCurrentPlayingStation(-1);
-
         setIsBrowseStationLoaded(false);
 
         if (streamRecorder->getIsRecording()) {
@@ -990,53 +896,11 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 
 void RadioList::addRadioToFavorite()
 {
-    qDebug() << playbackController.isPlaying();
-
-    if (isIceCastFavoriteMode()) {
-        handleIceCastFavorite();
-    } else if (playbackController.isPlaying()) {
+    if (playbackController.isPlaying()) {
         handleRadioBrowserFavorite();
     } else if (country.getIsPlaying()) {
         handleCountryFavorite();
     }
-}
-
-bool RadioList::isIceCastFavoriteMode() const
-{
-    return !playbackController.isPlaying()
-           && (ui->tabRadioListWidget->currentIndex() == 2 || iceCastXmlData->getPlaying());
-}
-
-void RadioList::handleIceCastFavorite()
-{
-    if (!playbackController.isPlaying())
-        return;
-
-    if (iceCastXmlData->getCurrentPlayingStation()
-        >= iceCastXmlData->getIceCastStationTableRows().size())
-        return;
-
-    const IceCastTableRow &stationRow = iceCastXmlData->getIceCastTableRow(
-        iceCastXmlData->getCurrentPlayingStation());
-
-    QString data = "," + stationRow.listen_url + "," + stationRow.station + ",,,";
-
-    bool added = favoriteManager->toggleFavorite(stationRow.listen_url, data, ICECAST_PLAYLIST);
-
-    if (added) {
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-        iceCastXmlData->addToFavoriteStations();
-    } else {
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-    }
-
-    iceCastXmlData->setFavoriteStations();
-    iceCastXmlData->clearTableViewColor();
-
-    if (iceCastXmlData->getIsFavoriteOnTreeCliced())
-        iceCastXmlData->loadFavoriteIceCastStations();
-
-    iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
 }
 
 void RadioList::handleRadioBrowserFavorite()
@@ -1120,9 +984,6 @@ QString RadioList::getCurrentStreamUrl() const
         return currentRadioPlayingAddress;
     if (country.getIsPlaying())
         return country.dtoFavorite.stream;
-    return iceCastXmlData->getIceCastStationTableRows()
-        .at(iceCastXmlData->getCurrentPlayingStation())
-        .listen_url;
 }
 
 void RadioList::setVectorsOfStation(const QString &endpoint, Stations station)

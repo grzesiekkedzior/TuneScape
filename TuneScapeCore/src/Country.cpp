@@ -174,7 +174,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         playbackController.play(url);
         audioProcessor.start(url);
 
-        radioList->getIceCastXmlData()->clearTableViewColor();
         setIndexColor(index);
         ui->infoData->clear();
         radioList->getRadioInfo()->clearInfo();
@@ -203,7 +202,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         radioList->setIsStopClicked(false);
         radioList->getSongTitle(url);
         //check favourite todo
-        radioList->getIceCastXmlData()->setPlaying(false);
         if (radioList->getStreamRecorder()->getIsRecording()) {
             radioList->getStreamRecorder()->stopRecording();
             radioList->getStreamRecorder()->setIsRecording(false);

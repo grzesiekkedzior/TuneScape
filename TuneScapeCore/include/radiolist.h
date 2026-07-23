@@ -9,7 +9,6 @@
 #include "audioprocessor.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
-#include "icecastxmldata.h"
 #include "include/IconLoader.h"
 #include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
@@ -81,8 +80,6 @@ public:
     bool getIsSearchTablelDoubleCliced() const;
     void setIsSearchTablelDoubleCliced(bool newIsSearchTablelDoubleCliced);
 
-    IceCastXmlData *getIceCastXmlData() const;
-
     QMainWindow *getMainWindow() const;
     void setMainWindow(QMainWindow *newMainWindow);
     void setFavoriteLibrary();
@@ -150,7 +147,6 @@ private:
     StreamReader streamReader;
     QSharedPointer<StreamRecorder> streamRecorder = QSharedPointer<StreamRecorder>::create(
         new StreamRecorder);
-    IceCastXmlData *iceCastXmlData = nullptr;
     QTimer searchTimer;
     RadioInfo *radioInfo;
     FlowLayout *flowLayout = nullptr;
@@ -262,15 +258,9 @@ private:
     void updateLayoutOrProgress();
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
     void switchToPlaylist(Stations station);
-    void switchToIceCastTab(bool favorite);
     void loadRadioIconsFromNetwork(int dataSize);
     void clearRadioDataVectors();
     void prepareRestoredConnectionMessage();
-    bool isIceCastTabOpen();
-    bool isIceCastReadyToPlay();
-    void startFirstIceCastStation();
-    void pauseIceCastStream();
-    void returnIceCastStreamToPlay();
     void stopRadioBrowserStream();
     void returnRadioBrowserToPlay();
     void playCountryStream();

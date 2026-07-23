@@ -43,7 +43,6 @@ MainWindow::MainWindow(QWidget *parent)
             &TrackView::setTrack);
     connect(ui->tableView, &QTableView::doubleClicked, trackView, &TrackView::clear);
     connect(ui->stop, &QPushButton::clicked, trackView, &TrackView::clear);
-    connect(ui->icecastTable, &QTableView::doubleClicked, trackView, &TrackView::clear);
     connect(ui->tableOfCoutries, &QTableView::doubleClicked, trackView, &TrackView::clear);
     connect(radioList, &RadioList::playIconButtonDoubleClicked, trackView, &TrackView::clear);
 }
@@ -81,8 +80,7 @@ void MainWindow::start()
     trayIcon->setRadioList(radioList);
     trayIcon->loadTrayLists();
     // Very very weird
-    radioList->getIceCastXmlData()->setTryIcon(trayIcon);
-    appMenu = new Menu(ui, radioList, radioList->getIceCastXmlData());
+    appMenu = new Menu(ui, radioList);
     country.setData(ui, radioList);
     country.load();
     country.setFavoriteManager(favoriteManager);
