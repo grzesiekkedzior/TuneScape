@@ -67,8 +67,8 @@ private:
 
     RadioTable radioTable;
     RadioPlaylistName radioPlaylist;
-
-    RadioAudioManager *radioAudioManager = nullptr;
+    PlaybackController &playbackController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlaybackController>();
     RadioList *radioList = nullptr;
     QAction *playPauseAction = nullptr;
     QAction *exitAction = nullptr;

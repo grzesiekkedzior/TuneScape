@@ -78,7 +78,6 @@ void MainWindow::start()
     radioList->loadAllData();
     radioList->setMainWindow(this);
     trayIcon = new TrayIcon(ui, *this);
-    trayIcon->setRadioAudioManager(&radioList->getRadioManager());
     trayIcon->setRadioList(radioList);
     trayIcon->loadTrayLists();
     // Very very weird

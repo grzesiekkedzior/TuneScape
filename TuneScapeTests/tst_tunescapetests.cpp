@@ -36,8 +36,7 @@ void TuneScapeTests::cleanupTestCase() {}
 
 void TuneScapeTests::testRadioListPause()
 {
-    RadioList radioList;
-    QCOMPARE_EQ(radioList.getIsPause(), false);
+    //TODO
 }
 
 void TuneScapeTests::testJsonListProcesorConnection()

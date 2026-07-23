@@ -32,6 +32,7 @@ void IceCastXmlData::loadXmlData()
         return;
     qDebug() << "Hello Ice-Cast";
     QUrl url(iceCastUrl);
+    qDebug() << "IceCast URL:" << iceCastUrl;
     QNetworkAccessManager manager;
     QNetworkRequest request(url);
     QNetworkReply *reply = manager.get(request);
@@ -71,7 +72,12 @@ void IceCastXmlData::loadXmlData()
         return;
     }
 
-    QXmlStreamReader xml(reply->readAll());
+    QByteArray data = reply->readAll();
+
+    qDebug() << "Bytes:" << data.size();
+    qDebug().noquote() << QString::fromUtf8(data.left(500));
+
+    QXmlStreamReader xml(data);
 
     while (!xml.atEnd()) {
         IceCastTableRow icast;
@@ -101,6 +107,7 @@ void IceCastXmlData::loadXmlData()
             discoveryStations.push_back(icast);
         }
     }
+    qDebug() << "Discovery:" << discoveryStations.size();
     iceCastStationTableRows = discoveryStations;
     reply->deleteLater();
     setIsDownloadFinish(true);
@@ -122,7 +129,7 @@ void IceCastXmlData::loadFavoriteIceCastStations()
 
     // if (ui->iceCastprogressBar->isVisible())
     //     ui->iceCastprogressBar->hide();
-    if (getIsFavoritePlaying() && !radioList->getIsPlaying()
+    if (getIsFavoritePlaying() && !playbackController.isPlaying()
         && indexPlayingStation.row() < favoriteStations.size() && this->getIsFavoritePlaying())
         setIndexColor(this->indexPlayingStation);
     else {
@@ -142,7 +149,7 @@ void IceCastXmlData::loadDiscoveryStations()
     }
 
     if (ui->iceCastprogressBar->isVisible()) {
-        if (!getIsFavoritePlaying() && !radioList->getIsPlaying())
+        if (!getIsFavoritePlaying() && !playbackController.isPlaying())
             setIndexColor(this->indexPlayingStation);
         else {
             if (customColor) {
@@ -155,6 +162,7 @@ void IceCastXmlData::loadDiscoveryStations()
 
 void IceCastXmlData::loadXmlToTable()
 {
+    qDebug() << "loadXmlToTable rows:" << iceCastStationTableRows.size();
     ui->icecastTable->clearContents();
     ui->icecastTable->setRowCount(0);
     for (const auto &row : iceCastStationTableRows) {
@@ -271,7 +279,7 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
 
         setCurrentPlayingStation(index.row());
         indexPlayingStation = index;
-        radioAudioManager->play(url);
+        playbackController.play(url);
         audioProcessor.start(url);
         setIndexColor(index);
         radioList->clearTableViewColor();
@@ -294,7 +302,6 @@ void IceCastXmlData::onDoubleListClicked(const QModelIndex &index)
         radioList->getSongTitle(url);
         checkIsRadioOnPlaylist();
         setPlaying(true);
-        radioList->setIsPlaying(false);
         if (streamRecorder->getIsRecording()) {
             streamRecorder->stopRecording();
             streamRecorder->setIsRecording(false);

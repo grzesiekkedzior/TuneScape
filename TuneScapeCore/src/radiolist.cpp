@@ -25,7 +25,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     streamRecorder->setUI(ui);
     iceCastXmlData = new IceCastXmlData(ui, favoriteManager);
     iceCastXmlData->setJsonListProcessor(jsonListProcesor);
-    iceCastXmlData->setRadioAudioManager(radioManager);
     iceCastXmlData->setRadioList(this);
     iceCastXmlData->setRadioInfo(radioInfo);
     iceCastXmlData->makeShareStreamRecorder(streamRecorder);
@@ -72,7 +71,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
     audioProcessor.setUi(ui);
-    audioProcessor.setPlayer(radioManager.getMediaPlayer());
+    audioProcessor.setPlayer(playbackController.mediaPlayer());
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
     imageManager = new RadioImageManager{ui, &miniPlayer, this};
@@ -168,7 +167,7 @@ void RadioList::updateThemeAppearance(bool darkMode)
 
     iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
 
-    if (!radioManager.getMediaPlayer()->isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
+    if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
         darkMode ? setRawDarkRadioImage() : setRawRadioImage();
     }
 }
@@ -379,16 +378,6 @@ void RadioList::setIsBrowseStationLoaded(bool newIsBrowseStationLoaded)
     isBrowseStationLoaded = newIsBrowseStationLoaded;
 }
 
-bool RadioList::getIsPause() const
-{
-    return isPause;
-}
-
-void RadioList::setIsPause(bool newIsPause)
-{
-    isPause = newIsPause;
-}
-
 QSharedPointer<StreamRecorder> RadioList::getStreamRecorder() const
 {
     return streamRecorder;
@@ -402,21 +391,6 @@ bool RadioList::getIsDarkMode() const
 void RadioList::setIsDarkMode(bool newIsDarkMode)
 {
     isDarkMode = newIsDarkMode;
-}
-
-RadioAudioManager &RadioList::getRadioManager()
-{
-    return radioManager;
-}
-
-bool RadioList::getIsPlaying() const
-{
-    return isPlaying;
-}
-
-void RadioList::setIsPlaying(bool newIsPlaying)
-{
-    isPlaying = newIsPlaying;
 }
 
 void RadioList::handleIconPlayButtonDoubleClick(int radioNumber)
@@ -712,7 +686,7 @@ void RadioList::setIndexColor()
 
 void RadioList::sliderMoved(int move)
 {
-    radioManager.setVolume(move);
+    playbackController.setVolume(move);
     if (move == 0)
         ui->volume->setIcon(QIcon(":/images/img/audiostop.png"));
     if (move > 0 && move < 5)
@@ -806,7 +780,7 @@ void RadioList::onPlayPauseButtonCliced()
         } else if (currentRadioPlayingAddress.isEmpty() && !radioStationsModel->isEmpty()) {
             startRadioBrowserStream();
         } else if (!playbackController.isPlaying() && currentRadioPlayingAddress != ""
-                   && radioManager.getMediaPlayer()->isAvailable()) {
+                   && playbackController.isAvailable()) {
             playbackController.resume();
             audioProcessor.getUpdateTimer()->start();
         } else if (!playbackController.isPlaying() && currentRadioPlayingAddress.isEmpty()
@@ -852,14 +826,14 @@ void RadioList::pauseIceCastStream()
     qDebug() << "2";
     iceCastXmlData->setPlaying(false);
     iceCastXmlData->playPauseIcon();
-    radioManager.stopStream();
+    playbackController.pause();
     audioProcessor.getUpdateTimer()->stop();
 }
 
 void RadioList::returnIceCastStreamToPlay()
 {
     qDebug() << "3";
-    radioManager.playStream();
+    playbackController.resume();
     audioProcessor.getUpdateTimer()->start();
     iceCastXmlData->setPlaying(true);
     iceCastXmlData->playPauseIcon();
@@ -867,24 +841,21 @@ void RadioList::returnIceCastStreamToPlay()
 
 void RadioList::stopRadioBrowserStream()
 {
-    radioManager.stopStream();
-    playbackController.setPlaying(false);
+    playbackController.stop();
     audioProcessor.getUpdateTimer()->stop();
 }
 
 void RadioList::returnRadioBrowserToPlay()
 {
-    radioManager.playStream();
+    playbackController.resume();
     audioProcessor.getUpdateTimer()->start();
-    playbackController.setPlaying(true);
 }
 
 void RadioList::playCountryStream()
 {
-    radioManager.playStream();
+    playbackController.resume();
     audioProcessor.getUpdateTimer()->start();
     country.setIsPlaying(true);
-    playbackController.setPlaying(true);
 }
 
 void RadioList::startRadioBrowserStream()
@@ -929,8 +900,7 @@ void RadioList::resetImageIfStopped()
 // Not use for now
 void RadioList::onNextButtonClicked()
 {
-    if (radioManager.getMediaPlayer()->isPlaying()
-        && radioIndexNumber < radioStationsModel->size() - 1) {
+    if (playbackController.isPlaying() && radioIndexNumber < radioStationsModel->size() - 1) {
         ++radioIndexNumber;
         clearTableViewColor();
         setIndexColor();
@@ -941,7 +911,7 @@ void RadioList::onNextButtonClicked()
 // Not use for now
 void RadioList::onPrevButtonClicked()
 {
-    if (radioManager.getMediaPlayer()->isPlaying() && radioIndexNumber > 0) {
+    if (playbackController.isPlaying() && radioIndexNumber > 0) {
         --radioIndexNumber;
         playSelectedStation(radioIndexNumber);
 
@@ -1039,7 +1009,7 @@ bool RadioList::isIceCastFavoriteMode() const
 
 void RadioList::handleIceCastFavorite()
 {
-    if (!radioManager.getMediaPlayer()->isPlaying())
+    if (!playbackController.isPlaying())
         return;
 
     if (iceCastXmlData->getCurrentPlayingStation()
@@ -1071,7 +1041,7 @@ void RadioList::handleIceCastFavorite()
 
 void RadioList::handleRadioBrowserFavorite()
 {
-    if (!radioManager.getMediaPlayer()->isPlaying())
+    if (!playbackController.isPlaying())
         return;
 
     QString data = currentPlayingStation.iconUrl + "," + currentPlayingStation.streamUrl + ","
@@ -1096,7 +1066,7 @@ void RadioList::updateFavoriteIcon(bool isFavorite)
 
 void RadioList::handleCountryFavorite()
 {
-    if (!radioManager.getMediaPlayer()->isPlaying())
+    if (!playbackController.isPlaying())
         return;
 
     QString data = country.dtoFavorite.icon + "," + country.dtoFavorite.stream + ","
@@ -1131,7 +1101,7 @@ void RadioList::handleDataReceived(const QString &data)
 
 void RadioList::startStopRecord()
 {
-    if (!(radioManager.getMediaPlayer()->isPlaying() && jsonListProcesor.isConnected))
+    if (!(playbackController.isPlaying() && jsonListProcesor.isConnected))
         return;
 
     if (!streamRecorder->getIsRecording()) {

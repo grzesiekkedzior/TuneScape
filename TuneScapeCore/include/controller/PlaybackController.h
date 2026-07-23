@@ -21,6 +21,10 @@ public:
     void setPlaying(bool playing);
     void setPaused(bool paused);
 
+    void setVolume(int volume);
+    bool isAvailable() const;
+    QMediaPlayer *mediaPlayer() const;
+
 private:
     PlaybackState &state = SingletonContainer::getSingleton().getInstance<PlaybackState>();
 

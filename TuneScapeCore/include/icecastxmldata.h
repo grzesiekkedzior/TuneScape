@@ -132,6 +132,8 @@ private:
     AudioProcessor& audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer& miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country& country = SingletonContainer::getSingleton().getInstance<Country>();
+    PlaybackController &playbackController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlaybackController>();
 
     const QString RADIO_ICON = ":/images/img/radio96x96.png";
     FavoriteManager *favoriteManager = nullptr;
