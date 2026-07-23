@@ -4,10 +4,9 @@
 #include <QMenu>
 #include <QMessageBox>
 
-Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlData)
+Menu::Menu(Ui::MainWindow *ui, RadioList *radioList)
     : ui(ui)
     , radioList(radioList)
-    , iceCastXmlData(iceCastXmlData)
 
 {
     mainMenu = new QMenu("Menu");
@@ -21,16 +20,10 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     exportRadioBrowser->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     exportRadioBrowserM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
 
-    exportIceCastRadio = new QAction("IceCast");
-    exportIceCastRadioM3U = new QAction("IceCast-M3U");
-    exportIceCastRadio->setIcon(QIcon(":/images/img/playlist-27-32.png"));
-    exportIceCastRadioM3U->setIcon(QIcon(":/images/img/playlist-27-32.png"));
     mainMenu->addAction(importPls);
     mainMenu->addMenu(exportPls);
     exportPls->addAction(exportRadioBrowser);
     exportPls->addAction(exportRadioBrowserM3U);
-    exportPls->addAction(exportIceCastRadio);
-    exportPls->addAction(exportIceCastRadioM3U);
 
     ui->menuButton->setMenu(mainMenu);
     ui->menuButton->setPopupMode(QToolButton::InstantPopup);
@@ -38,8 +31,6 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, IceCastXmlData *iceCastXmlD
     connect(importPls, &QAction::triggered, this, &Menu::importPlaylists);
     connect(exportRadioBrowser, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylist);
     connect(exportRadioBrowserM3U, &QAction::triggered, this, &Menu::exportRadioBrowserPlaylistM3U);
-    connect(exportIceCastRadio, &QAction::triggered, this, &Menu::exortIceCastPlaylist);
-    connect(exportIceCastRadioM3U, &QAction::triggered, this, &Menu::exportIceCastPlaylistM3U);
 }
 
 void Menu::importPlaylists()
@@ -53,11 +44,9 @@ void Menu::importPlaylists()
 
     if (fileName.contains(RADIO_BROWSER)) {
         playlist = RADIO_BROWSER;
-    } else if (fileName.contains(ICE_CAST)) {
-        playlist = ICE_CAST;
     } else if (fileName.contains(FORMAT_M3U)) {
         playlist = RADIO_BROWSER_M3U;
-    }else {
+    } else {
         QMessageBox::warning(nullptr, "Error", "This is not TuneScape playlist!");
         return;
     }
@@ -102,13 +91,6 @@ void Menu::importPlaylists()
         radioList->setFavoriteStatons();
         radioList->setFavoriteLibrary();
     }
-    if (playlist == ICE_CAST) {
-        if (iceCastXmlData->getIsFavoriteOnTreeCliced())
-            iceCastXmlData->loadFavoriteIceCastStations();
-        iceCastXmlData->setIndexColor(iceCastXmlData->getIndexPlayingStation());
-        iceCastXmlData->setFavoriteStations();
-        iceCastXmlData->loadFavoriteIceCastStations();
-    }
 }
 
 void Menu::exportRadioBrowserPlaylist()
@@ -120,16 +102,6 @@ void Menu::exportRadioBrowserPlaylistM3U()
 {
     generateM3Uplaylist(RADIO_BROWSER, RADIO_BROWSER_M3U);
 
-}
-
-void Menu::exportIceCastPlaylistM3U()
-{
-    generateM3Uplaylist(ICE_CAST, ICE_CAST_M3U);
-}
-
-void Menu::exortIceCastPlaylist()
-{
-    exportRadio(ICE_CAST, TUNSCAPE_FORMAT);
 }
 
 void Menu::exportRadio(const QString &playlist, QString format)
