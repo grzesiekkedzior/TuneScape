@@ -64,6 +64,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
     imageManager = new RadioImageManager{ui, &miniPlayer, this};
+    playerUIController.initialize(ui, &miniPlayer);
 }
 
 void RadioList::setRawDarkRadioImage()
