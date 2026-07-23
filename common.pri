@@ -32,7 +32,8 @@ HEADERS += $$PWD/TuneScapeCore/include/Menu.h \
            $$PWD/TuneScapeCore/include/RadioImageManager.h \
            $$PWD/TuneScapeCore/include/FavoriteManager.h \
            $$PWD/TuneScapeCore/include/PlaybackState.h \
-           $$PWD/TuneScapeCore/include/controller/PlaybackController.h
+           $$PWD/TuneScapeCore/include/controller/PlaybackController.h \
+           $$PWD/TuneScapeCore/include/controller/PlayerUIController.h
 
 SOURCES += $$PWD/TuneScapeCore/src/Menu.cpp \
            $$PWD/TuneScapeCore/src/StreamRecorder.cpp \
@@ -63,7 +64,8 @@ SOURCES += $$PWD/TuneScapeCore/src/Menu.cpp \
            $$PWD/TuneScapeCore/src/IconLoader.cpp \
            $$PWD/TuneScapeCore/src/RadioImageManager.cpp \
            $$PWD/TuneScapeCore/src/FavoriteManager.cpp \
-           $$PWD/TuneScapeCore/src/controller/PlaybackController.cpp
+           $$PWD/TuneScapeCore/src/controller/PlaybackController.cpp \
+           $$PWD/TuneScapeCore/src/controller/PlayerUIController.cpp
 
 
 FORMS += $$PWD/TuneScapeCore/mainwindow.ui \

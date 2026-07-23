@@ -9,6 +9,7 @@
 #include "audioprocessor.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
+#include "controller/PlayerUIController.h"
 #include "include/IconLoader.h"
 #include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
@@ -162,6 +163,8 @@ private:
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
     PlaybackController &playbackController = SingletonContainer::getSingleton()
                                                  .getInstance<PlaybackController>();
+    PlayerUIController &playerUIController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlayerUIController>();
 
     RadioStation currentPlayingStation;
 

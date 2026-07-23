@@ -23,6 +23,7 @@ SOURCES += \
     src/TrayIcon.cpp \
     src/audioprocessor.cpp \
     src/controller/PlaybackController.cpp \
+    src/controller/PlayerUIController.cpp \
     src/customcolordelegate.cpp \
     src/fft.cpp \
     src/miniplayer.cpp \
@@ -60,6 +61,7 @@ HEADERS += \
     include/audioprocessor.h \
     include/container.h \
     include/controller/PlaybackController.h \
+    include/controller/PlayerUIController.h \
     include/customcolordelegate.h \
     include/data/RadioStation.h \
     include/fft.h \
