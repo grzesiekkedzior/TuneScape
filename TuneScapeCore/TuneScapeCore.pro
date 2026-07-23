@@ -25,7 +25,6 @@ SOURCES += \
     src/controller/PlaybackController.cpp \
     src/customcolordelegate.cpp \
     src/fft.cpp \
-    src/flowlayout.cpp \
     src/miniplayer.cpp \
     src/model/RadioStationsModel.cpp \
     src/music_data/clients/CoverArtClient.cpp \
@@ -64,7 +63,6 @@ HEADERS += \
     include/customcolordelegate.h \
     include/data/RadioStation.h \
     include/fft.h \
-    include/flowlayout.h \
     include/miniplayer.h \
     include/model/RadioStationsModel.h \
     include/music_data/clients/CoverArtClient.h \

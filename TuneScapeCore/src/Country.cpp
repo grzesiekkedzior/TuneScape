@@ -178,7 +178,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         ui->infoData->clear();
         radioList->getRadioInfo()->clearInfo();
         radioList->clearTableViewColor();
-        radioList->clearIconLabelColor();
 
         if (radioList->getIsDarkMode()) {
             ui->infoLabel->setPixmap(QPixmap((RADIO_ICON)));

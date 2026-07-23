@@ -47,6 +47,5 @@ bool RadioBrowserPlaylistEditor::updateFile(int radioPosition)
 void RadioBrowserPlaylistEditor::refreshUI()
 {
     radioList.setFavoriteStatons();
-    radioList.loadRadioIconList();
     radioList.updateStationColoring();
 }
