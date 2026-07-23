@@ -52,9 +52,6 @@ public:
     bool isAddressExists(const QString address, const QString playlist);
     void setFavoriteStatons();
 
-    bool getIsPlaying() const;
-    void setIsPlaying(bool newIsPlaying);
-
     bool getIsDarkMode() const;
     void setIsDarkMode(bool newIsDarkMode);
     void onPlayPauseButtonCliced();
@@ -63,9 +60,6 @@ public:
     void addEmptyIconButton(int row);
 
     QSharedPointer<StreamRecorder> getStreamRecorder() const;
-
-    bool getIsPause() const;
-    void setIsPause(bool newIsPause);
 
     bool getIsBrowseStationLoaded() const;
     void setIsBrowseStationLoaded(bool newIsBrowseStationLoaded);
@@ -147,13 +141,12 @@ private:
     int currentPlaylistIndex = -1;
     int currentStationIndex = -1;
     int currentPlayListPlaying = -1;
-    bool isPlaying = false;
     Ui::MainWindow *ui = nullptr;
     QHeaderView *header = nullptr;
     QStringList headers;
     QString treeItem;
     JsonListProcessor jsonListProcesor;
-    RadioAudioManager radioManager;
+
     StreamReader streamReader;
     QSharedPointer<StreamRecorder> streamRecorder = QSharedPointer<StreamRecorder>::create(
         new StreamRecorder);
@@ -191,7 +184,6 @@ private:
     bool isSearching = false;
     bool isIconFlowlayoutFull = false;
     bool isDarkMode = false;
-    bool isPause = false;
     bool isBrowseStationLoaded = false;
     bool isSearchTablelDoubleCliced = false;
 

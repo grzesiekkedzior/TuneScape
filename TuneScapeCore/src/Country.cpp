@@ -171,7 +171,7 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         QString url = streamAddresses[index.row()];
         createDtoFavorites(index, url);
 
-        radioList->getRadioManager().play(url);
+        playbackController.play(url);
         audioProcessor.start(url);
 
         radioList->getIceCastXmlData()->clearTableViewColor();
@@ -203,7 +203,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
         radioList->setIsStopClicked(false);
         radioList->getSongTitle(url);
         //check favourite todo
-        radioList->setIsPlaying(false);
         radioList->getIceCastXmlData()->setPlaying(false);
         if (radioList->getStreamRecorder()->getIsRecording()) {
             radioList->getStreamRecorder()->stopRecording();

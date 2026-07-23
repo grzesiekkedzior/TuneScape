@@ -79,7 +79,7 @@ void TrayIcon::trayIconButtonClicked()
     if (!systemTrayIcon->isVisible())
         systemTrayIcon->show();
     mainWindow->hide();
-    if (radioAudioManager->getMediaPlayer()->isPlaying()) {
+    if (playbackController.isPlaying()) {
         trayMenu->actions().at(0)->setText("Pause");
         trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/pause30.png"));
 
@@ -205,7 +205,7 @@ void TrayIcon::trayMenuClicked(QAction *action)
     if (action == exitAction)
         QApplication::quit();
     if (action == playPauseAction) {
-        if (radioAudioManager->getMediaPlayer()->isPlaying()) {
+        if (playbackController.isPlaying()) {
             trayMenu->actions().at(0)->setText("Pause");
             trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/pause30.png"));
         } else {
@@ -269,14 +269,9 @@ void TrayIcon::setRadioList(RadioList *newRadioList)
         setNotifications(true);
 }
 
-void TrayIcon::setRadioAudioManager(RadioAudioManager *newRadioAudioManager)
-{
-    radioAudioManager = newRadioAudioManager;
-}
-
 void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    if (radioAudioManager->getMediaPlayer()->isPlaying()) {
+    if (playbackController.isPlaying()) {
         trayMenu->actions().at(0)->setText("Pause");
         trayMenu->actions().at(0)->setIcon(QIcon(":/images/img/pause30.png"));
     } else {

@@ -59,3 +59,18 @@ void PlaybackController::setPaused(bool paused)
 {
     state.isPause = paused;
 }
+
+void PlaybackController::setVolume(int volume)
+{
+    audioManager.setVolume(volume);
+}
+
+bool PlaybackController::isAvailable() const
+{
+    return audioManager.getMediaPlayer()->isAvailable();
+}
+
+QMediaPlayer *PlaybackController::mediaPlayer() const
+{
+    return audioManager.getMediaPlayer();
+}

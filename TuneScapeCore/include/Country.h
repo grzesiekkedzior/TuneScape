@@ -4,6 +4,7 @@
 #include "FavoriteManager.h"
 #include "audioprocessor.h"
 #include "container.h"
+#include "controller/PlaybackController.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
 #include "miniplayer.h"
@@ -88,6 +89,8 @@ public:
 
     FavoriteManager *getFavoriteManager() const;
     void setFavoriteManager(FavoriteManager *newFavoriteManager);
+    PlaybackController &playbackController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlaybackController>();
 
 private slots:
     void onDoubleListClicked(const QModelIndex &index);
