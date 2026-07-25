@@ -111,8 +111,6 @@ public:
     void handleRadioBrowserFavorite();
     void handleCountryFavorite();
 
-    void updateFavoriteIcon(bool isFavorite);
-
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
     void allIconsLoaded();
@@ -237,12 +235,10 @@ private:
     void clearInfoData(int stationIndex);
     void setDarkMode();
     void isDark();
-    void setRawRadioImage();
-    void setRawDarkRadioImage();
     void showMiniplayer();
     void maximizeWindow();
     QString getCurrentStreamUrl() const;
-    void updateThemeAppearance(bool darkMode);
+    void updateThemeAppearance();
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
@@ -259,7 +255,6 @@ private:
     void resetImageIfStopped();
 
     void updateFavoriteColumnLayout();
-    void onTrashIconCliced(const QModelIndex &index);
     void refreshFavoritePlaylist();
 };
 

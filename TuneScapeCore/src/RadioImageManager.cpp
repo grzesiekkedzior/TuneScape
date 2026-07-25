@@ -1,11 +1,12 @@
 #include "include/RadioImageManager.h"
+#include <QEventLoop>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
-
-RadioImageManager::RadioImageManager(Ui::MainWindow *ui, miniplayer *mp, QObject *parent)
+namespace {
+constexpr auto RadioIconPath = ":/images/img/radio96x96.png";
+}
+RadioImageManager::RadioImageManager(QObject *parent)
     : QObject(parent)
-    , m_ui(ui)
-    , m_miniPlayer(mp)
 {}
 
 QPixmap RadioImageManager::downloadImageSync(const QUrl &url)
@@ -34,17 +35,12 @@ QPixmap RadioImageManager::downloadImageSync(const QUrl &url)
     return pixmap;
 }
 
-void RadioImageManager::setImageToUI(const QPixmap &pixmap)
+QPixmap RadioImageManager::prepareImage(const QPixmap &pixmap) const
 {
-    QPixmap scaled = pixmap;
-    if (!scaled.isNull()) {
-        QSize imageSize(120, 120);
-        scaled = scaled.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
-    } else {
-        scaled = QPixmap(RADIO_ICON);
-    }
+    if (pixmap.isNull())
+        return QPixmap(RadioIconPath);
 
-    m_ui->infoLabel->setPixmap(scaled);
-    m_miniPlayer->getMui()->radioImage->setPixmap(scaled);
-    m_ui->infoLabel->show();
+    const QSize imageSize(120, 120);
+
+    return pixmap.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
 }
