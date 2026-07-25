@@ -21,8 +21,10 @@ public:
     void setMetadata(const QString &);
     void clearMetadata();
 
-    void setFavorite(bool);
+    void setFavorite(bool isFavorite);
     void showDefaultImage();
+
+    void setVolumeIcon(int volume);
 
     void initialize(Ui::MainWindow *ui, miniplayer *miniPlayer);
 

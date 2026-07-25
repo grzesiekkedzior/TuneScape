@@ -53,7 +53,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
 
     //trash header signal
-    connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTrashIconCliced);
     ui->tableView->setModel(radioStationsModel);
     header = ui->tableView->horizontalHeader();
     header->setSectionResizeMode(QHeaderView::Interactive);
@@ -63,15 +62,8 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     audioProcessor.setPlayer(playbackController.mediaPlayer());
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
-    imageManager = new RadioImageManager{ui, &miniPlayer, this};
+    imageManager = new RadioImageManager{this};
     playerUIController.initialize(ui, &miniPlayer);
-}
-
-void RadioList::setRawDarkRadioImage()
-{
-    ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-    ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
-    miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
 }
 
 void RadioList::showMiniplayer()
@@ -90,14 +82,7 @@ void RadioList::maximizeWindow()
     ui->horizontalVolumeSlider->setValue(value);
 }
 
-void RadioList::setRawRadioImage()
-{
-    ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-    ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
-    miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
-}
-
-void RadioList::updateThemeAppearance(bool darkMode)
+void RadioList::updateThemeAppearance()
 {
     clearTableViewColor();
 
@@ -105,14 +90,14 @@ void RadioList::updateThemeAppearance(bool darkMode)
         setIndexColor();
 
     if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
-        darkMode ? setRawDarkRadioImage() : setRawRadioImage();
+        playerUIController.setDefaultImage();
     }
 }
 
 void RadioList::setDarkMode()
 {
     isDarkMode = !isDarkMode;
-    updateThemeAppearance(isDarkMode);
+    updateThemeAppearance();
 }
 
 void RadioList::isDark() {}
@@ -286,19 +271,6 @@ void RadioList::updateFavoriteColumnLayout()
         ui->tableView->setColumnWidth(1, 16);
 }
 
-void RadioList::onTrashIconCliced(const QModelIndex &index)
-{
-    qDebug() << "Trash" << index.column() << " tree " << item;
-    if (item == FAVORITE && index.column() == 1) {
-        if (playlistEditor) {
-            bool success = playlistEditor->remove(index);
-            if (!success) {
-                qDebug() << "Error!!!";
-            }
-        }
-    }
-}
-
 void RadioList::refreshFavoritePlaylist()
 {
     setFavoriteStatons();
@@ -335,11 +307,7 @@ void RadioList::loadAllData()
     setVectorsOfStation(JSON_ENDPOINT_NEW, Stations::NEW);
 
     setFavoriteStatons();
-    if (!isDarkMode) {
-    }
-
     setTopListOnStart();
-    //loadRadioIconList();
 }
 
 void RadioList::setLoadedStationsCount(int num)
@@ -354,7 +322,6 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
     isTreeClicked = true;
     item = index.data().toString();
-    qDebug() << "onTreeViewItemClicked " << item << " ROW " << index.row();
 
     if (checkItem(item, LIBRARY_TREE))
         return;
@@ -407,17 +374,14 @@ void RadioList::getSongTitle(const QString &url)
 
 void RadioList::checkIsRadioOnPlaylist(const QString &station)
 {
-    if (favoriteManager->isAddressExists(station, RADIO_BROWSER_PLAYLIST)) {
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-    } else {
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
-    }
+    const bool isFavorite = favoriteManager->isAddressExists(station, RADIO_BROWSER_PLAYLIST);
+
+    playerUIController.setFavorite(isFavorite);
 }
 
 void RadioList::onInternetConnectionRestored()
 {
     clearRadioDataVectors();
-    //this->onStopButtonClicked();
     prepareRestoredConnectionMessage();
 
     clearTableViewColor();
@@ -465,10 +429,7 @@ void RadioList::setIndexColor()
 void RadioList::sliderMoved(int move)
 {
     playbackController.setVolume(move);
-    if (move == 0)
-        ui->volume->setIcon(QIcon(":/images/img/audiostop.png"));
-    if (move > 0 && move < 5)
-        ui->volume->setIcon(QIcon(":/images/img/audioplay.png"));
+    playerUIController.setVolumeIcon(move);
 }
 
 void RadioList::setRadioImage(const QModelIndex &index)
@@ -476,9 +437,11 @@ void RadioList::setRadioImage(const QModelIndex &index)
     if (!jsonListProcesor.isConnected || radioStationsModel->isEmpty())
         return;
 
-    QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
-    QPixmap pixmap = imageManager->downloadImageSync(imageUrl);
-    imageManager->setImageToUI(pixmap);
+    const QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
+    const QPixmap downloadedPixmap = imageManager->downloadImageSync(imageUrl);
+    const QPixmap preparedPixmap = imageManager->prepareImage(downloadedPixmap);
+
+    playerUIController.setStationImage(preparedPixmap);
 
     qDebug() << "Image is loaded.";
 }
@@ -500,12 +463,11 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 
         setIsBrowseStationLoaded(true);
         if (playbackController.isPlaying()) {
-            ui->playPause->setIcon(QIcon(":/images/img/pause30.png"));
-            miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/pause30.png"));
+            playerUIController.setPauseIcon();
         }
 
         isStopClicked = false;
-        ui->infoData->clear();
+        playerUIController.clearMetadata();
         if (playbackController.isPlaying()) {
             radioInfo->loadEndpoint(radioStationsModel->station(currentStationIndex).station);
             radioInfo->processInfoJsonQuery();
@@ -594,18 +556,14 @@ void RadioList::startRadioBrowserStream()
     radioInfo->setDataOnTable();
     QModelIndex newIndex = ui->tableView->model()->index(0, 0);
     setRadioImage(newIndex);
-    ui->radioIcon->setPixmap(ui->infoLabel->pixmap());
-    /***************************************************/
-    miniPlayer.getMui()->radioImage->setPixmap(ui->infoLabel->pixmap());
-    /***************************************************/
     country.setCurrentIndexPlaying(-1);
 }
 
 void RadioList::updatePlayPauseIcons() {
-    QIcon icon(playbackController.isPlaying() ? ":/images/img/pause30.png"
-                                              : ":/images/img/play30.png");
-    ui->playPause->setIcon(icon);
-    miniPlayer.getMui()->play->setIcon(icon);
+    if (playbackController.isPlaying())
+        playerUIController.setPauseIcon();
+    else
+        playerUIController.setPlayIcon();
 }
 
 void RadioList::switchToDefaultTabIfNoCountryStationPlaying()
@@ -661,20 +619,16 @@ void RadioList::onStopButtonClicked()
         && jsonListProcesor.isConnected) {
         isStopClicked = true;
 
-        ui->playPause->setIcon(QIcon(":/images/img/play30.png"));
-        miniPlayer.getMui()->play->setIcon(QIcon(":/images/img/play30.png"));
+        playerUIController.setPlayIcon();
 
         playbackController.stop();
         audioProcessor.stop();
 
         currentRadioPlayingAddress.clear();
 
-        ui->infoLabel->setPixmap(QPixmap(RADIO_ICON));
-        ui->radioIcon->setPixmap(QPixmap(RADIO_ICON));
-        miniPlayer.getMui()->radioImage->setPixmap(QPixmap(RADIO_ICON));
+        playerUIController.setDefaultImage();
 
-        ui->infoLabel->show();
-        ui->infoData->clear();
+        playerUIController.clearMetadata();
 
         QModelIndex newIndex = ui->tableView->model()->index(0, 0);
         ui->tableView->setCurrentIndex(newIndex);
@@ -700,7 +654,6 @@ void RadioList::onStopButtonClicked()
 // Not use now
 void RadioList::onTableViewClicked(const QModelIndex &index)
 {
-    //this->radioIndexNumber = index.row();
     qDebug() << this->radioIndexNumber;
 }
 
@@ -731,16 +684,8 @@ void RadioList::handleRadioBrowserFavorite()
                                                       data,
                                                       RADIO_BROWSER_PLAYLIST);
 
-    updateFavoriteIcon(isFavorite);
+    playerUIController.setFavorite(isFavorite);
     refreshFavoritePlaylist();
-}
-
-void RadioList::updateFavoriteIcon(bool isFavorite)
-{
-    if (isFavorite)
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-file.png"));
-    else
-        ui->favorite->setIcon(QIcon(":/images/img/bookmark-empty.png"));
 }
 
 void RadioList::handleCountryFavorite()
@@ -755,7 +700,7 @@ void RadioList::handleCountryFavorite()
     QString stationStream = country.dtoFavorite.stream;
 
     bool isFavorite = favoriteManager->toggleFavorite(stationStream, data, RADIO_BROWSER_PLAYLIST);
-    updateFavoriteIcon(isFavorite);
+    playerUIController.setFavorite(isFavorite);
     refreshFavoritePlaylist();
 }
 
@@ -768,10 +713,7 @@ void RadioList::handleDataReceived(const QString &data)
     if (titleStart != -1 && titleEnd != -1) {
         QString title = metaData.mid(titleStart + 13, titleEnd - (titleStart + 13));
         qDebug() << title;
-        ui->infoData->clear();
-        ui->infoData->setText(title);
-        miniPlayer.getMui()->radioText->clear();
-        miniPlayer.getMui()->radioText->setText(title);
+        playerUIController.setMetadata(title);
         emit trackTitleReceived(title);
         emit sendTitleToTray(title);
     }
