@@ -104,19 +104,20 @@ void RadioList::isDark() {}
 
 void RadioList::setMp3FileName()
 {
-    QString title = "";
-    QString extension = "";
+    QString title;
+    QString extension;
 
-    if (playbackController.isPlaying()) {
+    if (playbackController.isPlaying() && !country.getIsPlaying()) {
         title = ui->tableWidget->item(0, 1)->text();
         extension = ui->tableWidget->item(5, 1)->text().toLower();
     } else if (country.getIsPlaying()) {
-        title = country.dtoFavorite.station;
+        title = country.getCurrentStation().station;
         extension = ui->tableWidget->item(5, 1)->text().toLower();
     } else {
         return;
     }
-    extension.replace("+", "");
+
+    extension.remove('+');
     streamRecorder->setFileName(title, extension);
 }
 
@@ -664,10 +665,10 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 
 void RadioList::addRadioToFavorite()
 {
-    if (playbackController.isPlaying()) {
-        handleRadioBrowserFavorite();
-    } else if (country.getIsPlaying()) {
+    if (country.getIsPlaying()) {
         handleCountryFavorite();
+    } else if (playbackController.isPlaying()) {
+        handleRadioBrowserFavorite();
     }
 }
 
@@ -690,16 +691,18 @@ void RadioList::handleRadioBrowserFavorite()
 
 void RadioList::handleCountryFavorite()
 {
-    if (!playbackController.isPlaying())
+    if (!country.getIsPlaying())
         return;
 
-    QString data = country.dtoFavorite.icon + "," + country.dtoFavorite.stream + ","
-                   + country.dtoFavorite.station + "," + country.dtoFavorite.country + ","
-                   + country.dtoFavorite.genre + "," + country.dtoFavorite.stationUrl;
+    const RadioStation &station = country.getCurrentStation();
 
-    QString stationStream = country.dtoFavorite.stream;
+    const QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
+                         + station.country + "," + station.genre + "," + station.homepage;
 
-    bool isFavorite = favoriteManager->toggleFavorite(stationStream, data, RADIO_BROWSER_PLAYLIST);
+    const bool isFavorite = favoriteManager->toggleFavorite(station.streamUrl,
+                                                            data,
+                                                            RADIO_BROWSER_PLAYLIST);
+
     playerUIController.setFavorite(isFavorite);
     refreshFavoritePlaylist();
 }
@@ -737,10 +740,13 @@ void RadioList::startStopRecord()
 
 QString RadioList::getCurrentStreamUrl() const
 {
+    if (country.getIsPlaying())
+        return country.getCurrentStation().streamUrl;
+
     if (playbackController.isPlaying())
         return currentRadioPlayingAddress;
-    if (country.getIsPlaying())
-        return country.dtoFavorite.stream;
+
+    return {};
 }
 
 void RadioList::setVectorsOfStation(const QString &endpoint, Stations station)
