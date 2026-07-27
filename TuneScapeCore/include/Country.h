@@ -1,38 +1,33 @@
 #ifndef COUNTRY_H
 #define COUNTRY_H
 
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QObject>
+#include <QPixmap>
+#include <QSharedPointer>
+#include <QString>
+#include <QVector>
+
 #include "FavoriteManager.h"
+#include "RadioImageManager.h"
 #include "audioprocessor.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
+#include "controller/PlayerUIController.h"
 #include "customcolordelegate.h"
 #include "jsonlistprocessor.h"
-#include "miniplayer.h"
-#include "qnetworkreply.h"
-#include "qobject.h"
-#include "ui_mainwindow.h"
+#include "model/RadioStationsModel.h"
+
+namespace Ui {
+class MainWindow;
+}
 
 class RadioList;
 
 class Country : public QObject
 {
-    struct TableRow
-    {
-        QString station;
-        QString genre;
-        QString country;
-        QString stationUrl;
-    };
-
-    struct DtoFavourite
-    {
-        QString icon;
-        QString stream;
-        QString station;
-        QString genre;
-        QString country;
-        QString stationUrl;
-    };
+    Q_OBJECT
 
     struct CountriesData
     {
@@ -41,91 +36,85 @@ class Country : public QObject
         QString countryCount;
     };
 
-    Q_OBJECT
 public:
-    Country();
-    ~Country();
+    Country() = default;
+    ~Country() override = default;
 
     void setData(Ui::MainWindow *ui, RadioList *radioList);
     void load();
-    void createHeaders();
-    void loadCountriesToComboBox();
-    QNetworkReply *setConnection(QString endpoint);
-    bool createCountryArray(QNetworkReply *reply);
-    bool createTable(QNetworkReply *reply);
-    void searchCountry(QString country);
-    void addRowToTable(const TableRow &row);
-    void setIndexColor(const QModelIndex &index);
-
-    // const -> JSON
-    const QString NAME = "name";
-    const QString GENRE = "tags";
-    const QString COUNTRY = "country";
-    const QString URL = "homepage";
-    const QString URL_RESOLVED = "url_resolved";
-    const QString URL_STREAM = "url";
-    const QString FAVICON = "favicon";
-    // const -> array
-    const QString COUNTRY_NAME = "name";
-    const QString COUNTRY_ISO = "iso_3166_1";
-    const QString COUNTRY_COUNT = "stationcount";
-    const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
 
     bool getIsPlaying() const;
-    void setIsPlaying(bool newIsPlaying);
-    void clearTableColor();
-    void checkIsOnPlaylist(const QModelIndex &index, QString currentRadioPlayingAddress);
-
-    QString getIconAddresses(int index) const;
-
-    DtoFavourite dtoFavorite;
-
-    void createDtoFavorites(const QModelIndex &index, QString url);
-
-    QVector<QString> getStreamAddresses() const;
+    void setIsPlaying(bool isPlaying);
 
     int getCurrentIndexPlaying() const;
-    void setCurrentIndexPlaying(int newCourrentIndexPlaying);
+    void setCurrentIndexPlaying(int index);
+
+    const RadioStation &getCurrentStation() const;
+
+    void clearTableColor();
 
     FavoriteManager *getFavoriteManager() const;
-    void setFavoriteManager(FavoriteManager *newFavoriteManager);
-    PlaybackController &playbackController = SingletonContainer::getSingleton()
-                                                 .getInstance<PlaybackController>();
+    void setFavoriteManager(FavoriteManager *favoriteManager);
 
 private slots:
+    void searchCountry(const QString &country);
     void onDoubleListClicked(const QModelIndex &index);
 
 private:
+    void loadCountriesToComboBox();
+
+    QNetworkReply *setConnection(const QString &endpoint);
+    bool createCountryArray(QNetworkReply *reply);
+    bool createTable(QNetworkReply *reply);
+
+    void setIndexColor(const QModelIndex &index);
+
     Ui::MainWindow *ui = nullptr;
     RadioList *radioList = nullptr;
+    FavoriteManager *favoriteManager = nullptr;
 
     QNetworkReply *reply = nullptr;
     QNetworkAccessManager manager;
 
     JsonListProcessor jsonListProcessor;
-    QJsonDocument doc;
 
-    QVector<TableRow> tableRows;
     QVector<CountriesData> countriesData;
-    QVector<QString> streamAddresses;
-    QVector<QString> iconAddresses;
 
     QPixmap pixmap;
+    QSharedPointer<CustomColorDelegate> customColor;
 
-    QSharedPointer<CustomColorDelegate> customColor{nullptr};
+    bool isPlaying = false;
+    int currentIndexPlaying = -1;
 
-    bool isPlaying;
-    int courrentIndexPlaying = -1;
+    RadioStationsModel *countryStationsModel = nullptr;
+    RadioStation currentStation;
+    RadioImageManager imageManager;
 
-    const QString COUNTRY_ENDPOINT_SEARCH = "json/stations/search?country=";
-    const QString COUNTRY_ENDPOINT_NAME = "json/countries";
-    const QString RADIO_ICON = ":/images/img/radio96x96.png";
+    PlaybackController &playbackController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlaybackController>();
 
-    void playPauseIcon();
-    void setRadioImage(const QModelIndex &index);
     AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
-    miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
-    FavoriteManager *favoriteManager = nullptr;
+
+    PlayerUIController &playerUIController = SingletonContainer::getSingleton()
+                                                 .getInstance<PlayerUIController>();
+
+    inline static const QString NameKey = QStringLiteral("name");
+    inline static const QString GenreKey = QStringLiteral("tags");
+    inline static const QString CountryKey = QStringLiteral("country");
+    inline static const QString HomepageKey = QStringLiteral("homepage");
+    inline static const QString ResolvedUrlKey = QStringLiteral("url_resolved");
+    inline static const QString FaviconKey = QStringLiteral("favicon");
+
+    inline static const QString CountryNameKey = QStringLiteral("name");
+    inline static const QString CountryIsoKey = QStringLiteral("iso_3166_1");
+    inline static const QString CountryCountKey = QStringLiteral("stationcount");
+
+    inline static const QString CountrySearchEndpoint = QStringLiteral(
+        "json/stations/search?country=");
+
+    inline static const QString CountriesEndpoint = QStringLiteral("json/countries");
+
+    inline static const QString RadioBrowserPlaylist = QStringLiteral("radiobrowser.txt");
 };
 
 #endif // COUNTRY_H
