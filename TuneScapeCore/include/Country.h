@@ -16,6 +16,7 @@
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
 #include "customcolordelegate.h"
+#include "include/theme.h"
 #include "jsonlistprocessor.h"
 #include "model/RadioStationsModel.h"
 
@@ -55,6 +56,10 @@ public:
 
     FavoriteManager *getFavoriteManager() const;
     void setFavoriteManager(FavoriteManager *favoriteManager);
+
+    void setTheme(Theme *newTheme);
+public slots:
+    void updateThemeAppearance();
 
 private slots:
     void searchCountry(const QString &country);
@@ -97,6 +102,8 @@ private:
 
     PlayerUIController &playerUIController = SingletonContainer::getSingleton()
                                                  .getInstance<PlayerUIController>();
+
+    Theme *theme = nullptr;
 
     inline static const QString NameKey = QStringLiteral("name");
     inline static const QString GenreKey = QStringLiteral("tags");

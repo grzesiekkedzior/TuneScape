@@ -69,5 +69,6 @@
         <file>theme/LightTheme.qss</file>
         <file>theme/Light.qss</file>
         <file>files/licenses_qtextbrowser.html</file>
+        <file>theme/Cyberpunk.qss</file>
     </qresource>
 </RCC>

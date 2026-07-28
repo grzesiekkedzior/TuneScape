@@ -146,13 +146,6 @@ void Country::searchCountry(const QString &country)
     createTable(stationsReply);
 }
 
-void Country::setIndexColor(const QModelIndex &index)
-{
-    customColor.reset(new CustomColorDelegate(index.row(), QColor(222, 255, 223), this));
-
-    ui->tableOfCoutries->setItemDelegate(customColor.get());
-}
-
 void Country::onDoubleListClicked(const QModelIndex &index)
 {
     if (!index.isValid())
@@ -252,4 +245,33 @@ void Country::clearTableColor()
 const RadioStation &Country::getCurrentStation() const
 {
     return currentStation;
+}
+
+void Country::setIndexColor(const QModelIndex &index)
+{
+    if (!index.isValid() || !theme)
+        return;
+
+    customColor.reset(new CustomColorDelegate(index.row(), theme->playingRowColor(), this));
+
+    ui->tableOfCoutries->setItemDelegate(customColor.get());
+    ui->tableOfCoutries->viewport()->update();
+}
+
+void Country::setTheme(Theme *newTheme)
+{
+    theme = newTheme;
+}
+
+void Country::updateThemeAppearance()
+{
+    if (currentIndexPlaying < 0 || !countryStationsModel)
+        return;
+
+    const QModelIndex index = countryStationsModel->index(currentIndexPlaying, 0);
+
+    if (!index.isValid())
+        return;
+
+    setIndexColor(index);
 }

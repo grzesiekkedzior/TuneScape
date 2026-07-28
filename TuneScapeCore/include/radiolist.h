@@ -15,6 +15,7 @@
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
+#include "include/theme.h"
 #include "model/RadioStationsModel.h"
 #include "streamreader.h"
 #include "streamrecorder.h"
@@ -109,6 +110,7 @@ public:
     void handleCountryFavorite();
 
     void updateThemeAppearance();
+    void setTheme(Theme *theme);
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -162,6 +164,7 @@ private:
                                                  .getInstance<PlayerUIController>();
 
     RadioStation currentPlayingStation;
+    Theme *theme = nullptr;
 
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;

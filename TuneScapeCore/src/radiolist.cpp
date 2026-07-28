@@ -408,11 +408,9 @@ void RadioList::playSelectedStation(int radioNumber)
     audioProcessor.start(currentRadioPlayingAddress);
 }
 
-void RadioList::setIndexColor(int row)
+void RadioList::setTheme(Theme *newTheme)
 {
-    customColor.reset(new CustomColorDelegate(row, QColor(222, 255, 223), this));
-
-    ui->tableView->setItemDelegate(customColor.get());
+    theme = newTheme;
 }
 
 void RadioList::sliderMoved(int move)
@@ -776,4 +774,18 @@ void RadioList::searchStations()
     ui->tabRadioListWidget->setCurrentIndex(0);
 
     clearTableViewColor();
+}
+
+void RadioList::setIndexColor(int row)
+{
+    if (row < 0 || row >= radioStationsModel->size())
+        return;
+
+    if (!theme)
+        return;
+
+    customColor.reset(new CustomColorDelegate(row, theme->playingRowColor(), this));
+
+    ui->tableView->setItemDelegate(customColor.get());
+    ui->tableView->viewport()->update();
 }

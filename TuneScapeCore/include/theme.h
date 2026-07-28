@@ -2,6 +2,7 @@
 #define THEME_H
 
 #include <QApplication>
+#include <QColor>
 #include <QObject>
 #include <QString>
 
@@ -16,6 +17,7 @@ public:
     explicit Theme(QApplication &application, QObject *parent = nullptr);
 
     Type currentTheme() const;
+    QColor playingRowColor() const;
 
 public slots:
     bool applyTheme(Type theme);

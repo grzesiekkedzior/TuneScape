@@ -2,16 +2,14 @@
 #define CUSTOMCOLORDELEGATE_H
 
 #include <QColor>
-#include <QObject>
-#include <QPainter>
-#include <QStyleOptionViewItem>
 #include <QStyledItemDelegate>
 
 class CustomColorDelegate : public QStyledItemDelegate
 {
     Q_OBJECT
+
 public:
-    CustomColorDelegate(int target, const QColor &col, QObject *parent = nullptr);
+    explicit CustomColorDelegate(int targetRow, const QColor &color, QObject *parent = nullptr);
 
     void paint(QPainter *painter,
                const QStyleOptionViewItem &option,
@@ -20,8 +18,8 @@ public:
     void clearRowColor();
 
 private:
-    int targetRow;
-    QColor color;
+    int targetRow = -1;
+    QColor rowColor;
 };
 
 #endif // CUSTOMCOLORDELEGATE_H
