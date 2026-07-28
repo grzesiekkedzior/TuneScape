@@ -1,41 +1,35 @@
 #include "include/customcolordelegate.h"
 
-CustomColorDelegate::CustomColorDelegate(int target, const QColor &col, QObject *parent)
+#include <QPainter>
+
+CustomColorDelegate::CustomColorDelegate(int target, const QColor &color, QObject *parent)
     : QStyledItemDelegate(parent)
     , targetRow(target)
-    , color(col)
+    , rowColor(color)
 {}
 
 void CustomColorDelegate::paint(QPainter *painter,
                                 const QStyleOptionViewItem &option,
                                 const QModelIndex &index) const
 {
-    QStyleOptionViewItem opt = option;
+    QStyleOptionViewItem opt(option);
+    initStyleOption(&opt, index);
 
     if (targetRow != -1 && index.row() == targetRow) {
-        QPalette palette = opt.palette;
-        QColor textColor;
-        if (color.lightnessF() < 0.5) {
-            textColor = Qt::white;
-        } else {
-            textColor = Qt::black;
-        }
-        palette.setColor(QPalette::Text, textColor);
-        opt.palette = palette;
+        painter->save();
+        painter->fillRect(opt.rect, rowColor);
+        painter->restore();
 
-        QColor adjustedColor = color;
-        adjustedColor.setAlpha(255);
+        const QColor textColor = rowColor.lightnessF() < 0.5 ? Qt::white : Qt::black;
 
-        painter->fillRect(opt.rect, adjustedColor);
+        opt.palette.setColor(QPalette::Text, textColor);
+        opt.palette.setColor(QPalette::WindowText, textColor);
 
-        painter->setPen(opt.palette.color(QPalette::Text));
-        QRect textRect = option.rect.adjusted(3, 0, -3, 0);
-        painter->drawText(textRect,
-                          Qt::AlignLeft | Qt::AlignVCenter,
-                          index.data(Qt::DisplayRole).toString());
-    } else {
-        QStyledItemDelegate::paint(painter, opt, index);
+        opt.state &= ~QStyle::State_Selected;
+        opt.backgroundBrush = Qt::NoBrush;
     }
+
+    QStyledItemDelegate::paint(painter, opt, index);
 }
 
 void CustomColorDelegate::clearRowColor()

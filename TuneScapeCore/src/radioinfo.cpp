@@ -12,7 +12,19 @@ RadioInfo::RadioInfo() {}
 
 RadioInfo::RadioInfo(Ui::MainWindow *ui)
     : ui(ui)
-{}
+{
+    ui->tableWidget->horizontalHeader()->hide();
+    ui->tableWidget->verticalHeader()->hide();
+
+    ui->tableWidget->setShowGrid(false);
+    ui->tableWidget->setAlternatingRowColors(true);
+    ui->tableWidget->setSelectionMode(QAbstractItemView::NoSelection);
+    ui->tableWidget->setFocusPolicy(Qt::NoFocus);
+
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+
+    ui->tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+}
 
 void RadioInfo::setInfo()
 {

@@ -73,6 +73,7 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
     connect(ui->tableOfCoutries, &QTableView::doubleClicked, trackView, &TrackView::clear);
     connect(radioList, &RadioList::playIconButtonDoubleClicked, trackView, &TrackView::clear);
     connect(&m_theme, &Theme::themeChanged, radioList, &RadioList::updateThemeAppearance);
+    connect(&m_theme, &Theme::themeChanged, &country, &Country::updateThemeAppearance);
 }
 
 MainWindow::~MainWindow()
@@ -104,6 +105,7 @@ void MainWindow::start()
     radioExplorer->createMenu();
     radioList->loadAllData();
     radioList->setMainWindow(this);
+    radioList->setTheme(&m_theme);
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioList(radioList);
     trayIcon->loadTrayLists();
@@ -112,6 +114,7 @@ void MainWindow::start()
     country.setData(ui, radioList);
     country.load();
     country.setFavoriteManager(favoriteManager);
+    country.setTheme(&m_theme);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

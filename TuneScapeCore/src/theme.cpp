@@ -122,3 +122,22 @@ Theme::Type Theme::themeFromString(const QString &value)
 
     return Type::System;
 }
+
+QColor Theme::playingRowColor() const
+{
+    switch (m_currentTheme) {
+    case Type::System:
+        return QColor("#dff5ff");
+
+    case Type::Dark:
+        return QColor("#b78620");
+
+    case Type::Classic:
+        return QColor("#d9ead3");
+
+    case Type::Cyberpunk:
+        return QColor("#00f0ff");
+    }
+
+    return QColor("#dff5ff");
+}
