@@ -1,21 +1,48 @@
 #include "include/mainwindow.h"
-#include "../ui_mainwindow.h"
-#include "include/AppConfig.h"
-
 #include <QDebug>
 #include <QFile>
 #include <QIcon>
+#include <QMenu>
 #include <QMessageBox>
 #include <QSystemTrayIcon>
+#include "../ui_mainwindow.h"
+#include "include/AppConfig.h"
+#include "include/theme.h"
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(Theme &theme, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , m_theme(theme)
 {
     infoDialogApp();
 
     //******************************************************************
     ui->setupUi(this);
+    QMenu *themeMenu = new QMenu(ui->themeButton);
+
+    QAction *systemAction = themeMenu->addAction(tr("System"));
+    QAction *darkAction = themeMenu->addAction(tr("Dark"));
+    QAction *classicAction = themeMenu->addAction(tr("Classic"));
+    QAction *cyberpunkAction = themeMenu->addAction(tr("Cyberpunk"));
+
+    ui->themeButton->setMenu(themeMenu);
+
+    connect(systemAction, &QAction::triggered, this, [this]() {
+        m_theme.applyTheme(Theme::Type::System);
+    });
+
+    connect(darkAction, &QAction::triggered, this, [this]() {
+        m_theme.applyTheme(Theme::Type::Dark);
+    });
+
+    connect(classicAction, &QAction::triggered, this, [this]() {
+        m_theme.applyTheme(Theme::Type::Classic);
+    });
+
+    connect(cyberpunkAction, &QAction::triggered, this, [this]() {
+        m_theme.applyTheme(Theme::Type::Cyberpunk);
+    });
+
     ui->previous->hide();
     ui->next->hide();
     ui->licencesTextBrowser->setSource(QUrl("qrc:/src/files/licenses_qtextbrowser.html"));
@@ -45,6 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->stop, &QPushButton::clicked, trackView, &TrackView::clear);
     connect(ui->tableOfCoutries, &QTableView::doubleClicked, trackView, &TrackView::clear);
     connect(radioList, &RadioList::playIconButtonDoubleClicked, trackView, &TrackView::clear);
+    connect(&m_theme, &Theme::themeChanged, radioList, &RadioList::updateThemeAppearance);
 }
 
 MainWindow::~MainWindow()

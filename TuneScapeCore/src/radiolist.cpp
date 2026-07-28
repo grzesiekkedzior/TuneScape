@@ -46,8 +46,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     connect(ui->record, &QPushButton::clicked, this, &RadioList::startStopRecord);
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
-
-    connect(ui->themeButton, &QPushButton::clicked, this, &RadioList::setDarkMode);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
 
@@ -92,14 +90,6 @@ void RadioList::updateThemeAppearance()
         playerUIController.setDefaultImage();
     }
 }
-
-void RadioList::setDarkMode()
-{
-    isDarkMode = !isDarkMode;
-    updateThemeAppearance();
-}
-
-void RadioList::isDark() {}
 
 void RadioList::setMp3FileName()
 {
@@ -258,16 +248,6 @@ void RadioList::setIsBrowseStationLoaded(bool newIsBrowseStationLoaded)
 QSharedPointer<StreamRecorder> RadioList::getStreamRecorder() const
 {
     return streamRecorder;
-}
-
-bool RadioList::getIsDarkMode() const
-{
-    return isDarkMode;
-}
-
-void RadioList::setIsDarkMode(bool newIsDarkMode)
-{
-    isDarkMode = newIsDarkMode;
 }
 
 void RadioList::updateFavoriteColumnLayout()
