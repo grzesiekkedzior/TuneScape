@@ -14,6 +14,8 @@
 #include "include/trayicon.h"
 #include "view/TrackView.h"
 
+class Theme;
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -25,7 +27,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(Theme &theme, QWidget *parent = nullptr);
     ~MainWindow();
     Ui::MainWindow *getUi() const;
 
@@ -46,6 +48,7 @@ private:
     Menu *appMenu;
     TrackView *trackView;
     FavoriteManager *favoriteManager;
+    Theme &m_theme;
 
     music_data::MusicBrainzClient *m_musicBrainzCient;
     music_data::ResolverService *m_resolverService;

@@ -1,92 +1,124 @@
 #include "include/theme.h"
-#include "qsettings.h"
 
-Theme::Theme()
-    : filetheme(":/src/theme/Combinear.qss")
-    , lightTheme(":/src/theme/LightTheme.qss")
-    , light(":/src/theme/Light.qss")
-    , style{""}
+#include <QFile>
+#include <QSettings>
+
+Theme::Theme(QApplication &application, QObject *parent)
+    : QObject(parent)
+    , m_application(application)
 {
-    filetheme.open(QFile::ReadOnly);
-    lightTheme.open(QFile::ReadOnly);
-    light.open(QFile::ReadOnly);
-    style = filetheme.readAll();
-    lightThm = lightTheme.readAll();
-    lightDarkMode = light.readAll();
-    appConfig = new AppConfig("application.properties");
-    isDark = appConfig->checkBoolState(DARK_THEME_PROPERTY);
-    if (isDark) {
-        app->setStyleSheet(style);
-        isDark = true;
-    } else {
-        app->setStyleSheet(lightThm);
-        isDark = false;
+    const Type savedTheme = loadSavedTheme();
+
+    if (!applyTheme(savedTheme))
+        applyTheme(Type::System);
+}
+
+Theme::Type Theme::currentTheme() const
+{
+    return m_currentTheme;
+}
+
+bool Theme::applyTheme(Type theme)
+{
+    const QString path = themePath(theme);
+    const QString styleSheet = loadStyleSheet(path);
+
+    if (styleSheet.isEmpty())
+        return false;
+
+    m_application.setStyleSheet(styleSheet);
+    m_currentTheme = theme;
+
+    saveTheme(theme);
+    emit themeChanged(theme);
+
+    return true;
+}
+
+QString Theme::themePath(Type theme) const
+{
+    switch (theme) {
+    case Type::System:
+        return QString::fromLatin1(SystemThemePath);
+
+    case Type::Dark:
+        return QString::fromLatin1(DarkThemePath);
+
+    case Type::Classic:
+        return QString::fromLatin1(ClassicThemePath);
+
+    case Type::Cyberpunk:
+        return QString::fromLatin1(CyberpunkThemePath);
     }
+
+    return QString::fromLatin1(SystemThemePath);
 }
 
-bool Theme::getIsDark() const
+QString Theme::loadStyleSheet(const QString &path) const
 {
-    return isDark;
-}
+    if (path.isEmpty())
+        return {};
 
-void Theme::setIsDark(bool newIsDark)
-{
-    isDark = newIsDark;
-}
+    QFile file(path);
 
-void Theme::setTheme()
-{
-    if (isDark) {
-        if (isSystemDarkMode()) {
-            app->setStyleSheet(lightDarkMode);
-        } else {
-            app->setStyleSheet(lightThm);
-
-        }
-        isDark = false;
-    } else {
-        app->setStyleSheet(style);
-        isDark = true;
+    if (!file.open(QFile::ReadOnly | QFile::Text)) {
+        qWarning() << "Unable to open theme file:" << path;
+        return {};
     }
-    appConfig->changeBoolState(isDark, DARK_THEME_PROPERTY);
 
+    return QString::fromUtf8(file.readAll());
 }
 
-void Theme::setDarkTheme()
+Theme::Type Theme::loadSavedTheme() const
 {
-    app->setStyleSheet(style);
+    QSettings settings(QString::fromLatin1(SettingsFile), QSettings::IniFormat);
+
+    const QString savedTheme
+        = settings.value(QString::fromLatin1(ThemeProperty), QStringLiteral("system")).toString();
+
+    return themeFromString(savedTheme);
 }
 
-void Theme::setLightTheme()
+void Theme::saveTheme(Type theme) const
 {
-    if (isSystemDarkMode())
-        app->setStyleSheet(lightThm);
+    QSettings settings(QString::fromLatin1(SettingsFile), QSettings::IniFormat);
+
+    settings.setValue(QString::fromLatin1(ThemeProperty), themeToString(theme));
+
+    settings.sync();
 }
 
-void Theme::getApplicationObject(QApplication &app)
+QString Theme::themeToString(Type theme)
 {
-    qDebug() << "System theme!? : " << isSystemDarkMode();
-    connect(ui->themeButton, &QPushButton::clicked, this, &Theme::setTheme);
-    this->app = &app;
+    switch (theme) {
+    case Type::System:
+        return QStringLiteral("system");
+
+    case Type::Dark:
+        return QStringLiteral("dark");
+
+    case Type::Classic:
+        return QStringLiteral("classic");
+
+    case Type::Cyberpunk:
+        return QStringLiteral("cyberpunk");
+    }
+
+    return QStringLiteral("system");
 }
 
-bool Theme::isSystemDarkMode()
+Theme::Type Theme::themeFromString(const QString &value)
 {
-    QSettings settings(THEME_REGISTER, QSettings::NativeFormat);
-    return settings.value("AppsUseLightTheme", 1).toInt() == 0;
-}
-//TODO
-// void Theme::checkThemeChange()
-// {
-//
-// }
+    const QString normalizedValue = value.trimmed().toLower();
 
-Ui::MainWindow *Theme::getUi() const
-{
-    return ui;
-}
+    if (normalizedValue == QStringLiteral("dark"))
+        return Type::Dark;
 
-void Theme::setUi(Ui::MainWindow *newUi)
-{
-    ui = newUi;
+    if (normalizedValue == QStringLiteral("classic"))
+        return Type::Classic;
+
+    if (normalizedValue == QStringLiteral("cyberpunk"))
+        return Type::Cyberpunk;
+
+    return Type::System;
 }

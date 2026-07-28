@@ -1,44 +1,49 @@
 #ifndef THEME_H
 #define THEME_H
 
-#include <QFile>
+#include <QApplication>
 #include <QObject>
-#include "../ui_mainwindow.h"
-#include "../include/AppConfig.h"
+#include <QString>
 
 class Theme : public QObject
 {
     Q_OBJECT
+
 public:
-    Theme();
+    enum class Type { System, Dark, Classic, Cyberpunk };
+    Q_ENUM(Type)
 
-    bool getIsDark() const;
-    void setIsDark(bool newIsDark);
-    void setTheme();
-    void setDarkTheme();
-    void setLightTheme();
-    void getApplicationObject(QApplication &app);
-    bool isSystemDarkMode();
-    void checkThemeChange();
+    explicit Theme(QApplication &application, QObject *parent = nullptr);
 
-    Ui::MainWindow *getUi() const;
-    void setUi(Ui::MainWindow *newUi);
+    Type currentTheme() const;
+
+public slots:
+    bool applyTheme(Type theme);
+
+signals:
+    void themeChanged(Theme::Type theme);
 
 private:
-    Ui::MainWindow *ui;
-    QApplication *app = nullptr;
-    bool isDark = false;
-    AppConfig *appConfig = nullptr;
+    QString themePath(Type theme) const;
+    QString loadStyleSheet(const QString &path) const;
 
-    QFile filetheme;
-    QFile lightTheme;
-    QFile light;
-    QString style;
-    QString lightThm;
-    QString lightDarkMode;
+    Type loadSavedTheme() const;
+    void saveTheme(Type theme) const;
 
-    const QString THEME_REGISTER = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-    const QString DARK_THEME_PROPERTY = "darktheme";
+    static QString themeToString(Type theme);
+    static Type themeFromString(const QString &value);
+
+    QApplication &m_application;
+    Type m_currentTheme = Type::System;
+
+    static constexpr auto SettingsFile = "application.properties";
+    static constexpr auto ThemeProperty = "theme";
+
+    static constexpr auto DarkThemePath = ":/src/theme/Combinear.qss";
+    static constexpr auto SystemThemePath = ":/src/theme/LightTheme.qss";
+    static constexpr auto ClassicThemePath = ":/src/theme/Light.qss";
+
+    static constexpr auto CyberpunkThemePath = ":/src/theme/Cyberpunk.qss";
 };
 
 #endif // THEME_H

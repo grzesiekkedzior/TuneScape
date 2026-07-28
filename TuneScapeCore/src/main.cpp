@@ -5,10 +5,8 @@
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    MainWindow w;
-    Theme theme;
-    theme.setUi(w.getUi());
-    theme.getApplicationObject(a);
+    Theme theme(a);
+    MainWindow w{theme};
     w.setWindowIcon(QIcon(":/images/img/radio96x96.png"));
     w.setWindowTitle("TuneScape");
     w.show();

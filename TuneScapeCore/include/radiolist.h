@@ -49,8 +49,6 @@ public:
     bool isAddressExists(const QString address, const QString playlist);
     void setFavoriteStatons();
 
-    bool getIsDarkMode() const;
-    void setIsDarkMode(bool newIsDarkMode);
     void onPlayPauseButtonCliced();
     RadioAudioManager &getRadioManager();
 
@@ -109,6 +107,8 @@ public:
     void handleIceCastFavorite();
     void handleRadioBrowserFavorite();
     void handleCountryFavorite();
+
+    void updateThemeAppearance();
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -229,12 +229,9 @@ private:
     void addToButtonCache();
 
     void clearInfoData(int stationIndex);
-    void setDarkMode();
-    void isDark();
     void showMiniplayer();
     void maximizeWindow();
     QString getCurrentStreamUrl() const;
-    void updateThemeAppearance();
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
     void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
