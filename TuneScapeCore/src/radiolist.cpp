@@ -14,7 +14,6 @@ RadioList::RadioList(QObject *parent)
 RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     : radioStationsModel(new RadioStationsModel{this})
     , ui(ui)
-    , iconLoader(new IconLoader(this))
     , favoriteManager{favoriteManager}
 {
     jsonListProcesor.setUi(ui);
@@ -87,7 +86,7 @@ void RadioList::updateThemeAppearance()
     clearTableViewColor();
 
     if (!isStopClicked)
-        setIndexColor();
+        setIndexColor(radioIndexNumber);
 
     if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
         playerUIController.setDefaultImage();
@@ -104,15 +103,22 @@ void RadioList::isDark() {}
 
 void RadioList::setMp3FileName()
 {
+    const QTableWidgetItem *titleItem = ui->tableWidget->item(0, 1);
+    const QTableWidgetItem *extensionItem = ui->tableWidget->item(5, 1);
+
+    if (!extensionItem)
+        return;
+
     QString title;
-    QString extension;
+    QString extension = extensionItem->text().toLower();
 
     if (playbackController.isPlaying() && !country.getIsPlaying()) {
-        title = ui->tableWidget->item(0, 1)->text();
-        extension = ui->tableWidget->item(5, 1)->text().toLower();
+        if (!titleItem)
+            return;
+
+        title = titleItem->text();
     } else if (country.getIsPlaying()) {
         title = country.getCurrentStation().station;
-        extension = ui->tableWidget->item(5, 1)->text().toLower();
     } else {
         return;
     }
@@ -359,7 +365,7 @@ void RadioList::updateStationColoring()
 {
     if (currentPlayListPlaying == currentPlaylistIndex) {
         if (playbackController.isPlaying())
-            setIndexColor();
+            setIndexColor(radioIndexNumber);
     } else {
         // Clear the color-marked station when changing tree items.
         if (customColor)
@@ -388,7 +394,7 @@ void RadioList::onInternetConnectionRestored()
     clearTableViewColor();
 
     ui->treeView->clearSelection();
-    setIndexColor();
+    setIndexColor(radioIndexNumber);
     loadAllData();
     if (getMainWindow()->isHidden())
         getMainWindow()->show();
@@ -410,20 +416,22 @@ void RadioList::clearRadioDataVectors()
 void RadioList::playSelectedStation(int radioNumber)
 {
     radioIndexCurrentPlaying = radioNumber;
-    radioPlaylistCurrentPlaying = currentPlaylistIndex;
+    currentPlayListPlaying = currentPlaylistIndex;
+
     currentPlayingStation = radioStationsModel->station(radioNumber);
     currentRadioPlayingAddress = currentPlayingStation.streamUrl;
-    QString stationUrl = radioStationsModel->station(radioNumber).streamUrl;
-    checkIsRadioOnPlaylist(stationUrl);
+
+    checkIsRadioOnPlaylist(currentRadioPlayingAddress);
     getSongTitle(currentRadioPlayingAddress);
-    QUrl streamUrl(currentRadioPlayingAddress);
-    playbackController.play(streamUrl);
+
+    playbackController.play(QUrl(currentRadioPlayingAddress));
     audioProcessor.start(currentRadioPlayingAddress);
 }
 
-void RadioList::setIndexColor()
+void RadioList::setIndexColor(int row)
 {
-    customColor.reset(new CustomColorDelegate(radioIndexNumber, QColor(222, 255, 223), this));
+    customColor.reset(new CustomColorDelegate(row, QColor(222, 255, 223), this));
+
     ui->tableView->setItemDelegate(customColor.get());
 }
 
@@ -435,7 +443,13 @@ void RadioList::sliderMoved(int move)
 
 void RadioList::setRadioImage(const QModelIndex &index)
 {
+    if (!index.isValid())
+        return;
+
     if (!jsonListProcesor.isConnected || radioStationsModel->isEmpty())
+        return;
+
+    if (index.row() < 0 || index.row() >= radioStationsModel->size())
         return;
 
     const QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
@@ -449,10 +463,15 @@ void RadioList::setRadioImage(const QModelIndex &index)
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
+    if (!index.isValid())
+        return;
+
+    if (index.row() < 0 || index.row() >= radioStationsModel->size())
+        return;
+
     if (jsonListProcesor.checkInternetConnection()) {
         radioIndexNumber = index.row();
         currentStationIndex = index.row();
-        currentPlayListPlaying = currentPlaylistIndex;
 
         // change bookmark
         playSelectedStation(radioIndexNumber);
@@ -460,7 +479,7 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         country.clearTableColor();
         country.setIsPlaying(false);
         country.setCurrentIndexPlaying(-1);
-        setIndexColor();
+        setIndexColor(radioIndexNumber);
 
         setIsBrowseStationLoaded(true);
         if (playbackController.isPlaying()) {
@@ -474,8 +493,6 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
             radioInfo->processInfoJsonQuery();
             radioInfo->setDataOnTable();
         }
-        radioIndexNumber = index.row();
-        setIndexColor();
     }
 
     if (streamRecorder->getIsRecording()) {
@@ -494,9 +511,6 @@ void RadioList::onPlayPauseButtonCliced()
 {
     if (!isTreeClicked || !jsonListProcesor.isConnected)
         return;
-
-    if (country.getIsPlaying())
-        country.setIsPlaying(false);
 
     if (playbackController.isPlaying()) {
         playbackController.pause();
@@ -521,7 +535,7 @@ void RadioList::onPlayPauseButtonCliced()
     }
 
     if (currentPlayListPlaying == currentPlaylistIndex)
-        setIndexColor();
+        setIndexColor(radioIndexNumber);
 
     updatePlayPauseIcons();
     setIsBrowseStationLoaded(true);
@@ -550,14 +564,17 @@ void RadioList::playCountryStream()
 
 void RadioList::startRadioBrowserStream()
 {
-    currentPlayListPlaying = currentPlaylistIndex;
     playSelectedStation(radioIndexNumber);
-    radioInfo->loadEndpoint(radioStationsModel->station(radioEnterIndexNumber).station);
+
+    radioInfo->loadEndpoint(currentPlayingStation.station);
     radioInfo->processInfoJsonQuery();
     radioInfo->setDataOnTable();
-    QModelIndex newIndex = ui->tableView->model()->index(0, 0);
+
+    const QModelIndex newIndex = ui->tableView->model()->index(radioIndexNumber, 0);
     setRadioImage(newIndex);
+
     country.setCurrentIndexPlaying(-1);
+    country.setIsPlaying(false);
 }
 
 void RadioList::updatePlayPauseIcons() {
@@ -588,7 +605,7 @@ void RadioList::onNextButtonClicked()
     if (playbackController.isPlaying() && radioIndexNumber < radioStationsModel->size() - 1) {
         ++radioIndexNumber;
         clearTableViewColor();
-        setIndexColor();
+        setIndexColor(radioIndexNumber);
         playSelectedStation(radioIndexNumber);
     }
 }
@@ -601,7 +618,7 @@ void RadioList::onPrevButtonClicked()
         playSelectedStation(radioIndexNumber);
 
         clearTableViewColor();
-        setIndexColor();
+        setIndexColor(radioIndexNumber);
     }
 }
 
@@ -615,41 +632,39 @@ void RadioList::clearTableViewColor()
 
 void RadioList::onStopButtonClicked()
 {
-    // TODO when internet connection is lost then stop button is unable to turn off music!!!
-    if ((playbackController.isPlaying() || playbackController.isPaused())
-        && jsonListProcesor.isConnected) {
-        isStopClicked = true;
+    if (!playbackController.isPlaying() && !playbackController.isPaused())
+        return;
 
-        playerUIController.setPlayIcon();
+    isStopClicked = true;
 
-        playbackController.stop();
-        audioProcessor.stop();
+    playerUIController.setPlayIcon();
 
-        currentRadioPlayingAddress.clear();
+    playbackController.stop();
+    audioProcessor.stop();
 
-        playerUIController.setDefaultImage();
+    currentRadioPlayingAddress.clear();
 
-        playerUIController.clearMetadata();
+    playerUIController.setDefaultImage();
+    playerUIController.clearMetadata();
 
-        QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-        ui->tableView->setCurrentIndex(newIndex);
+    const QModelIndex newIndex = ui->tableView->model()->index(0, 0);
+    ui->tableView->setCurrentIndex(newIndex);
 
-        radioIndexNumber = 0;
+    radioIndexNumber = 0;
 
-        clearTableViewColor();
+    clearTableViewColor();
+    radioInfo->clearInfo();
 
-        radioInfo->clearInfo();
+    setIsBrowseStationLoaded(false);
 
-        setIsBrowseStationLoaded(false);
-
-        if (streamRecorder->getIsRecording()) {
-            streamRecorder->stopRecording();
-            streamRecorder->setIsRecording(false);
-        }
-
-        country.clearTableColor();
-        country.setCurrentIndexPlaying(-1);
+    if (streamRecorder->getIsRecording()) {
+        streamRecorder->stopRecording();
+        streamRecorder->setIsRecording(false);
     }
+
+    country.clearTableColor();
+    country.setCurrentIndexPlaying(-1);
+    country.setIsPlaying(false);
 }
 
 // Not use now

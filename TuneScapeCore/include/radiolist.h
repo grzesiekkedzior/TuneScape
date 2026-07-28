@@ -10,7 +10,6 @@
 #include "container.h"
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
-#include "include/IconLoader.h"
 #include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
 #include "include/jsonlistprocessor.h"
@@ -150,8 +149,6 @@ private:
 
     QMessageBox message;
     QMainWindow *mainWindow = nullptr;
-
-    IconLoader *iconLoader;
     RadioImageManager *imageManager = nullptr;
     FavoriteManager *favoriteManager = nullptr;
 
@@ -169,7 +166,6 @@ private:
     int radioIndexNumber = 0;
     int radioEnterIndexNumber = 0;
     int radioIndexCurrentPlaying = 0;
-    int radioPlaylistCurrentPlaying = 0;
     int progressLoading = 1;
     bool isStopClicked = true;
     bool isTreeClicked = false;
@@ -206,7 +202,7 @@ private:
     QVector<QVector<QString>> allIconsAddresses;
 
     void playSelectedStation(int radioNumber);
-    void setIndexColor();
+    void setIndexColor(int row);
     void sliderMoved(int move);
     void setRadioImage(const QModelIndex &index);
     void handleDataReceived(const QString &data);
