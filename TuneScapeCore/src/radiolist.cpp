@@ -15,6 +15,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     : radioStationsModel(new RadioStationsModel{this})
     , ui(ui)
     , favoriteManager{favoriteManager}
+    , iconLoader(this)
 {
     jsonListProcesor.setUi(ui);
     jsonListProcesor.setRadioList(this);
@@ -48,6 +49,10 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
+    connect(&iconLoader,
+            &IconLoader::iconLoaded,
+            radioStationsModel,
+            &RadioStationsModel::setStationIcon);
 
     //trash header signal
     ui->tableView->setModel(radioStationsModel);
@@ -61,6 +66,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     miniPlayer.setRadioList(this);
     imageManager = new RadioImageManager{this};
     playerUIController.initialize(ui, &miniPlayer);
+    ui->tableView->setIconSize(QSize(20, 20));
 }
 
 void RadioList::showMiniplayer()
@@ -264,6 +270,7 @@ void RadioList::refreshFavoritePlaylist()
 
     if (item == FAVORITE) {
         radioStationsModel->setStations(allStations[Stations::FAVORITE]);
+        loadStationIcons();
     }
 }
 
@@ -338,6 +345,7 @@ void RadioList::switchToPlaylist(Stations station)
 {
     resetTreeItemIfSearch();
     radioStationsModel->setStations(allStations[station]);
+    loadStationIcons();
     currentPlaylistIndex = station;
 }
 
@@ -763,6 +771,7 @@ void RadioList::searchStations()
     setVectorsOfStation(endpoint, Stations::SEARCH);
 
     radioStationsModel->setStations(allStations[Stations::SEARCH]);
+    loadStationIcons();
     currentPlaylistIndex = Stations::SEARCH;
 
     if (jsonListProcesor.checkInternetConnection()) {
@@ -788,4 +797,16 @@ void RadioList::setIndexColor(int row)
 
     ui->tableView->setItemDelegate(customColor.get());
     ui->tableView->viewport()->update();
+}
+
+void RadioList::loadStationIcons()
+{
+    for (int row = 0; row < radioStationsModel->rowCount(QModelIndex()); ++row) {
+        const RadioStation &station = radioStationsModel->station(row);
+
+        if (station.iconUrl.isEmpty())
+            continue;
+
+        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(20, 20));
+    }
 }

@@ -1,7 +1,12 @@
 #ifndef RADIOLIST_H
 #define RADIOLIST_H
 
+#include <QHeaderView>
 #include <QMessageBox>
+#include <QObject>
+#include <QPixmap>
+#include <QStandardItemModel>
+#include <QStringList>
 #include "../ui_mainwindow.h"
 #include "Country.h"
 #include "FavoriteManager.h"
@@ -10,6 +15,7 @@
 #include "container.h"
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
+#include "include/IconLoader.h"
 #include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
 #include "include/jsonlistprocessor.h"
@@ -19,12 +25,6 @@
 #include "model/RadioStationsModel.h"
 #include "streamreader.h"
 #include "streamrecorder.h"
-
-#include <QHeaderView>
-#include <QObject>
-#include <QPixmap>
-#include <QStandardItemModel>
-#include <QStringList>
 
 #include "miniplayer.h"
 
@@ -111,6 +111,7 @@ public:
 
     void updateThemeAppearance();
     void setTheme(Theme *theme);
+    void loadStationIcons();
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -164,6 +165,7 @@ private:
                                                  .getInstance<PlayerUIController>();
 
     RadioStation currentPlayingStation;
+    IconLoader iconLoader;
     Theme *theme = nullptr;
 
     int radioIndexNumber = 0;
