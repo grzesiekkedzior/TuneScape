@@ -24,15 +24,27 @@ QVariant RadioStationsModel::data(const QModelIndex &index, int role) const
     if (!index.isValid())
         return {};
 
-    if (role != Qt::DisplayRole)
+    if (index.row() < 0 || index.row() >= m_stations.size())
         return {};
 
     const RadioStation &station = m_stations.at(index.row());
 
-    switch (static_cast<Column>(index.column())) {
-    case Column::StationColumn:
-        return station.station;
+    if (index.column() == static_cast<int>(Column::StationColumn)) {
+        if (role == Qt::DecorationRole) {
+            if (!station.icon.isNull())
+                return station.icon;
 
+            return QIcon(QStringLiteral(":/images/img/radio96x96.png"));
+        }
+
+        if (role == Qt::DisplayRole)
+            return station.station;
+    }
+
+    if (role != Qt::DisplayRole)
+        return {};
+
+    switch (static_cast<Column>(index.column())) {
     case Column::GenreColumn:
         return station.genre;
 
@@ -42,6 +54,7 @@ QVariant RadioStationsModel::data(const QModelIndex &index, int role) const
     case Column::HomepageColumn:
         return station.homepage;
 
+    case Column::StationColumn:
     case Column::ColumnCount:
         break;
     }
@@ -59,20 +72,22 @@ QVariant RadioStationsModel::headerData(int section, Qt::Orientation orientation
 
     switch (static_cast<Column>(section)) {
     case Column::StationColumn:
-        return "Station";
+        return QStringLiteral("Station");
 
     case Column::GenreColumn:
-        return "Genre";
+        return QStringLiteral("Genre");
 
     case Column::CountryColumn:
-        return "Country";
+        return QStringLiteral("Country");
 
     case Column::HomepageColumn:
-        return "Homepage";
+        return QStringLiteral("Homepage");
 
-    default:
-        return {};
+    case Column::ColumnCount:
+        break;
     }
+
+    return {};
 }
 
 void RadioStationsModel::setStations(const QVector<RadioStation> &stations)
@@ -102,4 +117,20 @@ bool RadioStationsModel::isEmpty() const
 const QVector<RadioStation> &RadioStationsModel::stations() const
 {
     return m_stations;
+}
+
+void RadioStationsModel::setStationIcon(int row, const QIcon &icon)
+{
+    qDebug() << "setStationIcon row:" << row << "isNull:" << icon.isNull();
+
+    if (row < 0 || row >= m_stations.size()) {
+        qDebug() << "Invalid row, model size:" << m_stations.size();
+        return;
+    }
+
+    m_stations[row].icon = icon;
+
+    const QModelIndex changedIndex = index(row, static_cast<int>(Column::StationColumn));
+
+    emit dataChanged(changedIndex, changedIndex, {Qt::DecorationRole});
 }

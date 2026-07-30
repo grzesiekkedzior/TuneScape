@@ -22,6 +22,7 @@ public:
     const RadioStation &station(int row) const;
     int size() const;
     bool isEmpty() const;
+    void setStationIcon(int row, const QIcon &icon);
 
     const QVector<RadioStation> &stations() const;
 

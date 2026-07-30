@@ -12,6 +12,11 @@ constexpr auto WorldImagePath = ":/images/img/word.png";
 
 } // namespace
 
+Country::Country(const IconLoader &iconLoader, QObject *parent)
+    : QObject(parent)
+    , iconLoader(this)
+{}
+
 void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 {
     Q_ASSERT(ui);
@@ -22,6 +27,12 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 
     countryStationsModel = new RadioStationsModel(this);
     ui->tableOfCoutries->setModel(countryStationsModel);
+    connect(&iconLoader,
+            &IconLoader::iconLoaded,
+            countryStationsModel,
+            &RadioStationsModel::setStationIcon);
+
+    ui->tableOfCoutries->setIconSize(QSize(20, 20));
 
     connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
 
@@ -130,6 +141,7 @@ bool Country::createTable(QNetworkReply *reply)
     }
 
     countryStationsModel->setStations(stations);
+    loadStationIcons();
     return true;
 }
 
@@ -274,4 +286,19 @@ void Country::updateThemeAppearance()
         return;
 
     setIndexColor(index);
+}
+
+void Country::loadStationIcons()
+{
+    if (!countryStationsModel)
+        return;
+
+    for (int row = 0; row < countryStationsModel->rowCount(QModelIndex()); ++row) {
+        const RadioStation &station = countryStationsModel->station(row);
+
+        if (station.iconUrl.isEmpty())
+            continue;
+
+        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(20, 20));
+    }
 }

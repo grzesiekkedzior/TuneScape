@@ -1,5 +1,6 @@
 #ifndef RADIOSTATION_H
 #define RADIOSTATION_H
+#include <QIcon>
 #include <QString>
 
 struct RadioStation
@@ -11,5 +12,7 @@ struct RadioStation
 
     QString streamUrl;
     QString iconUrl;
+
+    QIcon icon;
 };
 #endif // RADIOSTATION_H

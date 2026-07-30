@@ -1,145 +1,54 @@
 #include "include/IconLoader.h"
-#include <QVBoxLayout>
+
+#include <QNetworkReply>
+#include <QPixmap>
 
 IconLoader::IconLoader(QObject *parent)
     : QObject(parent)
+{}
+
+void IconLoader::loadIcon(int row, const QUrl &url, const QSize &size)
 {
-    networkManager = new QNetworkAccessManager(this);
-}
-
-QLabel *IconLoader::createLabel(const QString &text)
-{
-    QLabel *label = new QLabel(text);
-    label->setFixedWidth(120);
-    label->setWordWrap(true);
-    label->setAlignment(Qt::AlignCenter);
-
-    return label;
-}
-
-QPushButton *IconLoader::createIconButton(int row)
-{
-    QPushButton *button = new QPushButton;
-    button->setFixedSize(120, 120);
-
-    QIcon icon(TUNESCAPE_ICON);
-    button->setIcon(icon);
-    button->setIconSize(QSize(100, 100));
-
-    connect(button, &QPushButton::clicked, this, [this, row]() { emit iconClicked(row); });
-
-    return button;
-}
-
-QWidget *IconLoader::createIconButtonWithLabel(int row, const QString &stationName)
-{
-    QWidget *itemContainer = new QWidget;
-
-    QVBoxLayout *itemLayout = new QVBoxLayout(itemContainer);
-
-    QLabel *label = createLabel(stationName);
-    QPushButton *button = createIconButton(row);
-
-    itemLayout->addWidget(button);
-    itemLayout->addWidget(label);
-
-    return itemContainer;
-}
-
-void IconLoader::resizeCache(int size)
-{
-    buttonCache.resize(size, nullptr);
-}
-
-void IconLoader::setButton(int row, QWidget *button)
-{
-    if (row < buttonCache.size())
-        buttonCache[row] = button;
-}
-
-QWidget *IconLoader::button(int row) const
-{
-    if (row < 0 || row >= buttonCache.size())
-        return nullptr;
-
-    return buttonCache[row];
-}
-
-bool IconLoader::containsEmptyButton() const
-{
-    return buttonCache.contains(nullptr);
-}
-
-int IconLoader::buttonCount() const
-{
-    return buttonCache.size();
-}
-
-void IconLoader::clearCache()
-{
-    buttonCache.clear();
-    networkReplies.clear();
-}
-
-QWidget *IconLoader::addButton(int row, const QString &stationName)
-{
-    QWidget *itemContainer = createIconButtonWithLabel(row, stationName);
-
-    if (row < buttonCount())
-        setButton(row, itemContainer);
-    return itemContainer;
-}
-
-void IconLoader::handleNetworkReply(QNetworkReply *reply, int row)
-{
-    if (row >= buttonCount()) {
-        reply->deleteLater();
+    if (!url.isValid() || url.isEmpty()) {
+        emit iconLoadFailed(row);
         return;
     }
 
-    QWidget *itemContainer = button(row);
-    if (!itemContainer) {
-        reply->deleteLater();
+    const QString cacheKey = url.toString()
+                             + QStringLiteral("_%1x%2").arg(size.width()).arg(size.height());
+
+    const auto cacheIt = m_cache.constFind(cacheKey);
+
+    if (cacheIt != m_cache.constEnd()) {
+        emit iconLoaded(row, cacheIt.value());
         return;
     }
 
-    QPushButton *button = qobject_cast<QPushButton *>(itemContainer->layout()->itemAt(0)->widget());
-    if (!button) {
-        reply->deleteLater();
-        return;
-    }
+    QNetworkRequest request(url);
 
-    if (reply->error() == QNetworkReply::NoError) {
-        QByteArray imageData = reply->readAll();
+    QNetworkReply *reply = m_networkManager.get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, row, size, cacheKey]() {
+        reply->deleteLater();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            emit iconLoadFailed(row);
+            return;
+        }
+
         QPixmap pixmap;
-        pixmap.loadFromData(imageData);
-        QSize buttonSize = button->size();
 
-        pixmap = pixmap.scaled(buttonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        button->setIcon(QIcon(pixmap));
-        button->setIconSize(buttonSize);
-    } else {
-        qDebug() << reply->errorString();
-    }
+        if (!pixmap.loadFromData(reply->readAll())) {
+            emit iconLoadFailed(row);
+            return;
+        }
 
-    reply->deleteLater();
-}
+        pixmap = pixmap.scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-void IconLoader::loadRadioIcons(const QVector<RadioStation> &stations)
-{
-    for (int row = 0; row < stations.size(); ++row) {
-        QNetworkRequest request(stations[row].iconUrl);
-        QNetworkReply *reply = networkManager->get(request);
+        const QIcon icon(pixmap);
 
-        networkReplies.append(reply);
+        m_cache.insert(cacheKey, icon);
 
-        connect(reply, &QNetworkReply::finished, this, [this, reply, row]() {
-            handleNetworkReply(reply, row);
-        });
-    }
-}
-
-QVector<QWidget *> IconLoader::getButtonCache() const
-{
-    return buttonCache;
+        emit iconLoaded(row, icon);
+    });
 }

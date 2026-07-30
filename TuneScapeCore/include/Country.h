@@ -16,6 +16,7 @@
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
 #include "customcolordelegate.h"
+#include "include/IconLoader.h"
 #include "include/theme.h"
 #include "jsonlistprocessor.h"
 #include "model/RadioStationsModel.h"
@@ -39,6 +40,8 @@ class Country : public QObject
 
 public:
     Country() = default;
+    Country(const IconLoader &iconLoader, QObject *parent = nullptr);
+
     ~Country() override = default;
 
     void setData(Ui::MainWindow *ui, RadioList *radioList);
@@ -58,6 +61,7 @@ public:
     void setFavoriteManager(FavoriteManager *favoriteManager);
 
     void setTheme(Theme *newTheme);
+    void loadStationIcons();
 public slots:
     void updateThemeAppearance();
 
@@ -94,6 +98,7 @@ private:
     RadioStationsModel *countryStationsModel = nullptr;
     RadioStation currentStation;
     RadioImageManager imageManager;
+    IconLoader iconLoader;
 
     PlaybackController &playbackController = SingletonContainer::getSingleton()
                                                  .getInstance<PlaybackController>();
