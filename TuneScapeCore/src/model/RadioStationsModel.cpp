@@ -1,4 +1,5 @@
 #include "include/model/RadioStationsModel.h"
+#include <QUrl>
 
 RadioStationsModel::RadioStationsModel(QObject *parent)
     : QAbstractTableModel(parent)
@@ -52,7 +53,7 @@ QVariant RadioStationsModel::data(const QModelIndex &index, int role) const
         return station.country;
 
     case Column::HomepageColumn:
-        return station.homepage;
+        return QUrl(station.homepage).host();
 
     case Column::StationColumn:
     case Column::ColumnCount:

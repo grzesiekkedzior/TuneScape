@@ -165,44 +165,64 @@ void JsonListProcessor::processJsonQuery()
     if (!doc.isArray())
         return;
 
-    QJsonArray stationsArray = doc.array();
+    const QJsonArray stationsArray = doc.array();
+
+    stations.reserve(stationsArray.size());
 
     for (const QJsonValue &value : stationsArray) {
-        QJsonObject stationObject = value.toObject();
+        const QJsonObject stationObject = value.toObject();
 
-        QString stationName = stationObject[NAME].toString().trimmed().replace(QRegularExpression(
-                                                                                   "^[\\s?_.-]+"),
-                                                                               "");
-        QString genre = stationObject[GENRE].toString();
-        genre = genre.left(genre.indexOf(',')).trimmed();
-
-        QString country = stationObject[COUNTRY].toString().trimmed();
-        QString stationUrl = stationObject[URL].toString().trimmed();
-
-        QString streamUrl = stationObject[URL_RESOLVED].toString();
-        QString iconUrl = stationObject[FAVICON].toString();
-
-        // New model
         RadioStation station;
-        station.station = stationName;
-        station.genre = genre;
-        station.country = country;
-        station.homepage = stationUrl;
-        station.streamUrl = streamUrl;
-        station.iconUrl = iconUrl;
+
+        station.station = stationObject[NAME].toString().trimmed().replace(QRegularExpression(
+                                                                               QStringLiteral(
+                                                                                   "^[\\s?_.-]+")),
+                                                                           QString());
+
+        station.genre = stationObject[GENRE].toString();
+
+        const qsizetype commaIndex = station.genre.indexOf(',');
+
+        if (commaIndex >= 0)
+            station.genre = station.genre.left(commaIndex);
+
+        station.genre = station.genre.trimmed();
+
+        station.country = stationObject[COUNTRY].toString().trimmed();
+
+        station.homepage = stationObject[URL].toString().trimmed();
+
+        station.streamUrl = stationObject[URL_RESOLVED].toString().trimmed();
+
+        station.iconUrl = stationObject[FAVICON].toString().trimmed();
+
+        // Dodatkowe dane do okna Details
+        station.codec = stationObject[QStringLiteral("codec")].toString().trimmed();
+
+        station.language = stationObject[QStringLiteral("language")].toString().trimmed();
+
+        station.state = stationObject[QStringLiteral("state")].toString().trimmed();
+
+        station.countryCode = stationObject[QStringLiteral("countrycode")].toString().trimmed();
+
+        station.bitrate = stationObject[QStringLiteral("bitrate")].toInt();
+
+        station.votes = stationObject[QStringLiteral("votes")].toInt();
+
+        station.clickCount = stationObject[QStringLiteral("clickcount")].toInt();
 
         stations.push_back(station);
 
-        // Legacy model (temporary)
+        // Legacy model
         TableRow row;
-        row.station = stationName;
-        row.genre = genre;
-        row.country = country;
-        row.stationUrl = stationUrl;
+        row.station = station.station;
+        row.genre = station.genre;
+        row.country = station.country;
+        row.stationUrl = station.homepage;
 
         tableRows.push_back(row);
-        streamAddresses.push_back(streamUrl);
-        iconAddresses.push_back(iconUrl);
+        streamAddresses.push_back(station.streamUrl);
+        iconAddresses.push_back(station.iconUrl);
     }
 }
 

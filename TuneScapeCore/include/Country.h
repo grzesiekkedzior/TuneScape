@@ -1,14 +1,16 @@
 #ifndef COUNTRY_H
 #define COUNTRY_H
 
+#include <QDesktopServices>
+#include <QMenu>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QObject>
 #include <QPixmap>
 #include <QSharedPointer>
 #include <QString>
+#include <QUrl>
 #include <QVector>
-
 #include "FavoriteManager.h"
 #include "RadioImageManager.h"
 #include "audioprocessor.h"
@@ -64,6 +66,7 @@ public:
     void loadStationIcons();
 public slots:
     void updateThemeAppearance();
+    void showStationContextMenu(const QPoint &position);
 
 private slots:
     void searchCountry(const QString &country);

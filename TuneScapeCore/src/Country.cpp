@@ -1,10 +1,10 @@
 #include "include/Country.h"
-#include "include/radiolist.h"
-
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QRegularExpression>
 #include <QTableView>
+#include "include/StationDetailsDialog.h"
+#include "include/radiolist.h"
 
 namespace {
 
@@ -43,6 +43,20 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
     ui->worldImage->setAlignment(Qt::AlignCenter);
 
     ui->tableOfCoutries->setVisible(false);
+    ui->tableOfCoutries->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(ui->tableOfCoutries,
+            &QTableView::customContextMenuRequested,
+            this,
+            &Country::showStationContextMenu);
+    ui->tableOfCoutries->verticalHeader()->setDefaultSectionSize(30);
+
+    QHeaderView *header = ui->tableOfCoutries->horizontalHeader();
+
+    header->setSectionResizeMode(static_cast<int>(Column::StationColumn), QHeaderView::Stretch);
+
+    header->setSectionResizeMode(static_cast<int>(Column::GenreColumn),
+                                 QHeaderView::ResizeToContents);
 }
 
 void Country::load()
@@ -53,7 +67,6 @@ void Country::load()
         return;
 
     loadCountriesToComboBox();
-    ui->tableOfCoutries->verticalHeader()->setDefaultSectionSize(18);
 }
 
 void Country::loadCountriesToComboBox()
@@ -136,7 +149,13 @@ bool Country::createTable(QNetworkReply *reply)
         station.homepage = object[HomepageKey].toString().trimmed();
         station.streamUrl = object[ResolvedUrlKey].toString().trimmed();
         station.iconUrl = object[FaviconKey].toString().trimmed();
-
+        station.codec = object[QStringLiteral("codec")].toString().trimmed();
+        station.language = object[QStringLiteral("language")].toString().trimmed();
+        station.state = object[QStringLiteral("state")].toString().trimmed();
+        station.countryCode = object[QStringLiteral("countrycode")].toString().trimmed();
+        station.bitrate = object[QStringLiteral("bitrate")].toInt();
+        station.votes = object[QStringLiteral("votes")].toInt();
+        station.clickCount = object[QStringLiteral("clickcount")].toInt();
         stations.append(std::move(station));
     }
 
@@ -299,6 +318,97 @@ void Country::loadStationIcons()
         if (station.iconUrl.isEmpty())
             continue;
 
-        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(20, 20));
+        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(128, 128));
+    }
+}
+
+void Country::showStationContextMenu(const QPoint &position)
+{
+    if (!countryStationsModel || !favoriteManager || !radioList)
+        return;
+
+    const QModelIndex index = ui->tableOfCoutries->indexAt(position);
+
+    if (!index.isValid())
+        return;
+
+    if (index.row() < 0 || index.row() >= countryStationsModel->size())
+        return;
+
+    const RadioStation station = countryStationsModel->station(index.row());
+
+    QMenu menu(ui->tableOfCoutries);
+
+    const bool isCurrentStationPlaying = playbackController.isPlaying() && isPlaying
+                                         && station.streamUrl == currentStation.streamUrl;
+
+    QAction *playAction = menu.addAction(isCurrentStationPlaying ? tr("Stop") : tr("Play"));
+
+    const bool isFavorite = favoriteManager->isAddressExists(station.streamUrl,
+                                                             RadioBrowserPlaylist);
+
+    QAction *favoriteAction = menu.addAction(isFavorite ? tr("Remove from favorites")
+                                                        : tr("Add to favorites"));
+
+    QAction *detailsAction = menu.addAction(tr("Details"));
+
+    menu.addSeparator();
+
+    QAction *openHomepageAction = menu.addAction(tr("Open homepage"));
+    openHomepageAction->setEnabled(!station.homepage.isEmpty());
+
+    QAction *selectedAction = menu.exec(ui->tableOfCoutries->viewport()->mapToGlobal(position));
+
+    if (!selectedAction)
+        return;
+
+    if (selectedAction == playAction) {
+        if (isCurrentStationPlaying) {
+            playbackController.stop();
+            audioProcessor.stop();
+
+            setIsPlaying(false);
+            setCurrentIndexPlaying(-1);
+
+            playerUIController.setPlayIcon();
+            playerUIController.setDefaultImage();
+            playerUIController.clearMetadata();
+
+            clearTableColor();
+
+            radioList->setIsBrowseStationLoaded(false);
+            radioList->setIsStopClicked(true);
+        } else {
+            onDoubleListClicked(index);
+        }
+
+        return;
+    }
+
+    if (selectedAction == favoriteAction) {
+        const QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
+                             + station.country + "," + station.genre + "," + station.homepage;
+
+        const bool isNowFavorite = favoriteManager->toggleFavorite(station.streamUrl,
+                                                                   data,
+                                                                   RadioBrowserPlaylist);
+
+        if (station.streamUrl == currentStation.streamUrl)
+            playerUIController.setFavorite(isNowFavorite);
+
+        radioList->refreshFavoritePlaylist();
+
+        return;
+    }
+
+    if (selectedAction == detailsAction) {
+        StationDetailsDialog dialog(station, ui->tableOfCoutries);
+
+        dialog.exec();
+        return;
+    }
+
+    if (selectedAction == openHomepageAction) {
+        QDesktopServices::openUrl(QUrl(station.homepage));
     }
 }
