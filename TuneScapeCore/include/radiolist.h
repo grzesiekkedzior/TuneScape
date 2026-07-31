@@ -2,6 +2,7 @@
 #define RADIOLIST_H
 
 #include <QHeaderView>
+#include <QMenu>
 #include <QMessageBox>
 #include <QObject>
 #include <QPixmap>
@@ -22,11 +23,10 @@
 #include "include/radioaudiomanager.h"
 #include "include/radioinfo.h"
 #include "include/theme.h"
+#include "miniplayer.h"
 #include "model/RadioStationsModel.h"
 #include "streamreader.h"
 #include "streamrecorder.h"
-
-#include "miniplayer.h"
 
 enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
 
@@ -112,6 +112,7 @@ public:
     void updateThemeAppearance();
     void setTheme(Theme *theme);
     void loadStationIcons();
+    void refreshFavoritePlaylist();
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -120,6 +121,7 @@ signals:
     void trackTitleReceived(const QString &title);
 public slots:
     void onStopButtonClicked();
+    void showStationContextMenu(const QPoint &position);
 
 private slots:
     void onTreeViewItemClicked(const QModelIndex &index);
@@ -253,7 +255,6 @@ private:
     void resetImageIfStopped();
 
     void updateFavoriteColumnLayout();
-    void refreshFavoritePlaylist();
 };
 
 #endif // RADIOLIST_H

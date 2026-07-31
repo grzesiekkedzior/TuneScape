@@ -1,11 +1,14 @@
 #include "include/radiolist.h"
+#include <QDesktopServices>
 #include <QFile>
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QPainter>
 #include <QScrollBar>
+#include <QUrl>
 #include "include/RadioBrowserPlaylistEditor.h"
+#include "include/StationDetailsDialog.h"
 
 RadioList::RadioList(QObject *parent)
     : QObject{parent}
@@ -67,6 +70,18 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     imageManager = new RadioImageManager{this};
     playerUIController.initialize(ui, &miniPlayer);
     ui->tableView->setIconSize(QSize(20, 20));
+
+    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    connect(ui->tableView,
+            &QTableView::customContextMenuRequested,
+            this,
+            &RadioList::showStationContextMenu);
+
+    ui->tableView->verticalHeader()->setDefaultSectionSize(30);
+    header->setSectionResizeMode(static_cast<int>(Column::StationColumn), QHeaderView::Stretch);
+    header->setSectionResizeMode(static_cast<int>(Column::GenreColumn),
+                                 QHeaderView::ResizeToContents);
 }
 
 void RadioList::showMiniplayer()
@@ -807,6 +822,98 @@ void RadioList::loadStationIcons()
         if (station.iconUrl.isEmpty())
             continue;
 
-        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(20, 20));
+        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(128, 128));
     }
+}
+
+void RadioList::showStationContextMenu(const QPoint &position)
+{
+    if (!radioStationsModel || !favoriteManager)
+        return;
+
+    const QModelIndex index = ui->tableView->indexAt(position);
+
+    if (!index.isValid())
+        return;
+
+    if (index.row() < 0 || index.row() >= radioStationsModel->size())
+        return;
+
+    const RadioStation station = radioStationsModel->station(index.row());
+
+    QMenu menu(ui->tableView);
+
+    const bool isCurrentStationPlaying = playbackController.isPlaying() && !country.getIsPlaying()
+                                         && station.streamUrl == currentPlayingStation.streamUrl;
+
+    QAction *playAction = menu.addAction(isCurrentStationPlaying ? tr("Stop") : tr("Play"));
+
+    const bool isFavorite = favoriteManager->isAddressExists(station.streamUrl,
+                                                             RADIO_BROWSER_PLAYLIST);
+
+    QAction *favoriteAction = menu.addAction(isFavorite ? tr("Remove from favorites")
+                                                        : tr("Add to favorites"));
+
+    QAction *detailsAction = menu.addAction(tr("Details"));
+
+    menu.addSeparator();
+
+    QAction *openHomepageAction = menu.addAction(tr("Open homepage"));
+    openHomepageAction->setEnabled(!station.homepage.isEmpty());
+
+    QAction *selectedAction = menu.exec(ui->tableView->viewport()->mapToGlobal(position));
+
+    if (!selectedAction)
+        return;
+
+    if (selectedAction == playAction) {
+        if (isCurrentStationPlaying) {
+            playbackController.stop();
+            audioProcessor.stop();
+
+            currentRadioPlayingAddress.clear();
+
+            playerUIController.setPlayIcon();
+            playerUIController.setDefaultImage();
+            playerUIController.clearMetadata();
+
+            clearTableViewColor();
+            radioInfo->clearInfo();
+
+            setIsBrowseStationLoaded(false);
+            setIsStopClicked(true);
+        } else {
+            radioIndexNumber = index.row();
+            currentStationIndex = index.row();
+
+            onTableViewDoubleClicked(index);
+        }
+
+        return;
+    }
+
+    if (selectedAction == favoriteAction) {
+        const QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
+                             + station.country + "," + station.genre + "," + station.homepage;
+
+        const bool isNowFavorite = favoriteManager->toggleFavorite(station.streamUrl,
+                                                                   data,
+                                                                   RADIO_BROWSER_PLAYLIST);
+
+        if (station.streamUrl == currentPlayingStation.streamUrl)
+            playerUIController.setFavorite(isNowFavorite);
+
+        refreshFavoritePlaylist();
+
+        return;
+    }
+
+    if (selectedAction == detailsAction) {
+        StationDetailsDialog dialog(station, ui->tableView);
+        dialog.exec();
+        return;
+    }
+
+    if (selectedAction == openHomepageAction)
+        QDesktopServices::openUrl(QUrl(station.homepage));
 }

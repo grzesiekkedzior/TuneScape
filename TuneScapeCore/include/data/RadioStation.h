@@ -13,6 +13,15 @@ struct RadioStation
     QString streamUrl;
     QString iconUrl;
 
+    QString codec;
+    QString language;
+    QString countryCode;
+    QString state;
+
+    int bitrate = 0;
+    int votes = 0;
+    int clickCount = 0;
+
     QIcon icon;
 };
 #endif // RADIOSTATION_H
