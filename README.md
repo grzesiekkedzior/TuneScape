@@ -1,134 +1,100 @@
+# TuneScape
 
-# TuneScape 🌐 [HOMEPAGE](https://grzesiekkedzior.github.io/TuneScape-site/)   
+**A free and open-source internet radio player for Windows, built with C++ and Qt 6.**
 
-### **5.0.1 - stability patch**   
-Version 5.0.1 focuses on stability improvements and internal fixes.
-Resolved a crash occurring on application shutdown caused by incorrect memory management in the system tray component.
-The fix aligns object lifecycle handling with Qt’s parent–child ownership model, eliminating double deletion issues.   
+Browse thousands of stations from around the world, search by country, save your favorites, record streams and control playback directly from the Windows system tray.
 
-### **5.0.0 - experimental**
-Version 5.0.0 brings a major step forward for TuneScape. A new track info panel now displays
-cover art and artist biographies fetched live from MusicBrainz, Cover Art Archive and Wikipedia.
-A dedicated Licenses & Attribution page has also been added to properly credit all the open
-services and communities that make TuneScape possible.   
-![cover](https://github.com/user-attachments/assets/79afaaa6-926c-40c0-8b71-82bce94de533)   
+[Download TuneScape](https://sourceforge.net/projects/tunescape/files/latest/download) · [Homepage](https://grzesiekkedzior.github.io/TuneScape-site/) · [Releases](https://github.com/grzesiekkedzior/TuneScape/releases) · [Report an issue](https://github.com/grzesiekkedzior/TuneScape/issues)
 
-### **4.9.0 - experimental**   
-From now on, you can remove radio stations from your favorites list.   
-![delete](https://github.com/user-attachments/assets/466260ba-a7f3-4fed-870a-4b5778bdee53)   
+![TuneScape 6.0.0 with the Dark theme](https://grzesiekkedzior.github.io/TuneScape-site/assets/app-dark.png)
 
-### **4.8.5 - experimental**   
-In version 4.8.5, a new feature has been added that allows exporting IceCast favorite stations to an M3U playlist.   
+## Features
 
-### **4.8.4 - experimental**   
-For now you can export an M3U playlist and listen to it on VLC or other compatible apps with the M3U standard. The second thing is that you can import playlists to TuneScape. For now, only RadioBrowser. 
+- Browse thousands of community-maintained stations provided by [Radio Browser](https://www.radio-browser.info/).
+- Search for stations by name and browse stations by country.
+- Save favorite stations and quickly return to them later.
+- View station details and open the broadcaster's homepage.
+- See live track metadata, cover artwork and available artist information.
+- Record the currently playing radio stream locally.
+- Control playback and open Top, Popular, New and Favorite station lists from the system tray.
+- Use the compact **Now Playing** panel while the main window is minimized.
+- Choose from five interface themes: **System, Light, Dark, Classic and Cyberpunk**.
 
-I highly encourage you to download the M3U playlist from https://www.radio-browser.info/ and choose your category or TAGS or everything else and load it to TuneScape.   
-### **4.7.4**   
-The main icon is changed. The icon is from [iconduck.com](https://iconduck.com/icons/105034/radio) and is for [GPL v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html) licence.   
-### **4.7.3**   
-Version 4.7.3 ... more functionality. A crash radio station is handled.   
-![connect](https://github.com/user-attachments/assets/30052936-4b9e-48df-8350-4f2017ca6cc1)   
+## What's new in 6.0.0
 
-### **4.7.0**   
-Version 4.7.0 brings us the countries choosing.   
-![world](https://github.com/user-attachments/assets/4423ba6c-f5ba-44af-9730-96f3fca2619d)   
+TuneScape 6.0.0 is a major release focused on a cleaner and more consistent Radio Browser experience.
 
-### **4.6.0**   
-We get a new feature with version 4.6.0. Miniplayer that shows for you only minimal useful information and can stay on top of other windows if you want.   
-<br/>
-![light50x50](https://github.com/user-attachments/assets/041ff162-260b-43ea-b563-3646ac1d119d)
-![dark50x50](https://github.com/user-attachments/assets/ccdf692a-926e-43c2-9658-de1d917330a2)   
-<br/>
-### **4.5.0**   
-Version 4.5.0 brings a new look for TuneScape. The appearance of the light and dark themes is more elegant, and its behavior is idealy the same.
-I prepared architecture to add more themes in the future too.   
-<br/>
-![light](https://github.com/user-attachments/assets/e23a5170-d8b5-45c2-89bf-d0e08c4b70de)   
-<br/>
-![dark](https://github.com/user-attachments/assets/d7b539e4-45c7-4b34-927f-99192f303826)   
-<br/>
-### **4.4.0**   
-In version 4.4.0 is added export and import functionality for the favorite playlists and a simple settings/menu button.   
-<br/>
-![playlists](https://github.com/user-attachments/assets/757570af-1877-4645-852f-dc7aa1ee3aec)   
-### **4.3.1**   
-In version 4.3.1, I resigned from creating independent widgets (FFT) to create some easily multiplatform integration.   
-For now I use QGraphicsView, and there are some problems in Linux. I think I will resolved this problem in the future.   
-I have fought seriously with FFT. There were very uncommon problems with buffers and streams!!!. The tests took a lot of time, but now it looks great.   
-### **A new release, 4.2.1, with audio frequency spectrum.**   
-![fft](https://github.com/user-attachments/assets/6bcc87d3-4990-4d28-a480-d4dfcd38b903)   
-### **You can test the new beta version 4.1.0 with the tray radio lists.**   
-![smallmenu](https://github.com/user-attachments/assets/0ebbd10b-7ee7-41e3-a502-f719af5ce6a5)   
+- A new list-based station browser with station icons and clearer information.
+- Improved country browsing, favorites and station actions.
+- Consistent highlighting of the currently playing station.
+- Expanded system tray controls and a refreshed Now Playing panel.
+- Five interface themes.
+- A major internal refactoring that makes the application easier to maintain and extend.
+- Removal of the legacy **Tiles**, **IceCast** and **Spectrum/FFT** modes.
 
-### **A new release, 4.0.0, is now available. Qt 6.7.0**   
+For earlier versions, see [GitHub Releases](https://github.com/grzesiekkedzior/TuneScape/releases).
 
-### Expansion of features:    
-- Add a record icon to the tray menu.
-- Add a menu for a radio-browser station to tray the menu.   
-### **The new branch for Linux development's name is "linux".**   
-![image](https://github.com/user-attachments/assets/626865e2-fe7a-4238-8e25-b281d37d5a4e)   
+## Download and installation
 
+TuneScape is currently developed and tested on Windows.
 
-![tray1](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/a5697f87-8b78-46a0-bdc7-20f93afb1f69)
-![tray2](https://github.com/grzesiekkedzior/TuneScape/assets/23739158/38610f42-4f10-4fe3-a3a0-c07b8bbd7356)
-   
+1. Download the latest release from [SourceForge](https://sourceforge.net/projects/tunescape/files/latest/download).
+2. Run the installer.
+3. Start TuneScape and choose a station.
 
+## Building from source
 
-This is an open-source internet radio app that provides access to a wide range of radio stations. It leverages a database of radio stations from the website https://www.radio-browser.info/ to offer a diverse selection of online radio channels for all users.
+To build TuneScape, you need:
 
-**TuneScape** for now is being tested on the Windows platform.
+- Qt 6;
+- a C++ compiler supported by your Qt installation;
+- Qt Creator or an equivalent Qt development environment.
 
-[![Download TuneScape](https://a.fsdn.com/con/app/sf-download-button)](https://sourceforge.net/projects/tunescape/files/latest/download)   
+Clone the repository, open the project in Qt Creator, select a compatible Qt 6 kit and build the project.
 
-## 🎵 Support TuneScape
+```bash
+git clone https://github.com/grzesiekkedzior/TuneScape.git
+cd TuneScape
+```
 
-If you enjoy using TuneScape and would like to support its development, you can make a donation via PayPal.  
-Every contribution helps maintain the project, add new features, and improve performance.  
+## Data and third-party services
 
-### 💰 Donate via PayPal  
-You can support TuneScape by sending a donation through PayPal:  
+TuneScape uses open services and community-maintained data:
+
+- [Radio Browser](https://www.radio-browser.info/) for the station directory;
+- [MusicBrainz](https://musicbrainz.org/) for music metadata;
+- [Cover Art Archive](https://coverartarchive.org/) for cover artwork;
+- [Wikipedia](https://www.wikipedia.org/) for available artist information.
+
+Availability and accuracy of station streams and metadata depend on their respective providers.
+
+## Contributing
+
+Contributions are welcome. You can help by:
+
+- reporting a bug through [GitHub Issues](https://github.com/grzesiekkedzior/TuneScape/issues);
+- suggesting an improvement or a new feature;
+- improving the documentation;
+- submitting a pull request;
+- starring the repository and sharing TuneScape with other internet-radio listeners.
+
+Before making a larger change, please open an issue so the idea can be discussed first.
+
+## Support TuneScape
+
+TuneScape is developed in free time. If you enjoy using it, you can support its continued development with a donation:
+
 [![Donate via PayPal](https://img.shields.io/badge/Donate%20via%20PayPal-00457C?logo=paypal&logoColor=white&style=for-the-badge)](https://www.paypal.com/donate/?hosted_button_id=MW4VMJ8YHSZF2)
 
-Or simply scan the QR code below:  
+A GitHub star, useful bug report or thoughtful feedback also helps the project grow.
 
-![Kod QR](https://github.com/user-attachments/assets/a9c86292-1220-4e7e-b7b2-6e7415075220)
+## License
 
-### 🙌 Other Ways to Support  
-If you can't donate, you can still help by:  
-- ⭐ Starring the project on GitHub to increase its visibility.  
-- 📝 Providing feedback and suggestions to improve TuneScape.  
-- 📢 Sharing the app with friends who love internet radio.  
+TuneScape is released under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 
-Thank you for your support! 🎶❤️  
+Additional components retain their original licenses:
 
+- the modified **Combinear** theme is based on [Qt Style Sheets Templates](https://qss-stock.devsecstudio.com/) and is licensed under the MIT License;
+- the application icon originates from [Iconduck](https://iconduck.com/icons/105034/radio) and is licensed under GPLv2.
 
-# License
-**TuneScape** is released under the GPLv3 license.  
-**The dark theme** "Combinear" with modification is from [Qt Style Sheets Templates](https://qss-stock.devsecstudio.com/) and is under an MIT license.
-
-# How it works
-
-You can add a station to favorites when the station is playing and the same when you want to remove it.
-
-The meta data is read even when you pause playing the radio so that titles change fluently.
-
-**TuneScape** informs you when connection will be lost and when the connect refreshes all automatically.
-
-**TuneScape** uses for every start all the newest radio databases. In that case, sometimes it can be a little slow, but only at the start.
-
-If you search for a radio station that you are interested in and you want to listen to later, add it to your favorite bookmark.
-
-When you search for a station and list it and click other bookmarks on then you lose all your search stations.
-
-# Contributing
-
-**An App by the People, for the People**
-
-**Your Contribution** is Invaluable: Regardless of who you are or what you bring to the table, your ideas and skills are irreplaceable. This is your opportunity to be a part of creating something truly exceptional.
-
-**For All of Us:** Our application is a creation of many people with diverse backgrounds and skills, designed with everyone in mind. No matter where you come from, our initiative aims to provide value for each and every user.
-
-**Choose Your Area:** Whether you're a developer, designer or have other talents, there's a place for you here.
-
-**Early Stage:** Our application is in its initial phase, which means that this is the moment when your ideas and involvement can have the greatest impact. It's an opportunity to shape the project right from the beginning.
+See the repository's license and attribution files for complete details.
