@@ -311,11 +311,37 @@ void RadioList::setFavoriteStatons()
 
 void RadioList::loadAllData()
 {
+    allStations.resize(Stations::FAVORITE + 1);
+    setFavoriteStatons();
+
+    if (!jsonListProcesor.checkInternetConnection()) {
+        radioStationsModel->setStations(allStations[Stations::FAVORITE]);
+
+        currentPlaylistIndex = Stations::FAVORITE;
+        item = FAVORITE;
+
+        const QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
+
+        const QModelIndex favoriteIndex = ui->treeView->model()->index(3, 0, libraryIndex);
+
+        if (favoriteIndex.isValid()) {
+            ui->treeView->selectionModel()->select(favoriteIndex,
+                                                   QItemSelectionModel::ClearAndSelect);
+        }
+
+        QMessageBox::warning(mainWindow,
+                             tr("No internet connection"),
+                             tr("TuneScape could not connect to the internet.\n"
+                                "Online station lists and playback are unavailable.\n"
+                                "The application will retry when the connection is restored."));
+
+        return;
+    }
+
     setVectorsOfStation(JSON_ENDPOINT_TOP, Stations::TOP);
     setVectorsOfStation(JSON_ENDPOINT_POPULAR, Stations::POPULAR);
     setVectorsOfStation(JSON_ENDPOINT_NEW, Stations::NEW);
 
-    setFavoriteStatons();
     setTopListOnStart();
 }
 
@@ -395,12 +421,15 @@ void RadioList::onInternetConnectionRestored()
     prepareRestoredConnectionMessage();
 
     clearTableViewColor();
-
     ui->treeView->clearSelection();
-    setIndexColor(radioIndexNumber);
+
     loadAllData();
+
+    emit internetConnectionRestored();
+
     if (getMainWindow()->isHidden())
         getMainWindow()->show();
+
     message.show();
 }
 

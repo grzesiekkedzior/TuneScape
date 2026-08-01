@@ -119,6 +119,7 @@ signals:
     void allIconsLoaded();
     void sendTitleToTray(QString title);
     void trackTitleReceived(const QString &title);
+    void internetConnectionRestored();
 public slots:
     void onStopButtonClicked();
     void showStationContextMenu(const QPoint &position);

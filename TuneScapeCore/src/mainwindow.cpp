@@ -100,21 +100,30 @@ void MainWindow::start()
 {
     radioExplorer = new RadioExplorer(ui);
     favoriteManager = new FavoriteManager{this};
+
     radioList = new RadioList(ui, favoriteManager);
-    radioInfo = new RadioInfo(ui);
-    radioExplorer->createMenu();
-    radioList->loadAllData();
     radioList->setMainWindow(this);
     radioList->setTheme(&m_theme);
+
+    radioInfo = new RadioInfo(ui);
+
+    radioExplorer->createMenu();
+
+    radioList->loadAllData();
+
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioList(radioList);
     trayIcon->loadTrayLists();
-    // Very very weird
+
     appMenu = new Menu(ui, radioList);
+
     country.setData(ui, radioList);
-    country.load();
     country.setFavoriteManager(favoriteManager);
     country.setTheme(&m_theme);
+
+    connect(radioList, &RadioList::internetConnectionRestored, &country, &Country::load);
+
+    country.load();
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -166,18 +175,18 @@ void MainWindow::infoDialogApp()
 
     aboutTuneScape = new QLabel;
     aboutTuneScape->setText(
-        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 5.0.1</p>"
-        "This is a free and Open Source online radio player based on "
-        "<a href=\"https://www.radio-browser.info\">radio-browser service </a> "
-        "and <a href=\"https://www.icecast.org/\">Ice-Cast service.</a>"
-        "This is the beta version. If you want help to develop this app, look at "
-        "<a href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</u></a>"
-        "or send me an email at <b>grzesiekkedzior@gmail.com</b>"
-        "If you enjoy using TuneScape and would like to support its development,"
-        "you can make a donation via.\n"
-        "<a "
-        "href=\"https://www.paypal.com/donate/?hosted_button_id=MW4VMJ8YHSZF2\"><u><b>PayPal</"
-        "u><b></a>");
+        "<p style=\"font-size: 18pt; line-height: 1.5;\">TuneScape 6.0.0</p>"
+        "This is a free and open-source online radio player based on the "
+        "<a href=\"https://www.radio-browser.info\">Radio Browser service</a>."
+        "<br><br>"
+        "This is the beta version. If you want to help develop this app, visit "
+        "<a href=\"https://github.com/grzesiekkedzior/TuneScape\"><u>TuneScape</u></a> "
+        "or send me an email at <b>grzesiekkedzior@gmail.com</b>."
+        "<br><br>"
+        "If you enjoy using TuneScape and would like to support its development, "
+        "you can make a donation via "
+        "<a href=\"https://www.paypal.com/donate/?hosted_button_id=MW4VMJ8YHSZF2\">"
+        "<u><b>PayPal</b></u></a>.");
     aboutTuneScape->setOpenExternalLinks(true);
     aboutTuneScape->setWordWrap(true);
 
