@@ -63,8 +63,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     header->setSectionResizeMode(QHeaderView::Interactive);
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
-    // audioProcessor.setUi(ui);
-    // audioProcessor.setPlayer(playbackController.mediaPlayer());
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
     imageManager = new RadioImageManager{this};
@@ -457,7 +455,6 @@ void RadioList::playSelectedStation(int radioNumber)
     getSongTitle(currentRadioPlayingAddress);
 
     playbackController.play(QUrl(currentRadioPlayingAddress));
-    //audioProcessor.start(currentRadioPlayingAddress);
 }
 
 void RadioList::setTheme(Theme *newTheme)
@@ -544,12 +541,8 @@ void RadioList::onPlayPauseButtonCliced()
 
     if (playbackController.isPlaying()) {
         playbackController.pause();
-        //audioProcessor.getUpdateTimer()->stop();
-
     } else if (playbackController.isPaused()) {
         playbackController.resume();
-        //audioProcessor.getUpdateTimer()->start();
-
     } else if (country.getCurrentIndexPlaying() != -1) {
         playCountryStream();
 
@@ -558,8 +551,6 @@ void RadioList::onPlayPauseButtonCliced()
 
     } else if (playbackController.isAvailable()) {
         playbackController.resume();
-        //audioProcessor.getUpdateTimer()->start();
-
     } else if (ui->tableView->currentIndex().isValid()) {
         playSelectedStation(radioIndexNumber);
     }
@@ -576,19 +567,16 @@ void RadioList::onPlayPauseButtonCliced()
 void RadioList::stopRadioBrowserStream()
 {
     playbackController.stop();
-    //audioProcessor.getUpdateTimer()->stop();
 }
 
 void RadioList::returnRadioBrowserToPlay()
 {
     playbackController.resume();
-    //audioProcessor.getUpdateTimer()->start();
 }
 
 void RadioList::playCountryStream()
 {
     playbackController.resume();
-    //audioProcessor.getUpdateTimer()->start();
     country.setIsPlaying(true);
 }
 
@@ -670,7 +658,6 @@ void RadioList::onStopButtonClicked()
     playerUIController.setPlayIcon();
 
     playbackController.stop();
-    //audioProcessor.stop();
 
     currentRadioPlayingAddress.clear();
 
@@ -898,7 +885,6 @@ void RadioList::showStationContextMenu(const QPoint &position)
     if (selectedAction == playAction) {
         if (isCurrentStationPlaying) {
             playbackController.stop();
-            //audioProcessor.stop();
 
             currentRadioPlayingAddress.clear();
 

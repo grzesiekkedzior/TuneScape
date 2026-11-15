@@ -1,6 +1,12 @@
 #include "include/radioaudiomanager.h"
+#include <QDateTime>
+#include <QDebug>
+#include <QTextStream>
+
+#ifdef Q_OS_WIN
 #include <QApplication>
 #include <windows.h>
+#endif
 
 RadioAudioManager::RadioAudioManager()
     : logLineCount(0)
@@ -21,7 +27,9 @@ RadioAudioManager::RadioAudioManager()
         qDebug() << "Cannot open log file!";
     }
 
+#ifdef Q_OS_WIN
     qApp->installNativeEventFilter(new SystemEventFilter(this));
+#endif
 #ifdef __unix__
     qputenv("QT_MEDIA_BACKEND", "gstreamer");
     // setenv("QT_MEDIA_BACKEND", "gstreamer", 1);
@@ -151,6 +159,7 @@ void RadioAudioManager::play(const QUrl &url)
     playStream();
 }
 
+#ifdef Q_OS_WIN
 bool SystemEventFilter::nativeEventFilter(const QByteArray &eventType,
                                           void *message,
                                           qintptr *result)
@@ -170,6 +179,7 @@ bool SystemEventFilter::nativeEventFilter(const QByteArray &eventType,
     }
     return false;
 }
+#endif
 
 void RadioAudioManager::handleSystemSleep()
 {

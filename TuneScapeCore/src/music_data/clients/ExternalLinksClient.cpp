@@ -1,6 +1,7 @@
 #include "include/music_data/clients/ExternalLinksClient.h"
 #include <QJsonArray>
 #include <QNetworkReply>
+#include "qjsondocument.h"
 
 music_data::ExternalLinksClient::ExternalLinksClient(QObject *parent)
     : QObject(parent)

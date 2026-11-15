@@ -10,7 +10,7 @@
 #include <QVector>
 #include <QWidget>
 
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "AppConfig.h"
 #include "IconLoader.h"
 #include "radioaudiomanager.h"

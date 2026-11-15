@@ -1,6 +1,7 @@
 #include "include/music_data/clients/MusicBrainzClient.h"
 #include <QNetworkReply>
 #include <QUrlQuery>
+#include "qjsondocument.h"
 
 music_data::MusicBrainzClient::MusicBrainzClient(QObject *parent)
     : QObject(parent)

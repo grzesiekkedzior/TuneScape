@@ -1,4 +1,4 @@
-QT       += core gui network multimedia concurrent svg svgwidgets
+QT       += core gui network multimedia svg svgwidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -19,14 +19,12 @@ SOURCES += \
     src/RadioBrowserPlaylistEditor.cpp \
     src/RadioImageManager.cpp \
     src/StationDetailsDialog.cpp \
-    src/StreamRecorder.cpp \
-    src/Theme.cpp \
-    src/TrayIcon.cpp \
-    src/audioprocessor.cpp \
+    src/streamrecorder.cpp \
+    src/theme.cpp \
+    src/trayicon.cpp \
     src/controller/PlaybackController.cpp \
     src/controller/PlayerUIController.cpp \
     src/customcolordelegate.cpp \
-    src/fft.cpp \
     src/miniplayer.cpp \
     src/model/RadioStationsModel.cpp \
     src/music_data/clients/CoverArtClient.cpp \
@@ -34,7 +32,7 @@ SOURCES += \
     src/music_data/clients/MusicBrainzClient.cpp \
     src/music_data/services/ResolverService.cpp \
     src/radioinfo.cpp \
-    src/streamReader.cpp \
+    src/streamreader.cpp \
     src/jsonlistprocessor.cpp \
     src/main.cpp \
     src/mainwindow.cpp \
@@ -57,16 +55,14 @@ HEADERS += \
     include/RadioBrowserPlaylistEditor.h \
     include/RadioImageManager.h \
     include/StationDetailsDialog.h \
-    include/StreamRecorder.h \
-    include/Theme.h \
-    include/TrayIcon.h \
-    include/audioprocessor.h \
+    include/streamrecorder.h \
+    include/theme.h \
+    include/trayicon.h \
     include/container.h \
     include/controller/PlaybackController.h \
     include/controller/PlayerUIController.h \
     include/customcolordelegate.h \
     include/data/RadioStation.h \
-    include/fft.h \
     include/miniplayer.h \
     include/model/RadioStationsModel.h \
     include/music_data/clients/CoverArtClient.h \
@@ -77,7 +73,7 @@ HEADERS += \
     include/music_data/models/Track.h \
     include/music_data/services/ResolverService.h \
     include/radioinfo.h \
-    include/streamReader.h \
+    include/streamreader.h \
     include/jsonlistprocessor.h \
     include/mainwindow.h \
     include/radioaudiomanager.h \

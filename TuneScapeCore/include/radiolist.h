@@ -8,11 +8,10 @@
 #include <QPixmap>
 #include <QStandardItemModel>
 #include <QStringList>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "Country.h"
 #include "FavoriteManager.h"
 #include "PlaylistEditor.h"
-#include "audioprocessor.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
@@ -159,7 +158,6 @@ private:
     FavoriteManager *favoriteManager = nullptr;
 
     //Singletons
-    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
     miniplayer &miniPlayer = SingletonContainer::getSingleton().getInstance<miniplayer>();
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
     PlaybackController &playbackController = SingletonContainer::getSingleton()

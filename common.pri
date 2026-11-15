@@ -1,11 +1,11 @@
 INCLUDEPATH += $$PWD/TuneScapeCore
 HEADERS += $$PWD/TuneScapeCore/include/Menu.h \
-           $$PWD/TuneScapeCore/include/StreamRecorder.h \
-           $$PWD/TuneScapeCore/include/Theme.h \
-           $$PWD/TuneScapeCore/include/TrayIcon.h \
+           $$PWD/TuneScapeCore/include/streamrecorder.h \
+           $$PWD/TuneScapeCore/include/theme.h \
+           $$PWD/TuneScapeCore/include/trayicon.h \
            $$PWD/TuneScapeCore/include/customcolordelegate.h \
            $$PWD/TuneScapeCore/include/radioinfo.h \
-           $$PWD/TuneScapeCore/include/streamReader.h \
+           $$PWD/TuneScapeCore/include/streamreader.h \
            $$PWD/TuneScapeCore/include/jsonlistprocessor.h \
            $$PWD/TuneScapeCore/include/mainwindow.h \
            $$PWD/TuneScapeCore/include/radioaudiomanager.h \
@@ -13,9 +13,7 @@ HEADERS += $$PWD/TuneScapeCore/include/Menu.h \
            $$PWD/TuneScapeCore/include/radiolist.h \
            $$PWD/TuneScapeCore/include/radiostations.h \
            $$PWD/TuneScapeCore/include/AppConfig.h \
-           $$PWD/TuneScapeCore/include/audioprocessor.h \
            $$PWD/TuneScapeCore/include/container.h \
-           $$PWD/TuneScapeCore/include/fft.h \
            $$PWD/TuneScapeCore/include/miniplayer.h \
            $$PWD/TuneScapeCore/include/Country.h \
            $$PWD/TuneScapeCore/include/M3UHandler.h \
@@ -37,12 +35,12 @@ HEADERS += $$PWD/TuneScapeCore/include/Menu.h \
            $$PWD/TuneScapeCore/include/StationDetailsDialog.h
 
 SOURCES += $$PWD/TuneScapeCore/src/Menu.cpp \
-           $$PWD/TuneScapeCore/src/StreamRecorder.cpp \
-           $$PWD/TuneScapeCore/src/Theme.cpp \
-           $$PWD/TuneScapeCore/src/TrayIcon.cpp \
+           $$PWD/TuneScapeCore/src/streamrecorder.cpp \
+           $$PWD/TuneScapeCore/src/theme.cpp \
+           $$PWD/TuneScapeCore/src/trayicon.cpp \
            $$PWD/TuneScapeCore/src/customcolordelegate.cpp \
            $$PWD/TuneScapeCore/src/radioinfo.cpp \
-           $$PWD/TuneScapeCore/src/streamReader.cpp \
+           $$PWD/TuneScapeCore/src/streamreader.cpp \
            $$PWD/TuneScapeCore/src/jsonlistprocessor.cpp \
            $$PWD/TuneScapeCore/src/mainwindow.cpp \
            $$PWD/TuneScapeCore/src/radioaudiomanager.cpp \
@@ -50,8 +48,6 @@ SOURCES += $$PWD/TuneScapeCore/src/Menu.cpp \
            $$PWD/TuneScapeCore/src/radiolist.cpp \
            $$PWD/TuneScapeCore/src/radiostations.cpp \
            $$PWD/TuneScapeCore/src/AppConfig.cpp \
-           $$PWD/TuneScapeCore/src/audioprocessor.cpp \
-           $$PWD/TuneScapeCore/src/fft.cpp \
            $$PWD/TuneScapeCore/src/miniplayer.cpp \
            $$PWD/TuneScapeCore/src/Country.cpp \
            $$PWD/TuneScapeCore/src/M3UHandler.cpp \

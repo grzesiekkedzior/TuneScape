@@ -13,7 +13,6 @@
 #include <QVector>
 #include "FavoriteManager.h"
 #include "RadioImageManager.h"
-#include "audioprocessor.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
@@ -105,8 +104,6 @@ private:
 
     PlaybackController &playbackController = SingletonContainer::getSingleton()
                                                  .getInstance<PlaybackController>();
-
-    AudioProcessor &audioProcessor = SingletonContainer::getSingleton().getInstance<AudioProcessor>();
 
     PlayerUIController &playerUIController = SingletonContainer::getSingleton()
                                                  .getInstance<PlayerUIController>();

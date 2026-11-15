@@ -1,5 +1,5 @@
 #include "include/miniplayer.h"
-#include "../ui_mini_player.h"
+#include "ui_mini_player.h"
 #include "include/radiolist.h"
 
 miniplayer::miniplayer()

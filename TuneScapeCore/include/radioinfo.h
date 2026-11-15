@@ -1,7 +1,7 @@
 #ifndef RADIOINFO_H
 #define RADIOINFO_H
 #include <QObject>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "include/jsonlistprocessor.h"
 
 // data to set on label

@@ -4,11 +4,13 @@
 #include <QNetworkInterface>
 #include <QProcess>
 #include <QDebug>
-#include <QtConcurrent>
+#include <QEventLoop>
+#include <QTimer>
 #include <QMutex>
 #include <qregularexpression.h>
 #include <QDnsLookup>
 #include <QDnsServiceRecord>
+#include <algorithm>
 
 class RadioBrowserApi {
 public:

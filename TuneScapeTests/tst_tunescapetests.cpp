@@ -1,4 +1,7 @@
 #include <QCoreApplication>
+#include <QMainWindow>
+#include <QMenu>
+#include <QTimer>
 #include <QtTest>
 #include "include/AppConfig.h"
 #include "include/miniplayer.h"
@@ -24,6 +27,7 @@ private slots:
     void testAppConfigCheckBoolState();
     void testAppConfigChangeBoolState();
     void testMiniPlayerIsVisible();
+    void testStopCountryStationFromContextMenu();
 };
 
 TuneScapeTests::TuneScapeTests() {}
@@ -93,6 +97,71 @@ void TuneScapeTests::testMiniPlayerIsVisible()
     QCOMPARE_NE(state, true);
     miniPlayer.setIsVisible(false);
     QCOMPARE(state, false);
+}
+
+void TuneScapeTests::testStopCountryStationFromContextMenu()
+{
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites);
+    radioList.setMainWindow(&window);
+    auto &container = SingletonContainer::getSingleton();
+    auto &country = container.getInstance<Country>();
+    auto &playback = container.getInstance<PlaybackController>();
+    country.setData(&ui, &radioList);
+    country.setFavoriteManager(&favorites);
+
+    // Seed playback state so the Stop action can be exercised without a live station.
+    auto *model = qobject_cast<RadioStationsModel *>(ui.tableOfCoutries->model());
+    QVERIFY(model);
+    RadioStation station = country.getCurrentStation();
+    station.station = QStringLiteral("Test station");
+    model->setStations({station});
+    country.setCurrentIndexPlaying(0);
+    country.setIsPlaying(true);
+    playback.setPlaying(true);
+    radioList.setIsBrowseStationLoaded(true);
+    radioList.setIsStopClicked(false);
+    const auto recorder = radioList.getStreamRecorder();
+    recorder->setIsRecording(true);
+    ui.infoData->setText(QStringLiteral("Test track"));
+
+    ui.tabRadioListWidget->setCurrentWidget(ui.listCountries);
+    ui.worldImage->hide();
+    ui.tableOfCoutries->show();
+    window.show();
+
+    const QRect stationRect = ui.tableOfCoutries->visualRect(model->index(0, 0));
+    QVERIFY(stationRect.isValid());
+
+    bool foundStopAction = false;
+    QTimer::singleShot(0, &window, [&] {
+        auto *menu = ui.tableOfCoutries->findChild<QMenu *>();
+        if (!menu)
+            return;
+
+        QAction *action = menu->actions().value(0);
+        foundStopAction = action && action->text() == Country::tr("Stop");
+        if (foundStopAction) {
+            menu->setActiveAction(action);
+            QTest::keyClick(menu, Qt::Key_Return);
+        }
+        if (menu->isVisible())
+            menu->close();
+    });
+    emit ui.tableOfCoutries->customContextMenuRequested(stationRect.center());
+
+    QVERIFY(foundStopAction);
+    QVERIFY(!playback.isPlaying());
+    QVERIFY(!country.getIsPlaying());
+    QCOMPARE(country.getCurrentIndexPlaying(), -1);
+    QVERIFY(radioList.getIsStopClicked());
+    QVERIFY(!radioList.getIsBrowseStationLoaded());
+    QVERIFY(!recorder->getIsRecording());
+    QVERIFY(ui.infoData->text().isEmpty());
 }
 
 QTEST_MAIN(TuneScapeTests)

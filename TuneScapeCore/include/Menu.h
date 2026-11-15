@@ -1,7 +1,7 @@
 #ifndef MENU_H
 #define MENU_H
 #include <QObject>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "radiolist.h"
 
 class Menu : public QObject

@@ -5,7 +5,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QSystemTrayIcon>
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "include/AppConfig.h"
 #include "include/theme.h"
 

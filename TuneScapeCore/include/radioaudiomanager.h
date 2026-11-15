@@ -1,12 +1,15 @@
 #ifndef RADIOAUDIOMANAGER_H
 #define RADIOAUDIOMANAGER_H
-#include <QAbstractNativeEventFilter>
 #include "include/streamreader.h"
 
 #include <QAudioOutput>
 #include <QFile>
 #include <QMediaPlayer>
 #include <QObject>
+
+#ifdef Q_OS_WIN
+#include <QAbstractNativeEventFilter>
+#endif
 
 class RadioAudioManager : public QObject
 {
@@ -46,6 +49,7 @@ private:
     void resetLogFile();
 };
 
+#ifdef Q_OS_WIN
 class SystemEventFilter : public QAbstractNativeEventFilter
 {
 public:
@@ -57,5 +61,6 @@ public:
 private:
     RadioAudioManager *manager;
 };
+#endif
 
 #endif // RADIOAUDIOMANAGER_H

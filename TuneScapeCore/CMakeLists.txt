@@ -21,7 +21,7 @@ if(WIN32)
 endif()
 
 # Find the QtWidgets library
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Concurrent OpenGL Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network OpenGL Multimedia)
 
 qt_standard_project_setup()
 
@@ -33,7 +33,7 @@ add_subdirectory(src)
 qt_add_executable(${MYPROJ} ${${MYPROJ}_SOURCES} ${${MYPROJ}_HEADERS} mainwindow.ui res.qrc)
 
 # Add the Qt5 Widgets for linking
-target_link_libraries(${MYPROJ} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::Concurrent Qt6::OpenGL Qt6::Multimedia)
+target_link_libraries(${MYPROJ} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network Qt6::OpenGL Qt6::Multimedia)
 
 #qt_import_plugins(${MYPROJ} INCLUDE Qt6::QXcbIntegrationPlugin)
 

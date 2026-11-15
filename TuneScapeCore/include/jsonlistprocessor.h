@@ -1,7 +1,7 @@
 #ifndef JSONLISTPROCESSOR_H
 #define JSONLISTPROCESSOR_H
 
-#include "../ui_mainwindow.h"
+#include "ui_mainwindow.h"
 #include "data/RadioStation.h"
 #include "include/radiostations.h"
 

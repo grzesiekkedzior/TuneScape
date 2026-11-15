@@ -197,7 +197,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
     currentStation = countryStationsModel->station(index.row());
 
     playbackController.play(QUrl(currentStation.streamUrl));
-    audioProcessor.start(currentStation.streamUrl);
 
     setIsPlaying(true);
     setCurrentIndexPlaying(index.row());
@@ -364,20 +363,7 @@ void Country::showStationContextMenu(const QPoint &position)
 
     if (selectedAction == playAction) {
         if (isCurrentStationPlaying) {
-            playbackController.stop();
-            audioProcessor.stop();
-
-            setIsPlaying(false);
-            setCurrentIndexPlaying(-1);
-
-            playerUIController.setPlayIcon();
-            playerUIController.setDefaultImage();
-            playerUIController.clearMetadata();
-
-            clearTableColor();
-
-            radioList->setIsBrowseStationLoaded(false);
-            radioList->setIsStopClicked(true);
+            radioList->onStopButtonClicked();
         } else {
             onDoubleListClicked(index);
         }
