@@ -1,0 +1,68 @@
+name: qmake build and QtTest
+
+on:
+  push:
+    branches:
+      - refactor/codebase-audit
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  QT_QPA_PLATFORM: offscreen
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt 6.7 and MinGW 11.2
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.7.0"
+          arch: win64_mingw
+          modules: qtmultimedia
+          tools: tools_mingw90,qt.tools.win64_mingw900
+
+      - name: Build with qmake
+        shell: pwsh
+        run: |
+          & "$env:QT_ROOT_DIR/bin/qmake.exe" -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          g++ -dumpfullversion
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path build | Out-Null
+          Set-Location build
+          & "$env:QT_ROOT_DIR/bin/qmake.exe" ../TuneScape.pro 'CONFIG+=release'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          mingw32-make -j4
+
+      - name: Run QtTest
+        shell: pwsh
+        run: .\build\TuneScapeTests\release\TuneScapeTests.exe
+
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Qt and GCC
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make qmake6 qt6-base-dev qt6-multimedia-dev qt6-svg-dev
+
+      - name: Build with qmake
+        run: |
+          qmake6 -v
+          g++ -dumpfullversion
+          mkdir build
+          cd build
+          qmake6 ../TuneScape.pro CONFIG+=release
+          make -j4
+
+      - name: Run QtTest
+        run: ./build/TuneScapeTests/TuneScapeTests

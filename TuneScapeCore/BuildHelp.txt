@@ -1,45 +1,41 @@
-Windows:
+Building TuneScape
 
-Install QT6
-f.e. using Choco:
-choco install qt6-base-dev
+Use a Qt 6 kit with a C++17 compiler that matches its libraries. The
+build uses Qt Core, GUI, Widgets, Network, Multimedia and SVG. Tests
+also use Qt Test. qmake is the primary build system.
 
-Add QT6 Multimedia Package:
+Windows (PowerShell, Qt 6.7 and MinGW 11.2)
 
-Go to QT install dir and run:
-aqt install-qt windows desktop 6.5.3 win64_mingw -m qtmultimedia
+Put the bin directories of the Qt kit and its MinGW toolchain on PATH.
+From the repository root:
 
-QT5 not supported!
+    New-Item -ItemType Directory build-qmake
+    Set-Location build-qmake
+    qmake ../TuneScape.pro 'CONFIG+=release'
+    mingw32-make -j4
+    $env:QT_QPA_PLATFORM = 'offscreen'
+    .\TuneScapeTests\release\TuneScapeTests.exe
 
-QT6 requires C++17 - VS2017 is too old
+Linux (Ubuntu 24.04)
 
-https://aqtinstall.readthedocs.io/en/stable/getting_started.html#installing-modules
-https://aqtinstall.readthedocs.io/en/stable/getting_started.html#installing-modules
-https://github.com/miurahr/aqtinstall
+    sudo apt-get install g++ make qmake6 qt6-base-dev qt6-multimedia-dev qt6-svg-dev
+    mkdir build-qmake
+    cd build-qmake
+    qmake6 ../TuneScape.pro CONFIG+=release
+    make -j4
+    QT_QPA_PLATFORM=offscreen ./TuneScapeTests/TuneScapeTests
 
-QT docs:
-https://doc.qt.io/qt-6.2/qmediaplayer.html
+Optional CMake build
 
-Use VSCode:
+Configure from the repository root with CMake 3.21 and Qt 6.4 or newer. For an SDK
+outside the default CMake search paths, pass -DCMAKE_PREFIX_PATH with
+the matching Qt installation prefix. Select a generator and compiler
+compatible with that Qt kit (for example, Ninja with MinGW on PATH).
 
-choco install vscode
+    cmake -S . -B build-cmake -DCMAKE_BUILD_TYPE=Release
+    cmake --build build-cmake --config Release
+    ctest --test-dir build-cmake -C Release --output-on-failure --no-tests=error
 
-Install C++ Extension
-
-https://code.visualstudio.com/docs/cpp/CMake-linux
-
-https://doc.qt.io/qt-6/cmake-get-started.html#building-a-c-gui-application
-
-All headers and cpps must be added to qt_add_executable, otherwise moc may not execute correctly
-
-
-Create install files using:
-cmake --build c:/Code/TuneScape/build --config Debug --target install
-
-Set install path using:
-CMAKE_INSTALL_PREFIX
-
-Linux:
-Some modifications to cmake script were required..
-To run install using platform X11  install following package:
-apt install libxcb-cursor0
+Use -DBUILD_TESTING=OFF for an application-only CMake build. Both
+systems read TuneScapeCore/sources.list for the shared sources, forms
+and resources. Rerun qmake after editing the list.

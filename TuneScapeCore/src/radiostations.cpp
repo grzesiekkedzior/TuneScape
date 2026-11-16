@@ -6,24 +6,18 @@ RadioStations::RadioStations(QObject *parent)
 {}
 
 RadioStations::RadioStations(const QString &endpoint)
+    : RadioStations(endpoint, RadioBrowserApi::getRadioBrowserBaseUrls())
+{}
+
+RadioStations::RadioStations(const QString &endpoint, const QStringList &baseUrls)
 {
-    serverAddress.addresses = RadioBrowserApi::getRadioBrowserBaseUrls();
-    for (const QString &address : serverAddress.addresses) {
+    for (const QString &address : baseUrls) {
         qDebug() << address;
+        fullServerAddresses.append(address + endpoint);
     }
-    fullServerAddresses = generateFullAddresses(endpoint);
 }
 
 QStringList RadioStations::getAddresses() const
 {
     return fullServerAddresses;
-}
-
-QStringList RadioStations::generateFullAddresses(const QString &endpoint) const
-{
-    QStringList fullServerAddress;
-    for (const QString &address : serverAddress.addresses) {
-        fullServerAddress.append(address + endpoint);
-    }
-    return fullServerAddress;
 }

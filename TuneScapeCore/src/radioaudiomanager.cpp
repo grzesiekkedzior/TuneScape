@@ -23,7 +23,9 @@ RadioAudioManager::RadioAudioManager()
         }
         logFile.close();
     }
-    if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
+    if (logFile.open(QIODevice::Append | QIODevice::Text)) {
+        logFile.close();
+    } else {
         qDebug() << "Cannot open log file!";
     }
 
@@ -49,9 +51,6 @@ RadioAudioManager::~RadioAudioManager()
         delete player;
     if (audioOutput)
         delete audioOutput;
-    if (logFile.isOpen()) {
-        logFile.close();
-    }
 }
 
 void RadioAudioManager::loadStream(const QUrl &url)
@@ -109,19 +108,11 @@ QString RadioAudioManager::getErrorString(QMediaPlayer::Error error)
 
 void RadioAudioManager::resetLogFile()
 {
-    if (logFile.isOpen()) {
-        logFile.close();
-    }
-
     if (logFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         logFile.close();
         logLineCount = 0;
     } else {
         qDebug() << "Cannot reset log file!";
-    }
-
-    if (!logFile.open(QIODevice::Append | QIODevice::Text)) {
-        qDebug() << "Cannot open log file!";
     }
 }
 
@@ -132,10 +123,11 @@ void RadioAudioManager::logError(QMediaPlayer::Error error)
     }
 
     QString errorMsg = getErrorString(error);
-    if (logFile.isOpen()) {
+    if (logFile.open(QIODevice::Append | QIODevice::Text)) {
         QTextStream out(&logFile);
         out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") << " - " << errorMsg
-            << "\n";
+            << Qt::endl;
+        logFile.close();
         logLineCount++;
     } else {
         qDebug() << "Log file is not open!";

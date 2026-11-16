@@ -46,11 +46,12 @@ TuneScape is currently developed and tested on Windows.
 
 To build TuneScape, you need:
 
-- Qt 6;
-- a C++ compiler supported by your Qt installation;
+- Qt 6 with Widgets, Network, Multimedia and SVG;
+- a C++17 compiler supported by your Qt installation;
 - Qt Creator or an equivalent Qt development environment.
 
-Clone the repository, open the project in Qt Creator, select a compatible Qt 6 kit and build the project.
+Open `TuneScape.pro` in Qt Creator and select a compatible Qt 6 kit.
+For Windows and Linux command-line builds, QtTest and the optional CMake build, see [BuildHelp.txt](TuneScapeCore/BuildHelp.txt).
 
 ```bash
 git clone https://github.com/grzesiekkedzior/TuneScape.git

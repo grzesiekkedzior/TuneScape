@@ -14,6 +14,13 @@
 
 class RadioBrowserApi {
 public:
+    static QString baseUrlForTarget(QString target)
+    {
+        if (target.endsWith('.'))
+            target.chop(1);
+        return QStringLiteral("https://") + target + '/';
+    }
+
     static QStringList getRadioBrowserBaseUrls() {
         QStringList baseUrls;
 
@@ -45,13 +52,8 @@ public:
                               return a.weight() > b.weight();
                           });
 
-                for (const QDnsServiceRecord &record : sortedRecords) {
-                    QString target = record.target();
-                    if (target.endsWith('.')) {
-                        target.chop(1);
-                    }
-                    baseUrls.append("https://" + target + "/");
-                }
+                for (const QDnsServiceRecord &record : sortedRecords)
+                    baseUrls.append(baseUrlForTarget(record.target()));
             } else {
                 qWarning() << "DNS SRV lookup failed:" << lookup.errorString();
             }
