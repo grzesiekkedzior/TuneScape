@@ -1,127 +1,224 @@
 #include "include/streamrecorder.h"
-#include <QDir>
-#include <QStandardPaths>
-#include <QTimer>
 
-// QTC_TEMP
+#include <QDir>
+#include <QFileInfo>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QRegularExpression>
+#include <QStandardPaths>
+#include <utility>
+
+namespace {
+
+constexpr int TransferTimeoutMs = 30000;
+constexpr int MaxFileNameAttempts = 1000;
+
+QString safeStationName(QString name)
+{
+    static const QRegularExpression forbidden(QStringLiteral(R"([<>:"/\\|?*\x00-\x1f\x7f])"));
+    name = name.trimmed().left(64);
+    if (!name.isEmpty() && name.back().isHighSurrogate())
+        name.chop(1);
+    name.replace(forbidden, QStringLiteral("_"));
+    while (name.endsWith('.') || name.endsWith(' '))
+        name.chop(1);
+    return name.isEmpty() ? QStringLiteral("radio") : name;
+}
+
+QString recordingExtension(QString codec)
+{
+    static const QRegularExpression safeExtension(QStringLiteral("^[a-z0-9]{1,12}$"));
+    codec = codec.trimmed().toLower().remove('+');
+    return safeExtension.match(codec).hasMatch() ? codec : QStringLiteral("stream");
+}
+
+bool isSuccessfulHttpResponse(const QNetworkReply *reply)
+{
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    return status >= 200 && status < 300;
+}
+
+} // namespace
+
 StreamRecorder::StreamRecorder(QObject *parent)
     : QObject(parent)
-    , manager(new QNetworkAccessManager(this))
+{}
+
+StreamRecorder::~StreamRecorder()
 {
-    downloadDir = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
+    blockSignals(true);
+    stopRecording();
 }
 
-void StreamRecorder::recordStream(const QByteArray &data)
+StreamRecorder::State StreamRecorder::state() const
 {
-    file.write(data);
+    return m_state;
 }
 
-void StreamRecorder::closeFile()
+qint64 StreamRecorder::bytesWritten() const
 {
-    if (file.isOpen()) {
-        file.close();
-        qDebug() << "File closed";
-    }
+    return m_bytesWritten;
 }
 
-void StreamRecorder::setFileName(const QString &title, const QString extention)
+QString StreamRecorder::filePath() const
 {
-    QDateTime currentDateTime = QDateTime::currentDateTime();
-
-    // Konwertuj datę i czas na string w określonym formacie
-    QString dateTimeString = currentDateTime.toString("[yyyy-hh-mm]");
-
-    filePath = downloadDir + QDir::separator();
-    filePath += dateTimeString + title + "." + extention;
-    file.setFileName(filePath);
+    return m_filePath;
 }
 
-void StreamRecorder::loadCurrentAddress(QString address)
+void StreamRecorder::setState(State state)
 {
-    url.setUrl(address);
-    if (!file.isOpen()) {
-        if (file.open(QIODevice::WriteOnly)) {
-            qDebug() << "File opened for writing";
-        } else {
-            qDebug() << "Error opening file for writing";
-            return;
+    m_state = state;
+    emit stateChanged(state);
+}
+
+QString StreamRecorder::openRecordingFile(const QString &directory, const QString &stationName,
+                                          const QString &codec, const QDateTime &startTime)
+{
+    if (directory.isEmpty())
+        return tr("The recording directory is unavailable: %1").arg(directory);
+
+    const QString baseName = startTime.toString(QStringLiteral("yyyy-MM-dd_HH-mm-ss-zzz"))
+                             + ' ' + safeStationName(stationName);
+    const QString extension = recordingExtension(codec);
+    const QDir targetDirectory(directory);
+
+    for (int attempt = 1; attempt <= MaxFileNameAttempts; ++attempt) {
+        QString name = baseName;
+        if (attempt > 1)
+            name += QStringLiteral("-%1").arg(attempt);
+        const QString path = targetDirectory.filePath(name + '.' + extension);
+        m_file.setFileName(path);
+
+        if (m_file.open(QIODevice::WriteOnly | QIODevice::NewOnly | QIODevice::Unbuffered)) {
+            m_filePath = path;
+            return {};
         }
+
+        const QFileInfo existing(path);
+        if (!existing.exists() && !existing.isSymLink())
+            return tr("Cannot open recording file %1: %2").arg(path, m_file.errorString());
     }
+    return tr("Could not reserve a unique recording filename in %1.").arg(directory);
 }
 
-void StreamRecorder::clearReply()
+void StreamRecorder::startRecording(const QUrl &url, const QString &stationName, const QString &codec,
+                                    QString directory, const QDateTime &startTime)
 {
-    if (reply != nullptr)
-        reply->deleteLater();
-}
+    if (m_state != State::Idle)
+        return;
 
-void StreamRecorder::clearRecordLabel()
-{
-    QTimer::singleShot(500, this, &StreamRecorder::showStopOnLabel);
-    QTimer::singleShot(2000, this, &StreamRecorder::clearLabelText);
-}
+    m_bytesWritten = 0;
+    m_filePath.clear();
+    setState(State::Starting);
+    if (m_state != State::Starting || m_reply)
+        return;
 
-void StreamRecorder::clearLabelText()
-{
-    ui->recordLabel->clear();
-}
+    if (!url.isValid() || url.host().isEmpty()
+        || (url.scheme() != QStringLiteral("http") && url.scheme() != QStringLiteral("https"))) {
+        finishRecording(tr("The recording requires a valid HTTP(S) stream URL."));
+        return;
+    }
 
-void StreamRecorder::showStopOnLabel()
-{
-    ui->recordLabel->setText("STOP RECORDING");
-}
+    if (directory.isEmpty())
+        directory = QStandardPaths::writableLocation(QStandardPaths::MusicLocation);
 
-void StreamRecorder::startRecording()
-{
-    // check url!!!
+    const QString error = openRecordingFile(directory, stationName, codec, startTime);
+    if (!error.isEmpty()) {
+        finishRecording(error);
+        return;
+    }
+
     QNetworkRequest request(url);
-    reply = manager->get(request);
-    connect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
-    connect(reply, &QNetworkReply::downloadProgress, this, &StreamRecorder::downloadProgress);
-    setIsRecording(true);
-
+    request.setTransferTimeout(TransferTimeoutMs);
+    auto *reply = m_manager.get(request);
+    m_reply = reply;
+    connect(reply, &QNetworkReply::readyRead, this, [this, reply] { writeAvailable(reply); });
+    connect(reply, &QNetworkReply::finished, this, [this, reply] { handleFinished(reply); });
+    if (reply->isFinished())
+        handleFinished(reply);
 }
 
 void StreamRecorder::stopRecording()
 {
-    closeFile();
-    clearReply();
-    clearRecordLabel();
+    finishRecording();
+}
 
-    //This is not ... but in some cases help
-    if (reply != nullptr) {
-        disconnect(reply, &QNetworkReply::readyRead, this, &StreamRecorder::recordFile);
+qint64 StreamRecorder::writeToFile(const char *data, qint64 size)
+{
+    return m_file.write(data, size);
+}
+
+void StreamRecorder::writeAvailable(QNetworkReply *reply)
+{
+    if (m_reply != reply || !isSuccessfulHttpResponse(reply))
+        return;
+
+    const QByteArray data = reply->readAll();
+    if (data.isEmpty())
+        return;
+
+    qint64 offset = 0;
+    while (offset < data.size()) {
+        const qint64 written = writeToFile(data.constData() + offset, data.size() - offset);
+        if (written <= 0) {
+            finishRecording(tr("Cannot write to recording file %1: %2")
+                                .arg(m_filePath, m_file.errorString()));
+            return;
+        }
+        offset += written;
+        m_bytesWritten += written;
     }
 
-    setIsRecording(false);
+    if (m_state == State::Starting)
+        setState(State::Recording);
+    if (m_reply == reply)
+        emit bytesWrittenChanged(m_bytesWritten);
 }
 
-bool StreamRecorder::getIsRecording() const
+void StreamRecorder::handleFinished(QNetworkReply *reply)
 {
-    return isRecording;
+    if (m_reply != reply)
+        return;
+
+    writeAvailable(reply);
+    if (m_reply != reply)
+        return;
+
+    if (reply->error() != QNetworkReply::NoError)
+        finishRecording(tr("The recording connection failed: %1").arg(reply->errorString()));
+    else if (!isSuccessfulHttpResponse(reply))
+        finishRecording(tr("The server did not return a successful HTTP response."));
+    else if (m_bytesWritten == 0)
+        finishRecording(tr("The stream ended before any audio data was received."));
+    else
+        finishRecording();
 }
 
-void StreamRecorder::setIsRecording(bool newIsRecording)
+void StreamRecorder::finishRecording(QString error)
 {
-    isRecording = newIsRecording;
-}
+    if (m_state == State::Idle || m_state == State::Stopping)
+        return;
 
-void StreamRecorder::downloadProgress(qint64 bytesReceived, qint64 bytesTotal)
-{
-    double megabytesReceived = static_cast<double>(bytesReceived) / (1024 * 1024);
-    QString text = QString("%1 MB").arg(QString::number(megabytesReceived, 'f', 2));
-    ui->recordLabel->setText(text);
-}
-
-void StreamRecorder::setUI(Ui::MainWindow *ui)
-{
-    this->ui = ui;
-}
-
-void StreamRecorder::recordFile()
-{
-    while (reply->bytesAvailable()) {
-        QByteArray data = reply->readAll();
-        file.write(data);
+    auto *reply = std::exchange(m_reply, nullptr);
+    setState(State::Stopping);
+    if (reply) {
+        disconnect(reply, nullptr, this, nullptr);
+        if (!reply->isFinished())
+            reply->abort();
+        reply->deleteLater();
     }
+
+    if (m_file.isOpen()) {
+        if (!m_file.flush() && error.isEmpty())
+            error = tr("Cannot flush recording file %1: %2").arg(m_filePath, m_file.errorString());
+        m_file.close();
+        if (m_file.error() != QFileDevice::NoError && error.isEmpty())
+            error = tr("Cannot close recording file %1: %2").arg(m_filePath, m_file.errorString());
+    }
+
+    if (error.isEmpty())
+        emit recordingFinished(m_filePath, m_bytesWritten);
+    else
+        emit recordingFailed(error, m_filePath, m_bytesWritten);
+    setState(State::Idle);
 }

@@ -110,10 +110,6 @@ void JsonListProcessor::lostConnection()
     messagebox.setIcon(QMessageBox::Information);
     messagebox.setWindowIcon(QIcon(":/images/img/radio30.png"));
     messagebox.show();
-    if (radioList->getStreamRecorder()->getIsRecording()) {
-        radioList->getStreamRecorder()->stopRecording();
-        radioList->getStreamRecorder()->setIsRecording(false);
-    }
 }
 
 void JsonListProcessor::retryInternetConnection()

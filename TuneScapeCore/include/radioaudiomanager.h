@@ -1,7 +1,5 @@
 #ifndef RADIOAUDIOMANAGER_H
 #define RADIOAUDIOMANAGER_H
-#include "include/streamreader.h"
-
 #include <QAudioOutput>
 #include <QFile>
 #include <QMediaPlayer>
@@ -38,7 +36,6 @@ private slots:
 private:
     QMediaPlayer *player;
     QAudioOutput *audioOutput;
-    StreamReader streamReader;
     int logLineCount;
     const int MAX_LOG_LINES = 10000;
     bool isPlaying = false;

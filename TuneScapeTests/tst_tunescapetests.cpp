@@ -1,6 +1,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QLockFile>
 #include <QMainWindow>
 #include <QMenu>
@@ -16,6 +17,7 @@
 #include "include/radioexplorer.h"
 #include "include/radiolist.h"
 #include <filesystem>
+#include <memory>
 
 namespace {
 
@@ -50,6 +52,66 @@ public:
 
 private:
     QTcpServer server;
+};
+
+class RecordingHttpServer
+{
+public:
+    RecordingHttpServer()
+    {
+        QObject::connect(&server, &QTcpServer::newConnection, &server, [this] {
+            auto *socket = server.nextPendingConnection();
+            QObject::connect(socket, &QTcpSocket::readyRead, socket,
+                             [this, socket, request = QByteArray()]() mutable {
+                request += socket->readAll();
+                if (request.contains("\r\n\r\n"))
+                    clients.insert(request.split(' ').value(1), socket);
+            });
+        });
+    }
+
+    bool listen() { return server.listen(QHostAddress::LocalHost); }
+
+    QUrl url(const QString &target) const
+    {
+        return QUrl(QStringLiteral("http://127.0.0.1:%1%2").arg(server.serverPort()).arg(target));
+    }
+
+    QTcpSocket *client(const QByteArray &target) const { return clients.value(target); }
+
+    static bool respond(QTcpSocket *client, const QByteArray &body, qint64 length = -1,
+                        const QByteArray &status = "200 OK")
+    {
+        QByteArray response = "HTTP/1.1 " + status + "\r\nContent-Type: audio/mpeg\r\nConnection: close\r\n";
+        if (length >= 0)
+            response += "Content-Length: " + QByteArray::number(length) + "\r\n";
+        response += "\r\n" + body;
+        return client->write(response) == response.size();
+    }
+
+private:
+    QHash<QByteArray, QTcpSocket *> clients;
+    QTcpServer server;
+};
+
+class LimitedWritesRecorder : public StreamRecorder
+{
+public:
+    explicit LimitedWritesRecorder(qint64 limit) : remaining(limit) {}
+
+protected:
+    qint64 writeToFile(const char *data, qint64 size) override
+    {
+        if (remaining == 0)
+            return -1;
+        const qint64 written = StreamRecorder::writeToFile(data, qMin(size, qMin(remaining, qint64(3))));
+        if (written > 0)
+            remaining -= written;
+        return written;
+    }
+
+private:
+    qint64 remaining;
 };
 
 bool writeFixture(const QString &path, const QByteArray &bytes)
@@ -103,6 +165,17 @@ private slots:
     void testFavoriteLegacyReadAndMigration();
     void testFavoriteViewOnlyUpdatesAfterSave();
     void testStopCountryStationFromContextMenu();
+    void testRecordingStartAndStop();
+    void testRecordingOpenFailure();
+    void testRecordingNameCollision();
+    void testRecordingSanitizesName();
+    void testRecordingRestartsWithoutMixingSessions();
+    void testRecordingConnectionEnds_data();
+    void testRecordingConnectionEnds();
+    void testRecordingShortWrites_data();
+    void testRecordingShortWrites();
+    void testStationChangeStopsRecording();
+    void testRecorderDestructionClosesSession();
 
 private:
     QTemporaryDir workingDirectory;
@@ -652,6 +725,10 @@ void TuneScapeTests::testFavoriteViewOnlyUpdatesAfterSave()
 
 void TuneScapeTests::testStopCountryStationFromContextMenu()
 {
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
     QMainWindow window;
     Ui::MainWindow ui;
     ui.setupUi(&window);
@@ -675,8 +752,11 @@ void TuneScapeTests::testStopCountryStationFromContextMenu()
     playback.setPlaying(true);
     radioList.setIsBrowseStationLoaded(true);
     radioList.setIsStopClicked(false);
-    const auto recorder = radioList.getStreamRecorder();
-    recorder->setIsRecording(true);
+    auto &recorder = radioList.getStreamRecorder();
+    recorder.startRecording(server.url("/country"), station.station, "MP3", directory.path());
+    QTRY_VERIFY(server.client("/country"));
+    QVERIFY(server.respond(server.client("/country"), "country audio"));
+    QTRY_COMPARE(recorder.state(), StreamRecorder::State::Recording);
     ui.infoData->setText(QStringLiteral("Test track"));
 
     ui.tabRadioListWidget->setCurrentWidget(ui.listCountries);
@@ -710,8 +790,298 @@ void TuneScapeTests::testStopCountryStationFromContextMenu()
     QCOMPARE(country.getCurrentIndexPlaying(), -1);
     QVERIFY(radioList.getIsStopClicked());
     QVERIFY(!radioList.getIsBrowseStationLoaded());
-    QVERIFY(!recorder->getIsRecording());
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(fileContents(recorder.filePath()), QByteArray("country audio"));
+    QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
+    QTRY_COMPARE(server.client("/country")->state(), QAbstractSocket::UnconnectedState);
     QVERIFY(ui.infoData->text().isEmpty());
+}
+
+void TuneScapeTests::testRecordingStartAndStop()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    StreamRecorder recorder;
+    using State = StreamRecorder::State;
+    QSignalSpy states(&recorder, &StreamRecorder::stateChanged);
+    QSignalSpy progress(&recorder, &StreamRecorder::bytesWrittenChanged);
+    QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
+    QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
+
+    recorder.startRecording(server.url("/live"), "Station", "MP3", directory.path());
+    QCOMPARE(recorder.state(), State::Starting);
+    QTRY_VERIFY(server.client("/live"));
+    const QByteArray first("a\0b", 3);
+    QVERIFY(server.respond(server.client("/live"), first));
+    QTRY_COMPARE(recorder.bytesWritten(), first.size());
+    QCOMPARE(recorder.state(), State::Recording);
+    QCOMPARE(progress.last().at(0).toLongLong(), first.size());
+
+    const QByteArray next = "defg";
+    QCOMPARE(server.client("/live")->write(next), next.size());
+    QTRY_COMPARE(recorder.bytesWritten(), first.size() + next.size());
+    QCOMPARE(progress.last().at(0).toLongLong(), first.size() + next.size());
+    recorder.stopRecording();
+    recorder.stopRecording();
+
+    QCOMPARE(failed.size(), 0);
+    QCOMPARE(finished.size(), 1);
+    QCOMPARE(finished.first().at(0).toString(), recorder.filePath());
+    QCOMPARE(finished.first().at(1).toLongLong(), first.size() + next.size());
+    QCOMPARE(fileContents(recorder.filePath()), first + next);
+    QCOMPARE(states.size(), 4);
+    QCOMPARE(states.at(0).at(0).value<State>(), State::Starting);
+    QCOMPARE(states.at(1).at(0).value<State>(), State::Recording);
+    QCOMPARE(states.at(2).at(0).value<State>(), State::Stopping);
+    QCOMPARE(states.at(3).at(0).value<State>(), State::Idle);
+    QTRY_COMPARE(server.client("/live")->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testRecordingOpenFailure()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites);
+    auto &recorder = radioList.getStreamRecorder();
+    QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
+    QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
+
+    recorder.startRecording(server.url("/unopened"), "Station", "MP3", directory.filePath("missing"));
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(finished.size(), 0);
+    QCOMPARE(failed.size(), 1);
+    QVERIFY(!failed.first().at(0).toString().isEmpty());
+    QVERIFY(recorder.filePath().isEmpty());
+    QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
+    QCOMPARE(ui.recordLabel->text(), RadioList::tr("Recording could not start"));
+    QCOMPARE(ui.statusbar->currentMessage(), failed.first().at(0).toString());
+    QVERIFY(QDir(directory.path()).isEmpty());
+    QTest::qWait(50);
+    QVERIFY(!server.client("/unopened"));
+}
+
+void TuneScapeTests::testRecordingNameCollision()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    const QDateTime start(QDate(2026, 11, 16), QTime(12, 34, 56, 789));
+    const QString original = directory.filePath("2026-11-16_12-34-56-789 Station.mp3");
+    QVERIFY(writeFixture(original, "existing recording"));
+    StreamRecorder recorder;
+    recorder.startRecording(server.url("/collision"), "Station", "MP3", directory.path(), start);
+    QCOMPARE(recorder.state(), StreamRecorder::State::Starting);
+    QCOMPARE(QFileInfo(recorder.filePath()).fileName(), QString("2026-11-16_12-34-56-789 Station-2.mp3"));
+    QTRY_VERIFY(server.client("/collision"));
+    QVERIFY(server.respond(server.client("/collision"), "new recording", 13));
+    QTRY_COMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(fileContents(original), QByteArray("existing recording"));
+    QCOMPARE(fileContents(recorder.filePath()), QByteArray("new recording"));
+}
+
+void TuneScapeTests::testRecordingSanitizesName()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    StreamRecorder recorder;
+    const QString station = QStringLiteral("Łódź/x\\a:b*?\"<>|\n. ");
+    recorder.startRecording(server.url("/name"), station, "../mp3", directory.path());
+    QCOMPARE(recorder.state(), StreamRecorder::State::Starting);
+    const QFileInfo opened(recorder.filePath());
+    QCOMPARE(opened.dir().canonicalPath(), QDir(directory.path()).canonicalPath());
+    QVERIFY(opened.completeBaseName().endsWith(QStringLiteral(" Łódź_x_a_b_______")));
+    QCOMPARE(opened.suffix(), QString("stream"));
+    recorder.stopRecording();
+    QVERIFY(QFileInfo::exists(opened.absoluteFilePath()));
+}
+
+void TuneScapeTests::testRecordingRestartsWithoutMixingSessions()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    StreamRecorder recorder;
+    QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
+    QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
+    recorder.startRecording(server.url("/first"), "First", "MP3", directory.path());
+    QTRY_VERIFY(server.client("/first"));
+    auto *first = server.client("/first");
+    QVERIFY(server.respond(first, "old"));
+    QTRY_COMPARE(recorder.bytesWritten(), 3);
+    const QString firstPath = recorder.filePath();
+
+    QCOMPARE(first->write("late"), 4);
+    recorder.stopRecording();
+    recorder.startRecording(server.url("/second"), "Second", "MP3", directory.path());
+    QTRY_VERIFY(server.client("/second"));
+    QVERIFY(server.respond(server.client("/second"), "new audio", 9));
+    QTRY_COMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QTRY_COMPARE(first->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(finished.size(), 2);
+    QCOMPARE(failed.size(), 0);
+    QCOMPARE(fileContents(firstPath), QByteArray("old"));
+    QCOMPARE(fileContents(recorder.filePath()), QByteArray("new audio"));
+}
+
+void TuneScapeTests::testRecordingConnectionEnds_data()
+{
+    QTest::addColumn<QByteArray>("body");
+    QTest::addColumn<int>("contentLength");
+    QTest::addColumn<QByteArray>("status");
+    QTest::addColumn<QByteArray>("expected");
+    QTest::addColumn<bool>("succeeded");
+    QTest::newRow("complete-http-response") << QByteArray("audio") << 5 << QByteArray("200 OK")
+                                            << QByteArray("audio") << true;
+    QTest::newRow("interrupted-transfer") << QByteArray("partial audio") << 200 << QByteArray("200 OK")
+                                          << QByteArray("partial audio") << false;
+    QTest::newRow("http-error") << QByteArray("bad URL") << 7 << QByteArray("404 Not Found")
+                               << QByteArray() << false;
+    QTest::newRow("empty-response") << QByteArray() << 0 << QByteArray("200 OK") << QByteArray() << false;
+}
+
+void TuneScapeTests::testRecordingConnectionEnds()
+{
+    QFETCH(QByteArray, body);
+    QFETCH(int, contentLength);
+    QFETCH(QByteArray, status);
+    QFETCH(QByteArray, expected);
+    QFETCH(bool, succeeded);
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    StreamRecorder recorder;
+    QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
+    QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
+    recorder.startRecording(server.url("/end"), "Station", "MP3", directory.path());
+    QTRY_VERIFY(server.client("/end"));
+    auto *client = server.client("/end");
+    QVERIFY(server.respond(client, body, contentLength, status));
+    if (contentLength > body.size())
+        QTRY_COMPARE(recorder.bytesWritten(), expected.size());
+    client->disconnectFromHost();
+
+    QTRY_COMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(finished.size(), succeeded ? 1 : 0);
+    QCOMPARE(failed.size(), succeeded ? 0 : 1);
+    if (!succeeded) {
+        QVERIFY(!failed.first().at(0).toString().isEmpty());
+        QCOMPARE(failed.first().at(1).toString(), recorder.filePath());
+        QCOMPARE(failed.first().at(2).toLongLong(), expected.size());
+    }
+    QCOMPARE(recorder.bytesWritten(), expected.size());
+    QVERIFY(QFileInfo::exists(recorder.filePath()));
+    QCOMPARE(fileContents(recorder.filePath()), expected);
+}
+
+void TuneScapeTests::testRecordingShortWrites_data()
+{
+    QTest::addColumn<qint64>("writableBytes");
+    QTest::addColumn<QByteArray>("expected");
+    QTest::addColumn<bool>("succeeded");
+    QTest::newRow("short-writes-complete") << qint64(100) << QByteArray("audio bytes") << true;
+    QTest::newRow("disk-error-after-partial-write") << qint64(5) << QByteArray("audio") << false;
+    QTest::newRow("disk-error-on-first-write") << qint64(0) << QByteArray() << false;
+}
+
+void TuneScapeTests::testRecordingShortWrites()
+{
+    QFETCH(qint64, writableBytes);
+    QFETCH(QByteArray, expected);
+    QFETCH(bool, succeeded);
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    LimitedWritesRecorder recorder(writableBytes);
+    QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
+    QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
+    recorder.startRecording(server.url("/disk"), "Station", "MP3", directory.path());
+    QTRY_VERIFY(server.client("/disk"));
+    const QByteArray body = "audio bytes";
+    const qint64 announcedLength = succeeded ? body.size() : -1;
+    QVERIFY(server.respond(server.client("/disk"), body, announcedLength));
+    QTRY_COMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QTRY_COMPARE(server.client("/disk")->state(), QAbstractSocket::UnconnectedState);
+
+    QCOMPARE(finished.size(), succeeded ? 1 : 0);
+    QCOMPARE(failed.size(), succeeded ? 0 : 1);
+    if (!succeeded)
+        QCOMPARE(failed.first().at(2).toLongLong(), expected.size());
+    QCOMPARE(recorder.bytesWritten(), expected.size());
+    QVERIFY(QFileInfo::exists(recorder.filePath()));
+    QCOMPARE(fileContents(recorder.filePath()), expected);
+}
+
+void TuneScapeTests::testStationChangeStopsRecording()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites);
+    QSignalSpy titles(&radioList, &RadioList::trackTitleReceived);
+    radioList.prepareStationChange(server.url("/old-metadata"));
+    QTRY_VERIFY(server.client("/old-metadata"));
+    auto *oldMetadata = server.client("/old-metadata");
+    QVERIFY(server.respond(oldMetadata, "StreamTitle='Old';"));
+    QTRY_COMPARE(titles.size(), 1);
+    QCOMPARE(titles.first().at(0).toString(), QString("Old"));
+
+    auto &recorder = radioList.getStreamRecorder();
+    recorder.startRecording(server.url("/recording"), "Station", "MP3", directory.path());
+    QTRY_VERIFY(server.client("/recording"));
+    QVERIFY(server.respond(server.client("/recording"), "old audio"));
+    QTRY_COMPARE(recorder.state(), StreamRecorder::State::Recording);
+    QCOMPARE(ui.record->toolTip(), RadioList::tr("Stop recording"));
+    QCOMPARE(ui.recordLabel->text(), RadioList::tr("Recording: %L1 bytes").arg(9));
+
+    QCOMPARE(oldMetadata->write("StreamTitle='Late';"), 19);
+    radioList.prepareStationChange(server.url("/new-metadata"));
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
+    QCOMPARE(ui.recordLabel->text(), RadioList::tr("Recording saved (%L1 bytes)").arg(9));
+    QCOMPARE(fileContents(recorder.filePath()), QByteArray("old audio"));
+    QTRY_COMPARE(server.client("/recording")->state(), QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(oldMetadata->state(), QAbstractSocket::UnconnectedState);
+    QTRY_VERIFY(server.client("/new-metadata"));
+    QVERIFY(server.respond(server.client("/new-metadata"), "StreamTitle='New';"));
+    QTRY_COMPARE(titles.size(), 2);
+    QCOMPARE(titles.last().at(0).toString(), QString("New"));
+}
+
+void TuneScapeTests::testRecorderDestructionClosesSession()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RecordingHttpServer server;
+    QVERIFY(server.listen());
+    auto recorder = std::make_unique<StreamRecorder>();
+    recorder->startRecording(server.url("/shutdown"), "Station", "MP3", directory.path());
+    QTRY_VERIFY(server.client("/shutdown"));
+    QVERIFY(server.respond(server.client("/shutdown"), "audio at shutdown"));
+    QTRY_COMPARE(recorder->bytesWritten(), 17);
+    const QString path = recorder->filePath();
+    recorder.reset();
+
+    QTRY_COMPARE(server.client("/shutdown")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(fileContents(path), QByteArray("audio at shutdown"));
 }
 
 QTEST_MAIN(TuneScapeTests)

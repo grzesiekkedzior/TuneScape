@@ -194,14 +194,16 @@ void Country::onDoubleListClicked(const QModelIndex &index)
 
     currentStation = countryStationsModel->station(index.row());
 
-    playbackController.play(QUrl(currentStation.streamUrl));
+    const QUrl streamUrl(currentStation.streamUrl);
+    playerUIController.clearMetadata();
+    radioList->prepareStationChange(streamUrl);
+    playbackController.play(streamUrl);
 
     setIsPlaying(true);
     setCurrentIndexPlaying(index.row());
 
     setIndexColor(index);
 
-    playerUIController.clearMetadata();
     radioList->getRadioInfo()->clearInfo();
     radioList->clearTableViewColor();
 
@@ -219,14 +221,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
     playerUIController.setPauseIcon();
 
     radioList->setIsStopClicked(false);
-    radioList->getSongTitle(currentStation.streamUrl);
-
-    const auto recorder = radioList->getStreamRecorder();
-
-    if (recorder->getIsRecording()) {
-        recorder->stopRecording();
-        recorder->setIsRecording(false);
-    }
 }
 
 int Country::getCurrentIndexPlaying() const

@@ -55,8 +55,6 @@ RadioAudioManager::~RadioAudioManager()
 
 void RadioAudioManager::loadStream(const QUrl &url)
 {
-    streamReader.cleanupReplies();
-
     player->setSource(url);
 }
 

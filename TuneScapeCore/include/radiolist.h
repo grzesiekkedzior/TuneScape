@@ -37,7 +37,7 @@ public:
 
     void loadAllData();
     void setLoadedStationsCount(int num);
-    void getSongTitle(const QString &url);
+    void prepareStationChange(const QUrl &url);
 
     void setTypeMenu();
     void startSearchTimer();
@@ -52,7 +52,7 @@ public:
 
     void addEmptyIconButton(int row);
 
-    QSharedPointer<StreamRecorder> getStreamRecorder() const;
+    StreamRecorder &getStreamRecorder();
 
     bool getIsBrowseStationLoaded() const;
     void setIsBrowseStationLoaded(bool newIsBrowseStationLoaded);
@@ -138,8 +138,7 @@ private:
     JsonListProcessor jsonListProcesor;
 
     StreamReader streamReader;
-    QSharedPointer<StreamRecorder> streamRecorder = QSharedPointer<StreamRecorder>::create(
-        new StreamRecorder);
+    StreamRecorder streamRecorder;
     QTimer searchTimer;
     RadioInfo *radioInfo;
 
@@ -206,7 +205,8 @@ private:
     void setRadioImage(const QModelIndex &index);
     void handleDataReceived(const QString &data);
     void startStopRecord();
-    void setMp3FileName();
+    void updateRecordButton(StreamRecorder::State state);
+    void stopStreamServices();
     void searchStations();
 
     void clearRadioInfoLabel();
@@ -230,7 +230,6 @@ private:
     void clearInfoData(int stationIndex);
     void showMiniplayer();
     void maximizeWindow();
-    QString getCurrentStreamUrl() const;
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
     void switchToPlaylist(Stations station);

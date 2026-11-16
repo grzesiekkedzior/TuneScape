@@ -1,48 +1,53 @@
 #include "include/streamreader.h"
-#include <QByteArray>
-#include <QDebug>
+
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <utility>
 
 StreamReader::StreamReader(QObject *parent)
     : QObject(parent)
-{
-    manager = new QNetworkAccessManager(this);
+{}
 
-    connect(manager, &QNetworkAccessManager::finished, this, &StreamReader::onFinished);
-    //connect(&replyCleanupTimer, &QTimer::timeout, this, &StreamReader::cleanupReplies);
-    //replyCleanupTimer.start(60000);
+StreamReader::~StreamReader()
+{
+    stopStreaming();
 }
 
 void StreamReader::startStreaming(const QUrl &url)
 {
-    if (reply != nullptr)
-        reply->deleteLater();
+    stopStreaming();
+    if (!url.isValid() || url.isEmpty())
+        return;
+
     QNetworkRequest request(url);
     request.setRawHeader("Icy-MetaData", "1");
-    reply = manager->get(request);
+    auto *reply = m_manager.get(request);
+    m_reply = reply;
 
-    connect(reply, &QNetworkReply::readyRead, this, &StreamReader::onReadyRead);
+    connect(reply, &QNetworkReply::readyRead, this, [this, reply] { readAvailable(reply); });
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        readAvailable(reply);
+        if (m_reply == reply)
+            stopStreaming();
+    });
 }
 
-void StreamReader::cleanupReplies()
+void StreamReader::stopStreaming()
 {
-    qDebug() << "FreeConnection";
-    if (reply) {
+    if (auto *reply = std::exchange(m_reply, nullptr)) {
+        disconnect(reply, nullptr, this, nullptr);
+        if (!reply->isFinished())
+            reply->abort();
         reply->deleteLater();
     }
 }
 
-void StreamReader::onFinished(QNetworkReply *reply)
+void StreamReader::readAvailable(QNetworkReply *reply)
 {
-    if (reply->error() != QNetworkReply::NoError) {
-        qDebug() << "Error:" << reply->errorString();
+    if (m_reply != reply || reply->error() != QNetworkReply::NoError)
         return;
-    }
-}
 
-void StreamReader::onReadyRead()
-{
-    while (reply->bytesAvailable()) {
-        QByteArray data = reply->readAll();
-        emit dataReceived(data);
-    }
+    const QByteArray data = reply->readAll();
+    if (!data.isEmpty())
+        emit dataReceived(QString::fromUtf8(data));
 }

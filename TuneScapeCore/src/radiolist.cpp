@@ -1,4 +1,5 @@
 #include "include/radiolist.h"
+#include <QCoreApplication>
 #include <QDesktopServices>
 #include <QFile>
 #include <QHeaderView>
@@ -25,7 +26,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     jsonListProcesor.setRadioList(this);
     radioInfo = new RadioInfo(ui);
 
-    streamRecorder->setUI(ui);
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
@@ -45,8 +45,29 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     connect(miniPlayer.getMui()->dial, &QDial::valueChanged, this, &RadioList::sliderMoved);
 
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
-    //connect(ui->record, &QPushButton::clicked, this, &RadioList::setMp3FileName);
     connect(ui->record, &QPushButton::clicked, this, &RadioList::startStopRecord);
+    connect(&streamRecorder, &StreamRecorder::stateChanged, this, &RadioList::updateRecordButton);
+    ui->recordLabel->setTextFormat(Qt::PlainText);
+    connect(&streamRecorder, &StreamRecorder::bytesWrittenChanged, this, [this](qint64 bytes) {
+        this->ui->recordLabel->setText(tr("Recording: %L1 bytes").arg(bytes));
+    });
+    connect(&streamRecorder, &StreamRecorder::recordingFinished, this,
+            [this](const QString &path, qint64 bytes) {
+                this->ui->recordLabel->setText(bytes > 0 ? tr("Recording saved (%L1 bytes)").arg(bytes)
+                                                         : tr("Recording stopped (0 bytes)"));
+                this->ui->recordLabel->setToolTip(path);
+            });
+    connect(&streamRecorder, &StreamRecorder::recordingFailed, this,
+            [this](const QString &error, const QString &path, qint64 bytes) {
+                this->ui->recordLabel->setText(path.isEmpty()
+                    ? tr("Recording could not start")
+                    : tr("Recording interrupted (%L1 bytes)").arg(bytes));
+                this->ui->recordLabel->setToolTip(path.isEmpty() ? error : error + '\n' + path);
+                this->ui->statusbar->showMessage(error, 10000);
+            });
+    connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit,
+            this, &RadioList::stopStreamServices);
+    updateRecordButton(streamRecorder.state());
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
@@ -109,32 +130,6 @@ void RadioList::updateThemeAppearance()
     if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
         playerUIController.setDefaultImage();
     }
-}
-
-void RadioList::setMp3FileName()
-{
-    const QTableWidgetItem *titleItem = ui->tableWidget->item(0, 1);
-    const QTableWidgetItem *extensionItem = ui->tableWidget->item(5, 1);
-
-    if (!extensionItem)
-        return;
-
-    QString title;
-    QString extension = extensionItem->text().toLower();
-
-    if (playbackController.isPlaying() && !country.getIsPlaying()) {
-        if (!titleItem)
-            return;
-
-        title = titleItem->text();
-    } else if (country.getIsPlaying()) {
-        title = country.getCurrentStation().station;
-    } else {
-        return;
-    }
-
-    extension.remove('+');
-    streamRecorder->setFileName(title, extension);
 }
 
 int RadioList::getCurrentStationIndex() const
@@ -269,7 +264,7 @@ void RadioList::setIsBrowseStationLoaded(bool newIsBrowseStationLoaded)
     isBrowseStationLoaded = newIsBrowseStationLoaded;
 }
 
-QSharedPointer<StreamRecorder> RadioList::getStreamRecorder() const
+StreamRecorder &RadioList::getStreamRecorder()
 {
     return streamRecorder;
 }
@@ -420,8 +415,9 @@ void RadioList::updateStationColoring()
 }
 //end
 
-void RadioList::getSongTitle(const QString &url)
+void RadioList::prepareStationChange(const QUrl &url)
 {
+    streamRecorder.stopRecording();
     streamReader.startStreaming(url);
 }
 
@@ -489,9 +485,9 @@ void RadioList::playSelectedStation(int radioNumber)
     currentRadioPlayingAddress = currentPlayingStation.streamUrl;
 
     playerUIController.setFavorite(isFavorite(currentPlayingStation));
-    getSongTitle(currentRadioPlayingAddress);
-
-    playbackController.play(QUrl(currentRadioPlayingAddress));
+    const QUrl streamUrl(currentRadioPlayingAddress);
+    prepareStationChange(streamUrl);
+    playbackController.play(streamUrl);
 }
 
 void RadioList::setTheme(Theme *newTheme)
@@ -559,11 +555,6 @@ void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
         }
     }
 
-    if (streamRecorder->getIsRecording()) {
-        streamRecorder->stopRecording();
-        streamRecorder->setIsRecording(false);
-    }
-
     if (this->treeItem == "Search")
         setIsSearchTablelDoubleCliced(true);
     else
@@ -603,6 +594,7 @@ void RadioList::onPlayPauseButtonCliced()
 
 void RadioList::stopRadioBrowserStream()
 {
+    stopStreamServices();
     playbackController.stop();
 }
 
@@ -687,6 +679,7 @@ void RadioList::clearTableViewColor()
 
 void RadioList::onStopButtonClicked()
 {
+    stopStreamServices();
     if (!playbackController.isPlaying() && !playbackController.isPaused())
         return;
 
@@ -711,11 +704,6 @@ void RadioList::onStopButtonClicked()
     radioInfo->clearInfo();
 
     setIsBrowseStationLoaded(false);
-
-    if (streamRecorder->getIsRecording()) {
-        streamRecorder->stopRecording();
-        streamRecorder->setIsRecording(false);
-    }
 
     country.clearTableColor();
     country.setCurrentIndexPlaying(-1);
@@ -761,28 +749,46 @@ void RadioList::handleDataReceived(const QString &data)
 
 void RadioList::startStopRecord()
 {
-    if (!(playbackController.isPlaying() && jsonListProcesor.isConnected))
+    if (streamRecorder.state() != StreamRecorder::State::Idle) {
+        streamRecorder.stopRecording();
         return;
+    }
 
-    if (!streamRecorder->getIsRecording()) {
-        setMp3FileName();
-        streamRecorder->loadCurrentAddress(getCurrentStreamUrl());
-        streamRecorder->startRecording();
-    } else {
-        qDebug() << "record false";
-        streamRecorder->stopRecording();
+    if (!playbackController.isPlaying()) {
+        ui->statusbar->showMessage(tr("Play a station to start recording."), 5000);
+        return;
+    }
+
+    const auto &station = country.getIsPlaying() ? country.getCurrentStation() : currentPlayingStation;
+    QString codec = station.codec;
+    if (codec.isEmpty()) {
+        const auto info = radioInfo->getInfoData();
+        if (info.station == station.station)
+            codec = info.codec;
+    }
+    streamRecorder.startRecording(QUrl(station.streamUrl), station.station, codec);
+}
+
+void RadioList::updateRecordButton(StreamRecorder::State state)
+{
+    using State = StreamRecorder::State;
+    const bool active = state != State::Idle;
+    const QString action = active ? tr("Stop recording") : tr("Start recording");
+    ui->record->setIcon(QIcon(active ? ":/images/img/stoprecord.png" : ":/images/img/red-save-32.png"));
+    ui->record->setToolTip(action);
+    ui->record->setAccessibleName(action);
+    ui->record->setEnabled(state != State::Stopping);
+
+    if (state == State::Starting) {
+        ui->recordLabel->setText(tr("Connecting for recording…"));
+        ui->recordLabel->setToolTip({});
     }
 }
 
-QString RadioList::getCurrentStreamUrl() const
+void RadioList::stopStreamServices()
 {
-    if (country.getIsPlaying())
-        return country.getCurrentStation().streamUrl;
-
-    if (playbackController.isPlaying())
-        return currentRadioPlayingAddress;
-
-    return {};
+    streamRecorder.stopRecording();
+    streamReader.stopStreaming();
 }
 
 void RadioList::setVectorsOfStation(const QString &endpoint, Stations station)
@@ -887,7 +893,7 @@ void RadioList::showStationContextMenu(const QPoint &position)
 
     if (selectedAction == playAction) {
         if (isCurrentStationPlaying) {
-            playbackController.stop();
+            stopRadioBrowserStream();
 
             currentRadioPlayingAddress.clear();
             playerUIController.setFavorite(false);

@@ -1,31 +1,30 @@
 #ifndef STREAMREADER_H
 #define STREAMREADER_H
 
-#include <QNetworkReply>
+#include <QNetworkAccessManager>
 #include <QObject>
-#include <QTimer>
 #include <QUrl>
+
+class QNetworkReply;
 
 class StreamReader : public QObject
 {
     Q_OBJECT
-
 public:
-    StreamReader(QObject *parent = nullptr);
+    explicit StreamReader(QObject *parent = nullptr);
+    ~StreamReader() override;
+
     void startStreaming(const QUrl &url);
-    void cleanupReplies();
+    void stopStreaming();
 
 signals:
     void dataReceived(const QString &data);
 
-private slots:
-    void onFinished(QNetworkReply *reply);
-    void onReadyRead();
-
 private:
-    QNetworkAccessManager *manager;
-    QNetworkReply *reply = nullptr;
-    //QTimer replyCleanupTimer;
+    void readAvailable(QNetworkReply *reply);
+
+    QNetworkAccessManager m_manager;
+    QNetworkReply *m_reply = nullptr;
 };
 
 #endif // STREAMREADER_H

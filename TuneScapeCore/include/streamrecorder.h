@@ -1,47 +1,55 @@
 #ifndef STREAMRECORDER_H
 #define STREAMRECORDER_H
+
+#include <QDateTime>
 #include <QFile>
 #include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QObject>
-#include "ui_mainwindow.h"
+#include <QUrl>
+
+class QNetworkReply;
 
 class StreamRecorder : public QObject
 {
     Q_OBJECT
 public:
-    StreamRecorder(QObject *parent = nullptr);
-    void recordStream(const QByteArray &data);
-    void closeFile();
-    void setFileName(const QString &title, const QString extention);
-    void loadCurrentAddress(QString address);
-    void extracted();
-    void startRecording();
-    void stopRecording();
-    void clearLabelText();
-    void showStopOnLabel();
+    enum class State { Idle, Starting, Recording, Stopping };
+    Q_ENUM(State)
 
-    bool getIsRecording() const;
-    void setIsRecording(bool newIsRecording);
-    void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-    void setUI(Ui::MainWindow *ui);
+    explicit StreamRecorder(QObject *parent = nullptr);
+    ~StreamRecorder() override;
+
+    State state() const;
+    qint64 bytesWritten() const;
+    QString filePath() const;
+
+    void startRecording(const QUrl &url, const QString &stationName, const QString &codec,
+                        QString directory = {}, const QDateTime &startTime = QDateTime::currentDateTime());
+    void stopRecording();
+
 signals:
-    void dataToRecord(QByteArray array);
-private slots:
-    void recordFile();
+    void stateChanged(StreamRecorder::State state);
+    void bytesWrittenChanged(qint64 bytes);
+    void recordingFinished(const QString &path, qint64 bytes);
+    void recordingFailed(const QString &error, const QString &path, qint64 bytes);
+
+protected:
+    virtual qint64 writeToFile(const char *data, qint64 size);
 
 private:
-    Ui::MainWindow *ui;
-    QFile file;
-    QString downloadDir{};
-    QString filePath{};
-    QUrl url;
-    bool isRecording = false;
+    void setState(State state);
+    QString openRecordingFile(const QString &directory, const QString &stationName,
+                              const QString &codec, const QDateTime &startTime);
+    void writeAvailable(QNetworkReply *reply);
+    void handleFinished(QNetworkReply *reply);
+    void finishRecording(QString error = {});
 
-    QNetworkAccessManager *manager = nullptr;
-    QNetworkReply *reply = nullptr;
-    void clearReply();
-    void clearRecordLabel();
+    QNetworkAccessManager m_manager;
+    QNetworkReply *m_reply = nullptr;
+    QFile m_file;
+    QString m_filePath;
+    qint64 m_bytesWritten = 0;
+    State m_state = State::Idle;
 };
 
 #endif // STREAMRECORDER_H
