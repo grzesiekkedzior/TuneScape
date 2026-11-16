@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <QMenu>
 #include <QNetworkProxy>
+#include <QProgressDialog>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTemporaryDir>
@@ -21,43 +22,10 @@
 
 namespace {
 
-class LocalHttpResponse
+class TestHttpServer
 {
 public:
-    explicit LocalHttpResponse(const QByteArray &body)
-    {
-        QObject::connect(&server, &QTcpServer::newConnection, &server, [this, body] {
-            auto *socket = server.nextPendingConnection();
-            QObject::connect(socket, &QTcpSocket::readyRead, socket, [this, socket, body] {
-                request += socket->readAll();
-                if (!request.contains("\r\n\r\n"))
-                    return;
-
-                socket->write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
-                              "Connection: close\r\nContent-Length: "
-                              + QByteArray::number(body.size()) + "\r\n\r\n" + body);
-                socket->disconnectFromHost();
-            });
-        });
-    }
-
-    bool listen() { return server.listen(QHostAddress::LocalHost); }
-
-    QString url() const
-    {
-        return QStringLiteral("http://127.0.0.1:%1/stations").arg(server.serverPort());
-    }
-
-    QByteArray request;
-
-private:
-    QTcpServer server;
-};
-
-class RecordingHttpServer
-{
-public:
-    RecordingHttpServer()
+    TestHttpServer()
     {
         QObject::connect(&server, &QTcpServer::newConnection, &server, [this] {
             auto *socket = server.nextPendingConnection();
@@ -80,13 +48,22 @@ public:
     QTcpSocket *client(const QByteArray &target) const { return clients.value(target); }
 
     static bool respond(QTcpSocket *client, const QByteArray &body, qint64 length = -1,
-                        const QByteArray &status = "200 OK")
+                        const QByteArray &status = "200 OK", const QByteArray &type = "audio/mpeg")
     {
-        QByteArray response = "HTTP/1.1 " + status + "\r\nContent-Type: audio/mpeg\r\nConnection: close\r\n";
+        QByteArray response = "HTTP/1.1 " + status + "\r\nContent-Type: " + type + "\r\nConnection: close\r\n";
         if (length >= 0)
             response += "Content-Length: " + QByteArray::number(length) + "\r\n";
         response += "\r\n" + body;
         return client->write(response) == response.size();
+    }
+
+    bool respondJson(const QByteArray &target, const QByteArray &body, const QByteArray &status = "200 OK")
+    {
+        auto *socket = client(target);
+        if (!socket || !respond(socket, body, body.size(), status, "application/json"))
+            return false;
+        socket->disconnectFromHost();
+        return true;
     }
 
 private:
@@ -146,8 +123,20 @@ private slots:
     void testRadioListPause();
     void testJsonListProcessorConnection();
     void testJsonListProcessorStationLoaded();
-    void testJsonListProcessorInvalidJson();
+    void testCatalogResponseErrors_data();
+    void testCatalogResponseErrors();
     void testRadioStationsGenerateFullAddress();
+    void testCatalogTimeout();
+    void testCatalogMirrorFallback();
+    void testCatalogCancellation();
+    void testCatalogCancellationDuringFailover();
+    void testCatalogOutOfOrder();
+    void testCatalogReceiverDestruction();
+    void testCatalogListsDoNotOverwriteVisibleSelection();
+    void testCatalogCountrySearchAndTabChange();
+    void testCatalogSearchReplacementAndCancellation();
+    void testCatalogStationDetailsIgnorePreviousRequest();
+    void testCatalogFailureLeavesPlaybackAndRecordingRunning();
     void testAppConfigCheckFileIsExists();
     void testAppConfigCheckBoolState();
     void testAppConfigChangeBoolState();
@@ -208,7 +197,6 @@ void TuneScapeTests::testRadioListPause()
     FavoriteManager favorites;
     RadioList radioList(&ui, &favorites);
     radioList.setIsTreeClicked(true);
-    radioList.getJsonListProcessor()->isConnected = true;
 
     auto &playback = SingletonContainer::getSingleton().getInstance<PlaybackController>();
     playback.stop();
@@ -222,21 +210,28 @@ void TuneScapeTests::testRadioListPause()
 
 void TuneScapeTests::testJsonListProcessorConnection()
 {
-    LocalHttpResponse http("[]");
+    TestHttpServer http;
     QVERIFY(http.listen());
-
-    JsonListProcessor jsonListProcessor;
-    const auto *reply = jsonListProcessor.checkAvailability({http.url()});
-    QVERIFY(reply);
-    QVERIFY(reply->isFinished());
-    QCOMPARE(reply->error(), QNetworkReply::NoError);
-    QCOMPARE(reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(), 200);
-    QVERIFY(http.request.startsWith("GET /stations HTTP/1.1\r\n"));
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QList<RadioBrowserApi::Result> results;
+    api.request(QUrl("stations"), this, [&](auto, const auto &result) { results.append(result); });
+    QVERIFY(results.isEmpty());
+    QTRY_VERIFY(http.client("/stations"));
+    QVERIFY(http.respondJson("/stations", "[]"));
+    QTRY_COMPARE(results.size(), 1);
+    QCOMPARE(results.first().status, RadioBrowserApi::Status::EmptyResult);
+    QVERIFY(results.first().data.isEmpty());
 }
 
 void TuneScapeTests::testJsonListProcessorStationLoaded()
 {
-    LocalHttpResponse http(R"json([{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QList<RadioBrowserApi::Result> results;
+    api.request(QUrl("stations"), this, [&](auto, const auto &result) { results.append(result); });
+    QTRY_VERIFY(http.client("/stations"));
+    const QByteArray payload = R"json([{
         "name": "  - Test Radio  ",
         "tags": " jazz,rock",
         "country": " Poland ",
@@ -252,13 +247,11 @@ void TuneScapeTests::testJsonListProcessorStationLoaded()
         "bitrate": 128,
         "votes": 7,
         "clickcount": 13
-    }])json");
-    QVERIFY(http.listen());
-
-    JsonListProcessor processor;
-    QVERIFY(processor.checkAvailability({http.url()}));
-    processor.processJsonQuery();
-    const auto stations = processor.getStations();
+    }])json";
+    QVERIFY(http.respondJson("/stations", payload));
+    QTRY_COMPARE(results.size(), 1);
+    QCOMPARE(results.first().status, RadioBrowserApi::Status::Success);
+    const auto stations = JsonListProcessor::stationsFromJson(results.first().data);
     QCOMPARE(stations.size(), 1);
 
     const auto &station = stations.first();
@@ -276,32 +269,386 @@ void TuneScapeTests::testJsonListProcessorStationLoaded()
     QCOMPARE(station.bitrate, 128);
     QCOMPARE(station.votes, 7);
     QCOMPARE(station.clickCount, 13);
-    QCOMPARE(processor.getTableRows().size(), 1);
-    QCOMPARE(processor.getTableRows().first().station, station.station);
-    QCOMPARE(processor.getStreamAddresses(), QVector<QString>{station.streamUrl});
-    QCOMPARE(processor.getIconAddresses(), QVector<QString>{station.iconUrl});
 }
 
-void TuneScapeTests::testJsonListProcessorInvalidJson()
+void TuneScapeTests::testCatalogResponseErrors_data()
 {
-    LocalHttpResponse http("[invalid]");
-    QVERIFY(http.listen());
+    QTest::addColumn<QByteArray>("body");
+    QTest::addColumn<QByteArray>("status");
+    QTest::addColumn<int>("expected");
+    using Status = RadioBrowserApi::Status;
+    QTest::newRow("empty-body") << QByteArray() << QByteArray("200 OK") << int(Status::InvalidResponse);
+    QTest::newRow("invalid-json") << QByteArray("[invalid]") << QByteArray("200 OK") << int(Status::InvalidResponse);
+    QTest::newRow("wrong-shape") << QByteArray("[1]") << QByteArray("200 OK") << int(Status::InvalidResponse);
+    QTest::newRow("http-404") << QByteArray("[]") << QByteArray("404 Not Found") << int(Status::NetworkError);
+    QTest::newRow("http-503") << QByteArray("[]") << QByteArray("503 Service Unavailable") << int(Status::NetworkError);
+}
 
-    JsonListProcessor processor;
-    QVERIFY(processor.checkAvailability({http.url()}));
-    processor.processJsonQuery();
-    QVERIFY(processor.getStations().isEmpty());
+void TuneScapeTests::testCatalogResponseErrors()
+{
+    QFETCH(QByteArray, body);
+    QFETCH(QByteArray, status);
+    QFETCH(int, expected);
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QList<RadioBrowserApi::Result> results;
+    api.request(QUrl("errors"), this, [&](auto, const auto &result) { results.append(result); });
+    QTRY_VERIFY(http.client("/errors"));
+    QVERIFY(http.respondJson("/errors", body, status));
+    QTRY_COMPARE(results.size(), 1);
+    QCOMPARE(int(results.first().status), expected);
+    QVERIFY(results.first().data.isEmpty());
+    QVERIFY(!results.first().detail.isEmpty());
 }
 
 void TuneScapeTests::testRadioStationsGenerateFullAddress()
 {
-    const QString endpoint = QStringLiteral("json/stations/topvote/20");
-    RadioStations radioStations(endpoint,
-                                {RadioBrowserApi::baseUrlForTarget(QStringLiteral("first.example.")),
-                                 RadioBrowserApi::baseUrlForTarget(QStringLiteral("second.example"))});
-    const QStringList expected = {QStringLiteral("https://first.example/json/stations/topvote/20"),
-                                  QStringLiteral("https://second.example/json/stations/topvote/20")};
-    QCOMPARE(radioStations.getAddresses(), expected);
+    const auto endpoint = RadioBrowserApi::endpoint("json/stations/search", "name", QStringLiteral("Łódź + & /"));
+    const auto first = RadioBrowserApi::baseUrlForTarget("first.example.").resolved(endpoint);
+    const auto second = RadioBrowserApi::baseUrlForTarget("second.example", 8443).resolved(endpoint);
+    QCOMPARE(first.toEncoded(), QByteArray("https://first.example/json/stations/search?name=%C5%81%C3%B3d%C5%BA%20%2B%20%26%20%2F"));
+    QCOMPARE(second.port(), 8443);
+    QCOMPARE(second.host(), QString("second.example"));
+}
+
+void TuneScapeTests::testCatalogTimeout()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 200);
+    QList<RadioBrowserApi::Result> results;
+    bool timerRan = false;
+    api.request(QUrl("stall"), this, [&](auto, const auto &result) { results.append(result); });
+    QTimer::singleShot(10, &api, [&] { timerRan = true; });
+    QTRY_VERIFY(http.client("/stall"));
+    QTRY_COMPARE(results.size(), 1);
+    QVERIFY(timerRan);
+    QCOMPARE(results.first().status, RadioBrowserApi::Status::Timeout);
+    QTRY_COMPARE(http.client("/stall")->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testCatalogMirrorFallback()
+{
+    TestHttpServer broken;
+    TestHttpServer working;
+    QVERIFY(broken.listen());
+    QVERIFY(working.listen());
+    QTcpServer unused;
+    QVERIFY(unused.listen(QHostAddress::LocalHost));
+    const QUrl refused(QStringLiteral("http://127.0.0.1:%1/").arg(unused.serverPort()));
+    unused.close();
+
+    RadioBrowserApi api({refused, broken.url("/"), working.url("/")}, 1500);
+    QList<RadioBrowserApi::Result> results;
+    api.request(QUrl("stations"), this, [&](auto, const auto &result) { results.append(result); });
+    QTRY_VERIFY(broken.client("/stations"));
+    QVERIFY(broken.respondJson("/stations", "malformed"));
+    QTRY_VERIFY(working.client("/stations"));
+    QVERIFY(working.respondJson("/stations", "[{\"name\":\"Available\"}]"));
+    QTRY_COMPARE(results.size(), 1);
+    QCOMPARE(results.first().status, RadioBrowserApi::Status::Success);
+    QCOMPARE(JsonListProcessor::stationsFromJson(results.first().data).first().station, QString("Available"));
+}
+
+void TuneScapeTests::testCatalogCancellation()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QList<RadioBrowserApi::Result> results;
+    const auto pending = api.request(QUrl("pending"), this, [&](auto, const auto &result) { results.append(result); });
+    const auto active = api.request(QUrl("active"), this, [&](auto, const auto &result) { results.append(result); });
+    api.cancel(pending);
+    QTRY_VERIFY(http.client("/active"));
+    api.cancel(active);
+    api.cancel(active);
+    QCOMPARE(results.size(), 2);
+    QCOMPARE(results.at(0).status, RadioBrowserApi::Status::Cancelled);
+    QCOMPARE(results.at(1).status, RadioBrowserApi::Status::Cancelled);
+    QVERIFY(!http.client("/pending"));
+    QTRY_COMPARE(http.client("/active")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(results.size(), 2);
+}
+
+void TuneScapeTests::testCatalogCancellationDuringFailover()
+{
+    TestHttpServer first;
+    TestHttpServer second;
+    TestHttpServer third;
+    QVERIFY(first.listen());
+    QVERIFY(second.listen());
+    QVERIFY(third.listen());
+    RadioBrowserApi api({first.url("/"), second.url("/"), third.url("/")}, 1500);
+    QList<RadioBrowserApi::Result> results;
+    const auto id = api.request(QUrl("failover"), this, [&](auto, const auto &result) { results.append(result); });
+    QTRY_VERIFY(first.client("/failover"));
+    QVERIFY(first.respondJson("/failover", "[]", "503 Service Unavailable"));
+    QTRY_VERIFY(second.client("/failover"));
+    api.cancel(id);
+    QTRY_COMPARE(second.client("/failover")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(results.size(), 1);
+    QCOMPARE(results.first().status, RadioBrowserApi::Status::Cancelled);
+    QVERIFY(!third.client("/failover"));
+}
+
+void TuneScapeTests::testCatalogOutOfOrder()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QList<RadioBrowserApi::RequestId> order;
+    QStringList names;
+    const auto completion = [&](auto id, const auto &result) {
+        order.append(id);
+        const auto stations = JsonListProcessor::stationsFromJson(result.data);
+        names.append(stations.isEmpty() ? QString() : stations.first().station);
+    };
+    const auto first = api.request(QUrl("first"), this, completion);
+    const auto second = api.request(QUrl("second"), this, completion);
+    QTRY_VERIFY(http.client("/first"));
+    QTRY_VERIFY(http.client("/second"));
+    QVERIFY(http.respondJson("/second", "[{\"name\":\"Second\"}]"));
+    QTRY_COMPARE(order.size(), 1);
+    QCOMPARE(order.first(), second);
+    QVERIFY(http.respondJson("/first", "[{\"name\":\"First\"}]"));
+    QTRY_COMPARE(order.size(), 2);
+    QCOMPARE(order.last(), first);
+    QCOMPARE(names, (QStringList{"Second", "First"}));
+}
+
+void TuneScapeTests::testCatalogReceiverDestruction()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    auto receiver = std::make_unique<QObject>();
+    int calls = 0;
+    api.request(QUrl("close"), receiver.get(), [&](auto, const auto &) { ++calls; });
+    QTRY_VERIFY(http.client("/close"));
+    receiver.reset();
+    QTRY_COMPARE(http.client("/close")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(calls, 0);
+}
+
+void TuneScapeTests::testCatalogListsDoNotOverwriteVisibleSelection()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 2000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    RadioExplorer explorer(&ui);
+    explorer.createMenu();
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites, &api);
+    radioList.setMainWindow(&window);
+    QSignalSpy lists(&radioList, &RadioList::catalogPlaylistLoaded);
+    radioList.loadAllData();
+    window.show();
+
+    const QByteArray top = "/json/stations/topvote/20";
+    const QByteArray popular = "/json/stations/topclick/20";
+    const QByteArray newest = "/json/stations/lastchange/20";
+    QTRY_VERIFY(http.client(top) && http.client(popular) && http.client(newest));
+    QVERIFY(window.isVisible());
+    QCOMPARE(radioList.radioStationsModel->size(), 0);
+    auto *tree = ui.treeView->model();
+    const auto library = tree->index(0, 0);
+    const auto popularIndex = tree->index(1, 0, library);
+    QVERIFY(popularIndex.isValid());
+    emit ui.treeView->clicked(popularIndex);
+
+    QVERIFY(http.respondJson(popular, "[{\"name\":\"Popular station\"}]"));
+    QTRY_COMPARE(radioList.radioStationsModel->size(), 1);
+    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Popular station"));
+    QVERIFY(http.respondJson(top, "[{\"name\":\"Top station\"}]"));
+    QVERIFY(http.respondJson(newest, "[{\"name\":\"New station\"}]"));
+    QTRY_COMPARE(lists.size(), 3);
+    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Popular station"));
+    QCOMPARE(radioList.stations(Stations::NEW).first().station, QString("New station"));
+    emit ui.treeView->clicked(tree->index(0, 0, library));
+    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Top station"));
+}
+
+void TuneScapeTests::testCatalogCountrySearchAndTabChange()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 2000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites, &api);
+    auto &country = SingletonContainer::getSingleton().getInstance<Country>();
+    country.setData(&ui, &radioList);
+    ui.tabRadioListWidget->setCurrentWidget(ui.listCountries);
+    QTRY_VERIFY(http.client("/json/countries"));
+    QVERIFY(http.respondJson("/json/countries",
+        "[{\"name\":\"Poland\",\"iso_3166_1\":\"PL\"},{\"name\":\"United Kingdom\",\"iso_3166_1\":\"GB\"}]"));
+    QTRY_COMPARE(ui.comboBox->count(), 2);
+    const auto selectCountry = [&ui](int index) {
+        ui.comboBox->setCurrentIndex(index);
+        emit ui.comboBox->textActivated(ui.comboBox->currentText());
+    };
+
+    selectCountry(0);
+    const QByteArray first = "/json/stations/search?countrycode=PL";
+    QTRY_VERIFY(http.client(first));
+    selectCountry(1);
+    const QByteArray second = "/json/stations/search?countrycode=GB";
+    QTRY_VERIFY(http.client(second));
+    QTRY_COMPARE(http.client(first)->state(), QAbstractSocket::UnconnectedState);
+    QVERIFY(http.respondJson(second, "[{\"name\":\"Current country\"}]"));
+    auto *model = qobject_cast<RadioStationsModel *>(ui.tableOfCoutries->model());
+    QVERIFY(model);
+    QTRY_COMPARE(model->size(), 1);
+    QCOMPARE(model->station(0).station, QString("Current country"));
+
+    selectCountry(0);
+    auto *old = http.client(first);
+    QTRY_VERIFY(http.client(first) != old);
+    ui.tabRadioListWidget->setCurrentIndex(0);
+    QTRY_COMPARE(http.client(first)->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(model->size(), 0);
+}
+
+void TuneScapeTests::testCatalogSearchReplacementAndCancellation()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 4000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites, &api);
+    window.show();
+
+    const auto search = [&ui](const QString &name) {
+        ui.serachInput->setText(name);
+        emit ui.serachInput->returnPressed();
+    };
+    auto *progress = window.findChild<QProgressDialog *>();
+    QVERIFY(progress);
+    auto *cancel = progress->findChild<QPushButton *>();
+    QVERIFY(cancel);
+
+    search("old");
+    const QByteArray old = "/json/stations/search?name=old";
+    QTRY_VERIFY(http.client(old));
+    QVERIFY(http.respond(http.client(old), "[", 15, "200 OK", "application/json"));
+    search("fresh + one");
+    const QByteArray fresh = "/json/stations/search?name=fresh%20%2B%20one";
+    QTRY_VERIFY(http.client(fresh));
+    QTRY_COMPARE(http.client(old)->state(), QAbstractSocket::UnconnectedState);
+    QVERIFY(http.respondJson(fresh, "[{\"name\":\"Fresh result\"}]"));
+    QTRY_COMPARE(radioList.radioStationsModel->size(), 1);
+    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Fresh result"));
+
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        const QString name = QStringLiteral("cancel-%1").arg(attempt);
+        const QByteArray target = "/json/stations/search?name=" + name.toLatin1();
+        search(name);
+        QTRY_VERIFY(http.client(target));
+        QTRY_VERIFY(progress->isVisible());
+        cancel->click();
+        QTRY_COMPARE(http.client(target)->state(), QAbstractSocket::UnconnectedState);
+        QVERIFY(!progress->isVisible());
+        QCOMPARE(radioList.radioStationsModel->size(), 0);
+    }
+}
+
+void TuneScapeTests::testCatalogStationDetailsIgnorePreviousRequest()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 2000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites, &api);
+
+    RadioStation previous;
+    previous.station = "Previous";
+    previous.iconUrl = http.url("/old-icon").toString();
+    radioList.loadPlayingStationDetails(previous);
+    const QByteArray first = "/json/stations/search?name=Previous&nameExact=true";
+    QTRY_VERIFY(http.client(first) && http.client("/old-icon"));
+
+    RadioStation current;
+    current.station = "Cached";
+    current.stationUuid = QUuid("87654321-4321-4321-4321-123456789abc");
+    radioList.loadPlayingStationDetails(current);
+    const QByteArray second = "/json/stations/byuuid/87654321-4321-4321-4321-123456789abc";
+    QCOMPARE(ui.tableWidget->item(0, 1)->text(), current.station);
+    QTRY_VERIFY(http.client(second));
+    QTRY_COMPARE(http.client(first)->state(), QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(http.client("/old-icon")->state(), QAbstractSocket::UnconnectedState);
+    QVERIFY(http.respondJson(second, "[{\"name\":\"Current\",\"codec\":\"AAC\",\"clicktrend\":11}]"));
+    QTRY_COMPARE(ui.tableWidget->item(0, 1)->text(), QString("Current"));
+    QCOMPARE(ui.tableWidget->item(5, 1)->text(), QString("AAC"));
+    QCOMPARE(ui.tableWidget->item(8, 1)->text(), QString("11"));
+
+    RadioStation legacy;
+    legacy.station = "Shared";
+    legacy.streamUrl = "https://stream.example/selected";
+    radioList.loadPlayingStationDetails(legacy);
+    const QByteArray third = "/json/stations/search?name=Shared&nameExact=true";
+    QTRY_VERIFY(http.client(third));
+    const QByteArray matches = R"([
+        {"name":"Shared","url_resolved":"https://stream.example/other","codec":"FLAC"},
+        {"name":"Shared","url_resolved":"https://stream.example/selected","codec":"MP3"}
+    ])";
+    QVERIFY(http.respondJson(third, matches));
+    QTRY_COMPARE(ui.tableWidget->item(5, 1)->text(), QString("MP3"));
+}
+
+void TuneScapeTests::testCatalogFailureLeavesPlaybackAndRecordingRunning()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    RadioList radioList(&ui, &favorites, &api);
+    auto &playback = SingletonContainer::getSingleton().getInstance<PlaybackController>();
+    playback.stop();
+    playback.setPlaying(true);
+    auto &recorder = radioList.getStreamRecorder();
+    recorder.startRecording(http.url("/live"), "Station", "MP3", directory.path());
+    QTRY_VERIFY(http.client("/live"));
+    QVERIFY(http.respond(http.client("/live"), "first"));
+    QTRY_COMPARE(recorder.bytesWritten(), 5);
+
+    ui.serachInput->setText("broken");
+    emit ui.serachInput->returnPressed();
+    const QByteArray target = "/json/stations/search?name=broken";
+    QTRY_VERIFY(http.client(target));
+    QVERIFY(http.respondJson(target, "", "503 Service Unavailable"));
+    QTRY_VERIFY(ui.statusbar->currentMessage().contains("503"));
+    QVERIFY(playback.isPlaying());
+    QCOMPARE(recorder.state(), StreamRecorder::State::Recording);
+    auto *failedRequest = http.client(target);
+    emit ui.serachInput->returnPressed();
+    QTRY_VERIFY(http.client(target) != failedRequest);
+    QVERIFY(http.respondJson(target, "[{\"name\":\"Recovered\"}]"));
+    QTRY_COMPARE(radioList.radioStationsModel->size(), 1);
+    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Recovered"));
+    QCOMPARE(http.client("/live")->write("more"), 4);
+    QTRY_COMPARE(recorder.bytesWritten(), 9);
+    ui.playPause->click();
+    QVERIFY(playback.isPaused());
+    ui.stop->click();
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(fileContents(recorder.filePath()), QByteArray("firstmore"));
 }
 
 void TuneScapeTests::testAppConfigCheckFileIsExists()
@@ -727,14 +1074,15 @@ void TuneScapeTests::testStopCountryStationFromContextMenu()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
+    RadioBrowserApi catalog({server.url("/")}, 1500);
     QMainWindow window;
     Ui::MainWindow ui;
     ui.setupUi(&window);
 
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites);
+    RadioList radioList(&ui, &favorites, &catalog);
     radioList.setMainWindow(&window);
     auto &container = SingletonContainer::getSingleton();
     auto &country = container.getInstance<Country>();
@@ -801,7 +1149,7 @@ void TuneScapeTests::testRecordingStartAndStop()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     StreamRecorder recorder;
     using State = StreamRecorder::State;
@@ -843,7 +1191,7 @@ void TuneScapeTests::testRecordingOpenFailure()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     QMainWindow window;
     Ui::MainWindow ui;
@@ -872,7 +1220,7 @@ void TuneScapeTests::testRecordingNameCollision()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     const QDateTime start(QDate(2026, 11, 16), QTime(12, 34, 56, 789));
     const QString original = directory.filePath("2026-11-16_12-34-56-789 Station.mp3");
@@ -892,7 +1240,7 @@ void TuneScapeTests::testRecordingSanitizesName()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     StreamRecorder recorder;
     const QString station = QStringLiteral("Łódź/x\\a:b*?\"<>|\n. ");
@@ -910,7 +1258,7 @@ void TuneScapeTests::testRecordingRestartsWithoutMixingSessions()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     StreamRecorder recorder;
     QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
@@ -960,7 +1308,7 @@ void TuneScapeTests::testRecordingConnectionEnds()
     QFETCH(bool, succeeded);
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     StreamRecorder recorder;
     QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
@@ -1003,7 +1351,7 @@ void TuneScapeTests::testRecordingShortWrites()
     QFETCH(bool, succeeded);
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     LimitedWritesRecorder recorder(writableBytes);
     QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
@@ -1029,7 +1377,7 @@ void TuneScapeTests::testStationChangeStopsRecording()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     QMainWindow window;
     Ui::MainWindow ui;
@@ -1070,7 +1418,7 @@ void TuneScapeTests::testRecorderDestructionClosesSession()
 {
     const QTemporaryDir directory;
     QVERIFY(directory.isValid());
-    RecordingHttpServer server;
+    TestHttpServer server;
     QVERIFY(server.listen());
     auto recorder = std::make_unique<StreamRecorder>();
     recorder->startRecording(server.url("/shutdown"), "Station", "MP3", directory.path());

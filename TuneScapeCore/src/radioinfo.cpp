@@ -1,113 +1,34 @@
 #include "include/radioinfo.h"
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QNetworkRequest>
-#include <QProgressBar>
-#include <QTableWidgetItem>
-#include <QTcpSocket>
-#include <QTimer>
-
-RadioInfo::RadioInfo() {}
+#include "ui_mainwindow.h"
 
 RadioInfo::RadioInfo(Ui::MainWindow *ui)
     : ui(ui)
 {
-    ui->tableWidget->horizontalHeader()->hide();
-    ui->tableWidget->verticalHeader()->hide();
-
-    ui->tableWidget->setShowGrid(false);
-    ui->tableWidget->setAlternatingRowColors(true);
-    ui->tableWidget->setSelectionMode(QAbstractItemView::NoSelection);
-    ui->tableWidget->setFocusPolicy(Qt::NoFocus);
-
-    ui->tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-
-    ui->tableWidget->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    auto *table = ui->tableWidget;
+    table->horizontalHeader()->hide();
+    table->verticalHeader()->hide();
+    table->setShowGrid(false);
+    table->setAlternatingRowColors(true);
+    table->setSelectionMode(QAbstractItemView::NoSelection);
+    table->setFocusPolicy(Qt::NoFocus);
+    table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+    table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
 }
 
-void RadioInfo::setInfo()
+void RadioInfo::showStation(const RadioStation &station, const QString &clickTrend)
 {
-    // load endpoint
-    // process query
-    // set data
-}
-
-void RadioInfo::loadEndpoint(const QString station)
-{
-    // ENDPOIN + station here is an adres of station "advance search" check dockumentation
-    qDebug() << ENDPOINT + station;
-    RadioStations radioStations(ENDPOINT + station);
-    if (jsonListProcessor.checkInternetConnection()) {
-        // important load first available server!!!
-        if (reply)
-            reply->deleteLater();
-        reply = jsonListProcessor.checkAvailability(radioStations.getAddresses());
-    }
-}
-
-void RadioInfo::processInfoJsonQuery()
-{
-    if (reply)
-        doc = jsonListProcessor.createJasonDocument(reply);
-
-    if (doc.isArray()) {
-        QJsonArray stationsArray = doc.array();
-        for (const QJsonValue &value : stationsArray) {
-            // I can do this in loop. This is more readible for long maintainance
-            QJsonObject stationObject = value.toObject();
-            infoData.favicon = stationObject[FAVICON].toString();
-            infoData.station = stationObject[STATION].toString().trimmed();
-            infoData.country = stationObject[COUNTRY].toString().trimmed();
-            infoData.state = stationObject[STATE].toString().trimmed();
-            infoData.language = stationObject[LANGUAGE].toString().trimmed();
-            infoData.votes = QString::number(stationObject[VOTES].toInt());
-            infoData.codec = stationObject[CODEC].toString().trimmed();
-            infoData.bitrate = QString::number(stationObject[BITRATE].toInt());
-            infoData.clickcount = QString::number(stationObject[CLICKCOUNT].toInt());
-            infoData.clicktrend = QString::number(stationObject[CLICKTREND].toInt());
-        }
-    }
-}
-
-void RadioInfo::setDataOnTable()
-{
-    ui->tableWidget->setItem(0, 1, new QTableWidgetItem(infoData.station));
-    ui->tableWidget->setItem(1, 1, new QTableWidgetItem(infoData.country));
-    ui->tableWidget->setItem(2, 1, new QTableWidgetItem(infoData.state));
-    ui->tableWidget->setItem(3, 1, new QTableWidgetItem(infoData.language));
-    ui->tableWidget->setItem(4, 1, new QTableWidgetItem(infoData.votes));
-    ui->tableWidget->setItem(5, 1, new QTableWidgetItem(infoData.codec));
-    ui->tableWidget->setItem(6, 1, new QTableWidgetItem(infoData.bitrate));
-    ui->tableWidget->setItem(7, 1, new QTableWidgetItem(infoData.clickcount));
-    ui->tableWidget->setItem(8, 1, new QTableWidgetItem(infoData.clicktrend));
-    QPixmap pixmapFromInfoLabel = ui->infoLabel->pixmap();
-    ui->radioIcon->setPixmap(pixmapFromInfoLabel);
+    setFields({station.station, station.country, station.state, station.language,
+               QString::number(station.votes), station.codec, QString::number(station.bitrate),
+               QString::number(station.clickCount), clickTrend});
 }
 
 void RadioInfo::clearInfo()
 {
-    infoData.favicon = "";
-    infoData.station = "";
-    infoData.country = "";
-    infoData.state = "";
-    infoData.language = "";
-    infoData.votes = "";
-    infoData.codec = "";
-    infoData.bitrate = "";
-    infoData.clickcount = "";
-    infoData.clicktrend = "";
-    setDataOnTable();
+    setFields({});
 }
 
-Infodata RadioInfo::getInfoData() const
+void RadioInfo::setFields(const QStringList &fields)
 {
-    return infoData;
-}
-
-RadioInfo::~RadioInfo()
-{
-    if (reply) {
-        reply->deleteLater();
-    }
+    for (int row = 0; row < ui->tableWidget->rowCount(); ++row)
+        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(fields.value(row)));
 }

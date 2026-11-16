@@ -38,7 +38,6 @@ private:
     Ui::MainWindow *ui;
     RadioExplorer *radioExplorer;
     RadioList *radioList;
-    RadioInfo *radioInfo;
     Country &country = SingletonContainer::getSingleton().getInstance<Country>();
     QDialog *licenseDialog;
     QLabel *licenseLabel;

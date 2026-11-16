@@ -2,6 +2,9 @@
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QFile>
+#include <QProgressDialog>
+#include <QPersistentModelIndex>
+#include <QTimer>
 #include <QHeaderView>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -12,25 +15,42 @@
 #include <utility>
 #include "include/StationDetailsDialog.h"
 
-RadioList::RadioList(QObject *parent)
-    : QObject{parent}
-{}
-
-RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
+RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, RadioBrowserApi *catalog)
     : radioStationsModel(new RadioStationsModel{this})
     , ui(ui)
+    , m_catalog(catalog ? catalog : new RadioBrowserApi(this))
+    , m_catalogProgress(new QProgressDialog(ui->centralwidget))
+    , radioInfo(ui)
     , favoriteManager{favoriteManager}
     , iconLoader(this)
 {
-    jsonListProcesor.setUi(ui);
-    jsonListProcesor.setRadioList(this);
-    radioInfo = new RadioInfo(ui);
+    m_catalogProgress->setWindowModality(Qt::NonModal);
+    m_catalogProgress->setWindowTitle(tr("Radio Browser"));
+    m_catalogProgress->setCancelButtonText(tr("Cancel"));
+    m_catalogProgress->setRange(0, 0);
+    connect(m_catalogProgress, &QProgressDialog::canceled, this, [this] {
+        m_catalog->cancel(m_progressRequest);
+    });
+    connect(ui->tabRadioListWidget, &QTabWidget::currentChanged, this, [this](int index) {
+        if (index == 0) {
+            if (currentPlaylistIndex >= Stations::TOP && currentPlaylistIndex <= Stations::NEW)
+                requestPlaylist(static_cast<Stations>(currentPlaylistIndex), true);
+            if (m_playlistDisplayPending)
+                displayPlaylist();
+        } else {
+            cancelSearch();
+            if (currentPlaylistIndex >= Stations::TOP && currentPlaylistIndex <= Stations::NEW)
+                hideCatalogProgress(m_playlistRequests[currentPlaylistIndex]);
+        }
+    });
+    connect(&imageManager, &RadioImageManager::imageLoaded, this, [this](const QPixmap &image) {
+        m_hasStationImage = true;
+        playerUIController.setStationImage(image);
+    });
 
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
-    connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
-    connect(ui->tableView, &QTableView::activated, this, &RadioList::setRadioImage);
 
     connect(ui->playPause, &QPushButton::clicked, this, &RadioList::onPlayPauseButtonCliced);
     connect(ui->next, &QPushButton::clicked, this, &RadioList::onNextButtonClicked);
@@ -85,7 +105,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
                                                            + 2);
     miniPlayer.setUi(ui);
     miniPlayer.setRadioList(this);
-    imageManager = new RadioImageManager{this};
     playerUIController.initialize(ui, &miniPlayer);
     ui->tableView->setIconSize(QSize(20, 20));
 
@@ -100,6 +119,63 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
     header->setSectionResizeMode(static_cast<int>(Column::StationColumn), QHeaderView::Stretch);
     header->setSectionResizeMode(static_cast<int>(Column::GenreColumn),
                                  QHeaderView::ResizeToContents);
+}
+
+RadioList::~RadioList()
+{
+    delete m_catalogProgress;
+}
+
+RadioBrowserApi &RadioList::catalog() const
+{
+    return *m_catalog;
+}
+
+void RadioList::showCatalogProgress(RadioBrowserApi::RequestId id, const QString &message)
+{
+    m_progressRequest = id;
+    m_progressMessage = message;
+    m_catalogProgress->setLabelText(message);
+    ui->statusbar->showMessage(message);
+    QTimer::singleShot(650, this, [this, id] {
+        if (m_progressRequest == id && ui->centralwidget->isVisible())
+            m_catalogProgress->show();
+    });
+}
+
+void RadioList::hideCatalogProgress(RadioBrowserApi::RequestId id)
+{
+    if (!id || m_progressRequest != id)
+        return;
+    m_progressRequest = 0;
+    m_catalogProgress->hide();
+    if (ui->statusbar->currentMessage() == m_progressMessage)
+        ui->statusbar->clearMessage();
+    m_progressMessage.clear();
+}
+
+void RadioList::showCatalogResult(RadioBrowserApi::RequestId id, const RadioBrowserApi::Result &result)
+{
+    if (!id || m_progressRequest != id)
+        return;
+    hideCatalogProgress(id);
+
+    using Status = RadioBrowserApi::Status;
+    switch (result.status) {
+    case Status::Success:
+        return;
+    case Status::EmptyResult:
+        ui->statusbar->showMessage(tr("Radio Browser returned no results."), 5000);
+        return;
+    case Status::Cancelled:
+        ui->statusbar->showMessage(tr("Radio Browser request cancelled."), 5000);
+        return;
+    case Status::NetworkError:
+    case Status::InvalidResponse:
+    case Status::Timeout:
+        ui->statusbar->showMessage(tr("Radio Browser request failed — %1").arg(result.detail), 10000);
+        return;
+    }
 }
 
 void RadioList::showMiniplayer()
@@ -127,7 +203,7 @@ void RadioList::updateThemeAppearance()
     else if (!isStopClicked)
         setIndexColor(radioIndexNumber);
 
-    if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
+    if (!playbackController.isPlaying() || !m_hasStationImage) {
         playerUIController.setDefaultImage();
     }
 }
@@ -165,11 +241,6 @@ bool RadioList::getIsStopClicked() const
 void RadioList::setIsStopClicked(bool newIsStopClicked)
 {
     isStopClicked = newIsStopClicked;
-}
-
-RadioInfo *RadioList::getRadioInfo() const
-{
-    return radioInfo;
 }
 
 QMainWindow *RadioList::getMainWindow() const
@@ -244,16 +315,6 @@ void RadioList::onTrayClickedandPlay(const QModelIndex &index)
     onTableViewDoubleClicked(index);
 }
 
-void RadioList::setTrayRadioImage(const QModelIndex &index)
-{
-    setRadioImage(index);
-}
-
-JsonListProcessor *RadioList::getJsonListProcessor()
-{
-    return &jsonListProcesor;
-}
-
 bool RadioList::getIsBrowseStationLoaded() const
 {
     return isBrowseStationLoaded;
@@ -304,7 +365,7 @@ void RadioList::setTopListOnStart()
 
 void RadioList::loadAllData()
 {
-    allStations.resize(Stations::FAVORITE + 1);
+    allStations.resize(Stations::SEARCH + 1);
     QVector<RadioStation> favorites;
     const QString error = favoriteManager->load(favorites);
     if (error.isEmpty())
@@ -312,40 +373,9 @@ void RadioList::loadAllData()
     else
         QMessageBox::warning(mainWindow, tr("Cannot read Favorites"), error);
 
-    if (!jsonListProcesor.checkInternetConnection()) {
-        radioStationsModel->setStations(allStations[Stations::FAVORITE]);
-
-        currentPlaylistIndex = Stations::FAVORITE;
-        item = FAVORITE;
-
-        const QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
-
-        const QModelIndex favoriteIndex = ui->treeView->model()->index(3, 0, libraryIndex);
-
-        if (favoriteIndex.isValid()) {
-            ui->treeView->selectionModel()->select(favoriteIndex,
-                                                   QItemSelectionModel::ClearAndSelect);
-        }
-
-        QMessageBox::warning(mainWindow,
-                             tr("No internet connection"),
-                             tr("TuneScape could not connect to the internet.\n"
-                                "Online station lists and playback are unavailable.\n"
-                                "The application will retry when the connection is restored."));
-
-        return;
-    }
-
-    setVectorsOfStation(JSON_ENDPOINT_TOP, Stations::TOP);
-    setVectorsOfStation(JSON_ENDPOINT_POPULAR, Stations::POPULAR);
-    setVectorsOfStation(JSON_ENDPOINT_NEW, Stations::NEW);
-
     setTopListOnStart();
-}
-
-void RadioList::setLoadedStationsCount(int num)
-{
-    this->loadedStationsCount = num;
+    requestPlaylist(Stations::POPULAR, false);
+    requestPlaylist(Stations::NEW, false);
 }
 
 auto checkItem = [](const QString &item, const QString &target) { return item == target; };
@@ -353,6 +383,8 @@ auto checkItem = [](const QString &item, const QString &target) { return item ==
 //Main function
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
+    if (!index.isValid() || !index.parent().isValid())
+        return;
     isTreeClicked = true;
     item = index.data().toString();
 
@@ -367,10 +399,6 @@ void RadioList::onTreeViewItemClicked(const QModelIndex &index)
         switchToPlaylist(Stations::NEW);
     else if (checkItem(item, "Favorite"))
         switchToPlaylist(Stations::FAVORITE);
-    if (jsonListProcesor.checkInternetConnection()) {
-        loadedStationsCount = 0;
-    }
-
     updateStationColoring();
 }
 
@@ -382,10 +410,14 @@ void RadioList::resetTreeItemIfSearch()
 
 void RadioList::switchToPlaylist(Stations station)
 {
+    cancelSearch();
+    for (auto id : m_playlistRequests)
+        hideCatalogProgress(id);
     resetTreeItemIfSearch();
-    radioStationsModel->setStations(allStations[station]);
-    loadStationIcons();
     currentPlaylistIndex = station;
+    displayPlaylist();
+    if (station <= Stations::NEW)
+        requestPlaylist(station, ui->tabRadioListWidget->currentIndex() == 0);
 }
 
 void RadioList::updateStationColoring()
@@ -443,41 +475,10 @@ void RadioList::setFavorite(const RadioStation &station, bool favorite)
     applyFavoritePlaylist(std::move(updated));
 }
 
-void RadioList::onInternetConnectionRestored()
-{
-    clearRadioDataVectors();
-    prepareRestoredConnectionMessage();
-
-    clearTableViewColor();
-    ui->treeView->clearSelection();
-
-    loadAllData();
-
-    emit internetConnectionRestored();
-
-    if (getMainWindow()->isHidden())
-        getMainWindow()->show();
-
-    message.show();
-}
-
-void RadioList::prepareRestoredConnectionMessage()
-{
-    message.setText("The connection has been restored. Select a station.");
-    message.setIcon(QMessageBox::Information);
-    message.setWindowIcon(QIcon(":/images/img/radio30.png"));
-}
-
-void RadioList::clearRadioDataVectors()
-{
-    auto favorites = allStations.value(Stations::FAVORITE);
-    allStations.clear();
-    allStations.resize(Stations::FAVORITE + 1);
-    allStations[Stations::FAVORITE] = std::move(favorites);
-}
-
 void RadioList::playSelectedStation(int radioNumber)
 {
+    if (radioNumber < 0 || radioNumber >= radioStationsModel->size())
+        return;
     radioIndexCurrentPlaying = radioNumber;
     currentPlayListPlaying = currentPlaylistIndex;
 
@@ -488,6 +489,7 @@ void RadioList::playSelectedStation(int radioNumber)
     const QUrl streamUrl(currentRadioPlayingAddress);
     prepareStationChange(streamUrl);
     playbackController.play(streamUrl);
+    loadPlayingStationDetails(currentPlayingStation);
 }
 
 void RadioList::setTheme(Theme *newTheme)
@@ -501,70 +503,79 @@ void RadioList::sliderMoved(int move)
     playerUIController.setVolumeIcon(move);
 }
 
-void RadioList::setRadioImage(const QModelIndex &index)
+void RadioList::loadPlayingStationDetails(const RadioStation &station)
 {
-    if (!index.isValid())
-        return;
+    clearPlayingStationDetails();
+    radioInfo.showStation(station);
+    playerUIController.setDefaultImage();
+    imageManager.load(QUrl(station.iconUrl));
 
-    if (!jsonListProcesor.isConnected || radioStationsModel->isEmpty())
-        return;
+    QUrl endpoint;
+    if (station.stationUuid.isNull()) {
+        endpoint = RadioBrowserApi::endpoint("json/stations/search", "name", station.station);
+        endpoint.setQuery(endpoint.query(QUrl::FullyEncoded) + "&nameExact=true", QUrl::StrictMode);
+    } else {
+        endpoint = QUrl("json/stations/byuuid/" + station.stationUuid.toString(QUuid::WithoutBraces));
+    }
+    m_detailsRequest = m_catalog->request(endpoint, this, [this, station](auto id, const auto &result) {
+        if (id != m_detailsRequest)
+            return;
+        m_detailsRequest = 0;
+        showCatalogResult(id, result);
+        if (result.status != RadioBrowserApi::Status::Success)
+            return;
+        const auto matches = JsonListProcessor::stationsFromJson(result.data);
+        auto match = matches.cbegin();
+        if (station.stationUuid.isNull() || matches.size() > 1) {
+            match = std::find_if(matches.cbegin(), matches.cend(), [&station](const RadioStation &item) {
+                return FavoriteManager::sameStation(station, item);
+            });
+        }
+        if (match == matches.cend())
+            return;
+        const auto index = match - matches.cbegin();
+        m_detailsCodec = match->codec;
+        radioInfo.showStation(*match, QString::number(result.data.at(index).toObject()["clicktrend"].toInt()));
+    });
+    if (!m_progressRequest)
+        showCatalogProgress(m_detailsRequest, tr("Loading station details…"));
+}
 
-    if (index.row() < 0 || index.row() >= radioStationsModel->size())
-        return;
-
-    const QUrl imageUrl(radioStationsModel->station(index.row()).iconUrl);
-    const QPixmap downloadedPixmap = imageManager->downloadImageSync(imageUrl);
-    const QPixmap preparedPixmap = imageManager->prepareImage(downloadedPixmap);
-
-    playerUIController.setStationImage(preparedPixmap);
-
-    qDebug() << "Image is loaded.";
+void RadioList::clearPlayingStationDetails()
+{
+    const auto id = std::exchange(m_detailsRequest, 0);
+    hideCatalogProgress(id);
+    m_catalog->cancel(id);
+    imageManager.cancel();
+    m_hasStationImage = false;
+    m_detailsCodec.clear();
+    radioInfo.clearInfo();
 }
 
 void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
 {
-    if (!index.isValid())
+    if (!index.isValid() || index.row() < 0 || index.row() >= radioStationsModel->size())
         return;
 
-    if (index.row() < 0 || index.row() >= radioStationsModel->size())
-        return;
-
-    if (jsonListProcesor.checkInternetConnection()) {
-        radioIndexNumber = index.row();
-        currentStationIndex = index.row();
-
-        // change bookmark
-        playSelectedStation(radioIndexNumber);
-        clearTableViewColor();
-        country.clearTableColor();
-        country.setIsPlaying(false);
-        country.setCurrentIndexPlaying(-1);
-        setIndexColor(radioIndexNumber);
-
-        setIsBrowseStationLoaded(true);
-        if (playbackController.isPlaying()) {
-            playerUIController.setPauseIcon();
-        }
-
-        isStopClicked = false;
-        playerUIController.clearMetadata();
-        if (playbackController.isPlaying()) {
-            radioInfo->loadEndpoint(radioStationsModel->station(currentStationIndex).station);
-            radioInfo->processInfoJsonQuery();
-            radioInfo->setDataOnTable();
-        }
-    }
-
-    if (this->treeItem == "Search")
-        setIsSearchTablelDoubleCliced(true);
-    else
-        setIsSearchTablelDoubleCliced(false);
+    radioIndexNumber = index.row();
+    currentStationIndex = index.row();
+    playSelectedStation(radioIndexNumber);
+    clearTableViewColor();
+    country.clearTableColor();
+    country.setIsPlaying(false);
+    country.setCurrentIndexPlaying(-1);
+    setIndexColor(radioIndexNumber);
+    setIsBrowseStationLoaded(true);
+    playerUIController.setPauseIcon();
+    isStopClicked = false;
+    playerUIController.clearMetadata();
+    setIsSearchTablelDoubleCliced(treeItem == "Search");
 }
 
 //Main function
 void RadioList::onPlayPauseButtonCliced()
 {
-    if (!isTreeClicked || !jsonListProcesor.isConnected)
+    if (!isTreeClicked && !playbackController.isPlaying() && !playbackController.isPaused())
         return;
 
     if (playbackController.isPlaying()) {
@@ -580,16 +591,17 @@ void RadioList::onPlayPauseButtonCliced()
     } else if (playbackController.isAvailable()) {
         playbackController.resume();
     } else if (ui->tableView->currentIndex().isValid()) {
-        playSelectedStation(radioIndexNumber);
+        playSelectedStation(ui->tableView->currentIndex().row());
     }
 
     if (currentPlayListPlaying == currentPlaylistIndex)
         setIndexColor(radioIndexNumber);
 
     updatePlayPauseIcons();
-    setIsBrowseStationLoaded(true);
+    setIsBrowseStationLoaded(playbackController.isPlaying() || playbackController.isPaused());
     switchToDefaultTabIfNoCountryStationPlaying();
-    resetImageIfStopped();
+    if (playbackController.isPlaying())
+        isStopClicked = false;
 }
 
 void RadioList::stopRadioBrowserStream()
@@ -611,14 +623,12 @@ void RadioList::playCountryStream()
 
 void RadioList::startRadioBrowserStream()
 {
+    if (radioIndexNumber < 0 || radioIndexNumber >= radioStationsModel->size())
+        radioIndexNumber = 0;
     playSelectedStation(radioIndexNumber);
 
-    radioInfo->loadEndpoint(currentPlayingStation.station);
-    radioInfo->processInfoJsonQuery();
-    radioInfo->setDataOnTable();
-
     const QModelIndex newIndex = ui->tableView->model()->index(radioIndexNumber, 0);
-    setRadioImage(newIndex);
+    ui->tableView->setCurrentIndex(newIndex);
 
     country.setCurrentIndexPlaying(-1);
     country.setIsPlaying(false);
@@ -637,13 +647,6 @@ void RadioList::switchToDefaultTabIfNoCountryStationPlaying()
         ui->tabRadioListWidget->setCurrentIndex(0);
 }
 
-void RadioList::resetImageIfStopped()
-{
-    if (isStopClicked) {
-        setRadioImage(radioStationsModel->index(0, 0));
-        isStopClicked = false;
-    }
-}
 //End
 
 // Not use for now
@@ -680,6 +683,7 @@ void RadioList::clearTableViewColor()
 void RadioList::onStopButtonClicked()
 {
     stopStreamServices();
+    clearPlayingStationDetails();
     if (!playbackController.isPlaying() && !playbackController.isPaused())
         return;
 
@@ -701,7 +705,6 @@ void RadioList::onStopButtonClicked()
     radioIndexNumber = 0;
 
     clearTableViewColor();
-    radioInfo->clearInfo();
 
     setIsBrowseStationLoaded(false);
 
@@ -761,11 +764,8 @@ void RadioList::startStopRecord()
 
     const auto &station = country.getIsPlaying() ? country.getCurrentStation() : currentPlayingStation;
     QString codec = station.codec;
-    if (codec.isEmpty()) {
-        const auto info = radioInfo->getInfoData();
-        if (info.station == station.station)
-            codec = info.codec;
-    }
+    if (codec.isEmpty())
+        codec = m_detailsCodec;
     streamRecorder.startRecording(QUrl(station.streamUrl), station.station, codec);
 }
 
@@ -791,39 +791,81 @@ void RadioList::stopStreamServices()
     streamReader.stopStreaming();
 }
 
-void RadioList::setVectorsOfStation(const QString &endpoint, Stations station)
+void RadioList::requestPlaylist(Stations station, bool showProgress)
 {
-    jsonListProcesor.loadEndpoint(endpoint);
-    jsonListProcesor.processJsonQuery();
+    static const std::array<QUrl, 3> endpoints = {
+        QUrl("json/stations/topvote/20"), QUrl("json/stations/topclick/20"),
+        QUrl("json/stations/lastchange/20")
+    };
+    if (m_playlistLoaded[station])
+        return;
+    auto &request = m_playlistRequests[station];
+    if (!request) {
+        request = m_catalog->request(endpoints[station], this, [this, station](auto id, const auto &result) {
+            m_playlistRequests[station] = 0;
+            showCatalogResult(id, result);
+            using Status = RadioBrowserApi::Status;
+            if (result.status != Status::Success && result.status != Status::EmptyResult)
+                return;
+            m_playlistLoaded[station] = true;
+            allStations[station] = JsonListProcessor::stationsFromJson(result.data);
+            if (currentPlaylistIndex == station) {
+                m_playlistDisplayPending = true;
+                if (ui->tabRadioListWidget->currentIndex() == 0)
+                    displayPlaylist();
+            }
+            emit catalogPlaylistLoaded(station);
+        });
+    }
+    if (showProgress)
+        showCatalogProgress(request, tr("Loading %1 stations…").arg(item));
+}
 
-    // Wait for processing data
-    QCoreApplication::processEvents();
+void RadioList::displayPlaylist()
+{
+    if (currentPlaylistIndex < 0 || currentPlaylistIndex >= allStations.size())
+        return;
+    m_playlistDisplayPending = false;
+    radioStationsModel->setStations(allStations[currentPlaylistIndex]);
+    loadStationIcons();
+    updateStationColoring();
+}
 
-    //new model
-    if (allStations.size() > station)
-        allStations[station] = jsonListProcesor.getStations();
-    else
-        allStations.push_back(jsonListProcesor.getStations());
+void RadioList::cancelSearch()
+{
+    const auto id = std::exchange(m_searchRequest, 0);
+    hideCatalogProgress(id);
+    m_catalog->cancel(id);
 }
 
 void RadioList::searchStations()
 {
-    const QString endpoint = JSON_ENDPOINT_SEARCH + ui->serachInput->text();
-    setVectorsOfStation(endpoint, Stations::SEARCH);
-
-    radioStationsModel->setStations(allStations[Stations::SEARCH]);
-    loadStationIcons();
+    cancelSearch();
+    for (auto id : m_playlistRequests)
+        hideCatalogProgress(id);
+    const auto endpoint = RadioBrowserApi::endpoint("json/stations/search", "name", ui->serachInput->text());
+    if (allStations.size() <= Stations::SEARCH)
+        allStations.resize(Stations::SEARCH + 1);
+    allStations[Stations::SEARCH].clear();
     currentPlaylistIndex = Stations::SEARCH;
-
-    if (jsonListProcesor.checkInternetConnection()) {
-        loadedStationsCount = 0;
-    }
-
     treeItem = "Search";
     item = "Search";
     ui->tabRadioListWidget->setCurrentIndex(0);
+    displayPlaylist();
 
-    clearTableViewColor();
+    m_searchRequest = m_catalog->request(endpoint, this, [this](auto id, const auto &result) {
+        if (id != m_searchRequest)
+            return;
+        m_searchRequest = 0;
+        showCatalogResult(id, result);
+        using Status = RadioBrowserApi::Status;
+        if (currentPlaylistIndex == Stations::SEARCH && ui->tabRadioListWidget->currentIndex() == 0
+            && (result.status == Status::Success || result.status == Status::EmptyResult)) {
+            allStations[Stations::SEARCH] = JsonListProcessor::stationsFromJson(result.data);
+            displayPlaylist();
+        }
+    });
+    showCatalogProgress(m_searchRequest, tr("Searching Radio Browser…"));
 }
 
 void RadioList::setIndexColor(int row)
@@ -842,6 +884,7 @@ void RadioList::setIndexColor(int row)
 
 void RadioList::loadStationIcons()
 {
+    iconLoader.cancelPending();
     for (int row = 0; row < radioStationsModel->rowCount(QModelIndex()); ++row) {
         const RadioStation &station = radioStationsModel->station(row);
 
@@ -857,7 +900,7 @@ void RadioList::showStationContextMenu(const QPoint &position)
     if (!radioStationsModel || !favoriteManager)
         return;
 
-    const QModelIndex index = ui->tableView->indexAt(position);
+    const QPersistentModelIndex index(ui->tableView->indexAt(position));
 
     if (!index.isValid())
         return;
@@ -903,7 +946,7 @@ void RadioList::showStationContextMenu(const QPoint &position)
             playerUIController.clearMetadata();
 
             clearTableViewColor();
-            radioInfo->clearInfo();
+            clearPlayingStationDetails();
 
             setIsBrowseStationLoaded(false);
             setIsStopClicked(true);

@@ -53,7 +53,7 @@ public:
     bool getIsNotificationEnable() const;
     void setIsNotificationEnable(bool newIsNotificationEnable);
 
-    void loadTrayLists();
+    void loadTrayList(Stations station);
     void clearIcon();
 
 private slots:
@@ -81,7 +81,6 @@ private:
     void setTrayListIcon();
     void restoreStationIcons();
     void clearStationHighlights();
-    void loadTrayStationIcons();
     void updatePlayPauseAction();
 
     QIcon currentStationIcon() const;

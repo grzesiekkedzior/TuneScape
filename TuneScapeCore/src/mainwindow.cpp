@@ -78,11 +78,10 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    delete ui;
-    delete radioExplorer;
-    delete radioList;
-    delete radioInfo;
     delete trayIcon;
+    delete radioList;
+    delete radioExplorer;
+    delete ui;
 }
 
 void MainWindow::set_icon_btn()
@@ -105,23 +104,19 @@ void MainWindow::start()
     radioList->setMainWindow(this);
     radioList->setTheme(&m_theme);
 
-    radioInfo = new RadioInfo(ui);
-
     radioExplorer->createMenu();
 
-    radioList->loadAllData();
 
     trayIcon = new TrayIcon(ui, *this);
     trayIcon->setRadioList(radioList);
-    trayIcon->loadTrayLists();
+    connect(radioList, &RadioList::catalogPlaylistLoaded, trayIcon, &TrayIcon::loadTrayList);
 
     appMenu = new Menu(ui, radioList, favoriteManager);
 
     country.setData(ui, radioList);
     country.setTheme(&m_theme);
 
-    connect(radioList, &RadioList::internetConnectionRestored, &country, &Country::load);
-
+    radioList->loadAllData();
     country.load();
 }
 

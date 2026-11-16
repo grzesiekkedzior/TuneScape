@@ -649,54 +649,43 @@ void TrayIcon::setNotifications(bool notificationsEnabled)
     appConfig->changeBoolState(true, NotificationsProperty);
 }
 
-void TrayIcon::loadTrayLists()
+void TrayIcon::loadTrayList(Stations station)
 {
     if (!radioList)
         return;
 
-    top->clear();
-    popular->clear();
-    newRadio->clear();
-
-    topVector.clear();
-    popularVector.clear();
-    newRadioVector.clear();
-
-    topIcons.clear();
-    popularIcons.clear();
-    newRadioIcons.clear();
-
-    const auto &topStations = radioList->stations(Stations::TOP);
-
-    const auto &popularStations = radioList->stations(Stations::POPULAR);
-
-    const auto &newStations = radioList->stations(Stations::NEW);
-
     const QIcon defaultIcon(DefaultStationIconPath);
+    const auto &stations = radioList->stations(station);
+    const auto load = [&](QMenu *menu, QVector<QAction *> &actions, QVector<QIcon> &icons,
+                          IconLoader &loader) {
+        loader.cancelPending();
+        menu->clear();
+        actions.clear();
+        icons.fill(defaultIcon, stations.size());
 
-    topIcons.fill(defaultIcon, topStations.size());
-    popularIcons.fill(defaultIcon, popularStations.size());
-    newRadioIcons.fill(defaultIcon, newStations.size());
+        for (int row = 0; row < stations.size(); ++row) {
+            QAction *action = menu->addAction(defaultIcon, stations[row].station);
+            action->setCheckable(true);
+            actions.append(action);
+            const QUrl iconUrl(stations[row].iconUrl);
+            if (!iconUrl.isEmpty())
+                loader.loadIcon(row, iconUrl, QSize(32, 32));
+        }
+    };
 
-    for (const RadioStation &station : topStations) {
-        QAction *action = top->addAction(defaultIcon, station.station);
-        action->setCheckable(true);
-        topVector.append(action);
+    switch (station) {
+    case Stations::TOP:
+        load(top, topVector, topIcons, topIconLoader);
+        break;
+    case Stations::POPULAR:
+        load(popular, popularVector, popularIcons, popularIconLoader);
+        break;
+    case Stations::NEW:
+        load(newRadio, newRadioVector, newRadioIcons, newIconLoader);
+        break;
+    default:
+        return;
     }
-
-    for (const RadioStation &station : popularStations) {
-        QAction *action = popular->addAction(defaultIcon, station.station);
-        action->setCheckable(true);
-        popularVector.append(action);
-    }
-
-    for (const RadioStation &station : newStations) {
-        QAction *action = newRadio->addAction(defaultIcon, station.station);
-        action->setCheckable(true);
-        newRadioVector.append(action);
-    }
-
-    loadTrayStationIcons();
 }
 
 void TrayIcon::clearIcon()
@@ -793,7 +782,6 @@ void TrayIcon::trayMenuClicked(QAction *action)
     currentTrackTitle.clear();
 
     radioList->onTrayClickedandPlay(radioIndex);
-    radioList->setTrayRadioImage(radioIndex);
 
     updatePlayPauseAction();
     setTrayListIcon();
@@ -935,45 +923,6 @@ void TrayIcon::clearStationHighlights()
     clearHighlights(topVector);
     clearHighlights(popularVector);
     clearHighlights(newRadioVector);
-}
-
-void TrayIcon::loadTrayStationIcons()
-{
-    if (!radioList)
-        return;
-
-    const auto &topStations = radioList->stations(Stations::TOP);
-
-    const auto &popularStations = radioList->stations(Stations::POPULAR);
-
-    const auto &newStations = radioList->stations(Stations::NEW);
-
-    for (int row = 0; row < topStations.size(); ++row) {
-        const QString &iconUrl = topStations[row].iconUrl;
-
-        if (iconUrl.isEmpty())
-            continue;
-
-        topIconLoader.loadIcon(row, QUrl(iconUrl), QSize(32, 32));
-    }
-
-    for (int row = 0; row < popularStations.size(); ++row) {
-        const QString &iconUrl = popularStations[row].iconUrl;
-
-        if (iconUrl.isEmpty())
-            continue;
-
-        popularIconLoader.loadIcon(row, QUrl(iconUrl), QSize(32, 32));
-    }
-
-    for (int row = 0; row < newStations.size(); ++row) {
-        const QString &iconUrl = newStations[row].iconUrl;
-
-        if (iconUrl.isEmpty())
-            continue;
-
-        newIconLoader.loadIcon(row, QUrl(iconUrl), QSize(32, 32));
-    }
 }
 
 void TrayIcon::updatePlayPauseAction()

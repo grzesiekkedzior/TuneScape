@@ -1,7 +1,8 @@
 #include "include/Country.h"
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QRegularExpression>
+#include <QPersistentModelIndex>
+#include <utility>
 #include <QTableView>
 #include "include/StationDetailsDialog.h"
 #include "include/radiolist.h"
@@ -12,11 +13,6 @@ constexpr auto WorldImagePath = ":/images/img/word.png";
 
 } // namespace
 
-Country::Country(const IconLoader &iconLoader, QObject *parent)
-    : QObject(parent)
-    , iconLoader(this)
-{}
-
 void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 {
     Q_ASSERT(ui);
@@ -24,6 +20,27 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 
     this->ui = ui;
     this->radioList = radioList;
+    connect(radioList, &QObject::destroyed, this, [this] {
+        iconLoader.cancelPending();
+        delete countryStationsModel;
+        countryStationsModel = nullptr;
+        customColor.clear();
+        countriesRequest = stationsRequest = 0;
+        countriesLoaded = false;
+        isPlaying = false;
+        currentIndexPlaying = -1;
+        this->ui = nullptr;
+        this->radioList = nullptr;
+        theme = nullptr;
+    });
+    connect(ui->tabRadioListWidget, &QTabWidget::currentChanged, radioList, [this] {
+        if (this->ui->tabRadioListWidget->currentWidget() == this->ui->listCountries) {
+            load();
+        } else {
+            cancelStationSearch();
+            this->radioList->hideCatalogProgress(countriesRequest);
+        }
+    });
 
     countryStationsModel = new RadioStationsModel(this);
     ui->tableOfCoutries->setModel(countryStationsModel);
@@ -61,129 +78,76 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 
 void Country::load()
 {
-    QNetworkReply *countriesReply = setConnection(CountriesEndpoint);
-
-    if (!createCountryArray(countriesReply))
+    if (!radioList || countriesLoaded)
         return;
-
-    loadCountriesToComboBox();
+    if (!countriesRequest) {
+        countriesRequest = radioList->catalog().request(QUrl("json/countries"), radioList,
+            [this](auto id, const auto &result) {
+                if (id != countriesRequest)
+                    return;
+                countriesRequest = 0;
+                radioList->showCatalogResult(id, result);
+                using Status = RadioBrowserApi::Status;
+                if (result.status == Status::Success || result.status == Status::EmptyResult) {
+                    countriesLoaded = true;
+                    loadCountriesToComboBox(result.data);
+                }
+            });
+    }
+    if (ui->tabRadioListWidget->currentWidget() == ui->listCountries)
+        radioList->showCatalogProgress(countriesRequest, tr("Loading Radio Browser countries…"));
 }
 
-void Country::loadCountriesToComboBox()
+void Country::loadCountriesToComboBox(const QJsonArray &countries)
 {
     ui->comboBox->clear();
-
-    for (const CountriesData &country : countriesData)
-        ui->comboBox->addItem(country.countryName);
-}
-
-QNetworkReply *Country::setConnection(const QString &endpoint)
-{
-    RadioStations radioStations(endpoint);
-
-    return jsonListProcessor.checkAvailability(radioStations.getAddresses());
-}
-
-bool Country::createCountryArray(QNetworkReply *reply)
-{
-    if (!reply)
-        return false;
-
-    const QJsonDocument document = jsonListProcessor.createJasonDocument(reply);
-
-    reply->deleteLater();
-
-    if (!document.isArray())
-        return false;
-
-    countriesData.clear();
-
-    for (const QJsonValue &value : document.array()) {
-        const QJsonObject object = value.toObject();
-
-        CountriesData country;
-        country.countryName = object[CountryNameKey].toString();
-        country.countryIso = object[CountryIsoKey].toString();
-        country.countryCount = QString::number(object[CountryCountKey].toInt());
-
-        countriesData.append(std::move(country));
+    for (const QJsonValue &entry : countries) {
+        const auto object = entry.toObject();
+        const auto name = object["name"].toString();
+        if (!name.isEmpty())
+            ui->comboBox->addItem(name, object["iso_3166_1"].toString());
     }
-
-    return true;
 }
 
-bool Country::createTable(QNetworkReply *reply)
+void Country::cancelStationSearch()
 {
-    if (!reply || !countryStationsModel)
-        return false;
-
-    const QJsonDocument document = jsonListProcessor.createJasonDocument(reply);
-
-    reply->deleteLater();
-
-    if (!document.isArray())
-        return false;
-
-    QVector<RadioStation> stations;
-    stations.reserve(document.array().size());
-
-    for (const QJsonValue &value : document.array()) {
-        const QJsonObject object = value.toObject();
-
-        RadioStation station;
-        station.stationUuid = QUuid(object[QStringLiteral("stationuuid")].toString());
-
-        station.station = object[NameKey].toString().trimmed().replace(QRegularExpression(
-                                                                           QStringLiteral(
-                                                                               "^[\\s?_.-]+")),
-                                                                       QString());
-
-        station.genre = object[GenreKey].toString();
-
-        const qsizetype commaIndex = station.genre.indexOf(',');
-
-        if (commaIndex >= 0)
-            station.genre = station.genre.left(commaIndex);
-
-        station.genre = station.genre.trimmed();
-        station.country = object[CountryKey].toString().trimmed();
-        station.homepage = object[HomepageKey].toString().trimmed();
-        station.streamUrl = object[ResolvedUrlKey].toString().trimmed();
-        station.iconUrl = object[FaviconKey].toString().trimmed();
-        station.codec = object[QStringLiteral("codec")].toString().trimmed();
-        station.language = object[QStringLiteral("language")].toString().trimmed();
-        station.state = object[QStringLiteral("state")].toString().trimmed();
-        station.countryCode = object[QStringLiteral("countrycode")].toString().trimmed();
-        station.bitrate = object[QStringLiteral("bitrate")].toInt();
-        station.votes = object[QStringLiteral("votes")].toInt();
-        station.clickCount = object[QStringLiteral("clickcount")].toInt();
-        stations.append(std::move(station));
-    }
-
-    countryStationsModel->setStations(stations);
-    loadStationIcons();
-    return true;
+    const auto id = std::exchange(stationsRequest, 0);
+    radioList->hideCatalogProgress(id);
+    radioList->catalog().cancel(id);
 }
 
 void Country::searchCountry(const QString &country)
 {
-    if (!ui->tableOfCoutries->isVisible()) {
-        ui->tableOfCoutries->show();
-        ui->worldImage->hide();
-    }
+    if (!radioList)
+        return;
+    cancelStationSearch();
+    ui->tableOfCoutries->show();
+    ui->worldImage->hide();
+    iconLoader.cancelPending();
+    countryStationsModel->setStations({});
+    clearTableColor();
 
-    const QString endpoint = CountrySearchEndpoint + country;
-    QNetworkReply *stationsReply = setConnection(endpoint);
-
-    createTable(stationsReply);
+    const auto countryCode = ui->comboBox->currentData().toString();
+    const QUrl endpoint = countryCode.isEmpty()
+        ? RadioBrowserApi::endpoint("json/stations/search", "country", country)
+        : RadioBrowserApi::endpoint("json/stations/search", "countrycode", countryCode);
+    stationsRequest = radioList->catalog().request(endpoint, radioList,
+        [this](auto id, const auto &result) {
+            if (id != stationsRequest)
+                return;
+            stationsRequest = 0;
+            radioList->showCatalogResult(id, result);
+            if (result.status == RadioBrowserApi::Status::Success) {
+                countryStationsModel->setStations(JsonListProcessor::stationsFromJson(result.data));
+                loadStationIcons();
+            }
+        });
+    radioList->showCatalogProgress(stationsRequest, tr("Loading stations for %1…").arg(country));
 }
 
 void Country::onDoubleListClicked(const QModelIndex &index)
 {
     if (!index.isValid())
-        return;
-
-    if (!radioList->getJsonListProcessor()->isConnected)
         return;
 
     if (!countryStationsModel)
@@ -204,18 +168,8 @@ void Country::onDoubleListClicked(const QModelIndex &index)
 
     setIndexColor(index);
 
-    radioList->getRadioInfo()->clearInfo();
     radioList->clearTableViewColor();
-
-    radioList->getRadioInfo()->loadEndpoint(currentStation.station);
-    radioList->getRadioInfo()->processInfoJsonQuery();
-    radioList->getRadioInfo()->setDataOnTable();
-
-    const QPixmap downloadedPixmap = imageManager.downloadImageSync(QUrl(currentStation.iconUrl));
-
-    const QPixmap preparedPixmap = imageManager.prepareImage(downloadedPixmap);
-
-    playerUIController.setStationImage(preparedPixmap);
+    radioList->loadPlayingStationDetails(currentStation);
 
     playerUIController.setFavorite(radioList->isFavorite(currentStation));
     playerUIController.setPauseIcon();
@@ -248,7 +202,8 @@ void Country::clearTableColor()
     if (customColor)
         customColor->clearRowColor();
 
-    ui->tableOfCoutries->update();
+    if (ui)
+        ui->tableOfCoutries->update();
 }
 
 const RadioStation &Country::getCurrentStation() const
@@ -305,7 +260,7 @@ void Country::showStationContextMenu(const QPoint &position)
     if (!countryStationsModel || !radioList)
         return;
 
-    const QModelIndex index = ui->tableOfCoutries->indexAt(position);
+    const QPersistentModelIndex index(ui->tableOfCoutries->indexAt(position));
 
     if (!index.isValid())
         return;

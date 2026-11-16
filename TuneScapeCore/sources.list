@@ -21,7 +21,7 @@ src/radioaudiomanager.cpp
 src/radioexplorer.cpp
 src/radioinfo.cpp
 src/radiolist.cpp
-src/radiostations.cpp
+src/RadioBrowserApi.cpp
 src/streamreader.cpp
 src/streamrecorder.cpp
 src/theme.cpp
@@ -57,7 +57,6 @@ include/radioaudiomanager.h
 include/radioexplorer.h
 include/radioinfo.h
 include/radiolist.h
-include/radiostations.h
 include/streamreader.h
 include/streamrecorder.h
 include/theme.h

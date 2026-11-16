@@ -8,6 +8,7 @@
 #include <QPixmap>
 #include <QStandardItemModel>
 #include <QStringList>
+#include <array>
 #include "ui_mainwindow.h"
 #include "Country.h"
 #include "FavoriteManager.h"
@@ -15,6 +16,7 @@
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
 #include "include/IconLoader.h"
+#include "include/RadioBrowserApi.h"
 #include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
 #include "include/jsonlistprocessor.h"
@@ -28,20 +30,23 @@
 
 enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
 
+class QProgressDialog;
+
 class RadioList : public QObject
 {
     Q_OBJECT
 public:
-    explicit RadioList(QObject *parent = nullptr);
-    RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager);
+    RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, RadioBrowserApi *catalog = nullptr);
+    ~RadioList() override;
 
     void loadAllData();
-    void setLoadedStationsCount(int num);
     void prepareStationChange(const QUrl &url);
+    void loadPlayingStationDetails(const RadioStation &station);
 
-    void setTypeMenu();
-    void startSearchTimer();
-    void onInternetConnectionRestored();
+    RadioBrowserApi &catalog() const;
+    void showCatalogProgress(RadioBrowserApi::RequestId id, const QString &message);
+    void showCatalogResult(RadioBrowserApi::RequestId id, const RadioBrowserApi::Result &result);
+    void hideCatalogProgress(RadioBrowserApi::RequestId id);
 
     void clearTableViewColor();
     bool isFavorite(const RadioStation &station) const;
@@ -57,11 +62,8 @@ public:
     bool getIsBrowseStationLoaded() const;
     void setIsBrowseStationLoaded(bool newIsBrowseStationLoaded);
 
-    JsonListProcessor *getJsonListProcessor();
-
     void onTrayViewItemClicked(const QModelIndex &index);
     void onTrayClickedandPlay(const QModelIndex &index);
-    void setTrayRadioImage(const QModelIndex &index);
 
     void setIsTreeClicked(bool newIsTreeClicked);
 
@@ -78,7 +80,6 @@ public:
     void setMainWindow(QMainWindow *newMainWindow);
     void setFavoriteLibrary();
 
-    RadioInfo *getRadioInfo() const;
 
     bool getIsStopClicked() const;
     void setIsStopClicked(bool newIsStopClicked);
@@ -112,7 +113,7 @@ signals:
     void allIconsLoaded();
     void sendTitleToTray(QString title);
     void trackTitleReceived(const QString &title);
-    void internetConnectionRestored();
+    void catalogPlaylistLoaded(Stations station);
 public slots:
     void onStopButtonClicked();
     void showStationContextMenu(const QPoint &position);
@@ -127,7 +128,6 @@ private slots:
     void addRadioToFavorite();
 
 private:
-    int loadedStationsCount = -1;
     int currentPlaylistIndex = -1;
     int currentStationIndex = -1;
     int currentPlayListPlaying = -1;
@@ -135,19 +135,27 @@ private:
     QHeaderView *header = nullptr;
     QStringList headers;
     QString treeItem;
-    JsonListProcessor jsonListProcesor;
+    RadioBrowserApi *m_catalog;
+    std::array<RadioBrowserApi::RequestId, 3> m_playlistRequests{};
+    std::array<bool, 3> m_playlistLoaded{};
+    RadioBrowserApi::RequestId m_searchRequest = 0;
+    RadioBrowserApi::RequestId m_detailsRequest = 0;
+    RadioBrowserApi::RequestId m_progressRequest = 0;
+    QProgressDialog *m_catalogProgress;
+    QString m_progressMessage;
+    QString m_detailsCodec;
+    bool m_playlistDisplayPending = false;
+    bool m_hasStationImage = false;
 
     StreamReader streamReader;
     StreamRecorder streamRecorder;
-    QTimer searchTimer;
-    RadioInfo *radioInfo;
+    RadioInfo radioInfo;
 
     QString currentRadioPlayingAddress = "";
     QString item = "";
 
-    QMessageBox message;
     QMainWindow *mainWindow = nullptr;
-    RadioImageManager *imageManager = nullptr;
+    RadioImageManager imageManager;
     FavoriteManager *favoriteManager = nullptr;
 
     //Singletons
@@ -182,11 +190,6 @@ private:
     const QString FAVORITE = "Favorite";
     const QString SEARCH = "Search";
 
-    const QString JSON_ENDPOINT_TOP = "json/stations/topvote/20";
-    const QString JSON_ENDPOINT_POPULAR = "json/stations/topclick/20";
-    const QString JSON_ENDPOINT_NEW = "json/stations/lastchange/20";
-    const QString JSON_ENDPOINT_SEARCH = "json/stations/search?name=";
-    const QString JSON_ENDPOINT_EMPTY = "empty";
     const QString LIBRARY_TREE = "Library";
     const QString FAVORITE_TREE = "Favorite";
     const QString FAVORITE_ICECAST = "IceCastFavorite";
@@ -195,14 +198,9 @@ private:
     const QString RADIO_ICON = ":/images/img/radio96x96.png";
     const QString TUNESCAPE_ICON = ":/images/img/TuneScape.ico";
 
-    QVector<QVector<TableRow>> allTableRows;
-    QVector<QVector<QString>> allStreamAddresses;
-    QVector<QVector<QString>> allIconsAddresses;
-
     void playSelectedStation(int radioNumber);
     void setIndexColor(int row);
     void sliderMoved(int move);
-    void setRadioImage(const QModelIndex &index);
     void handleDataReceived(const QString &data);
     void startStopRecord();
     void updateRecordButton(StreamRecorder::State state);
@@ -210,7 +208,10 @@ private:
     void searchStations();
 
     void clearRadioInfoLabel();
-    void setVectorsOfStation(const QString &endpoint, Stations station);
+    void requestPlaylist(Stations station, bool showProgress);
+    void cancelSearch();
+    void clearPlayingStationDetails();
+    void displayPlaylist();
     void setTopListOnStart();
     void setImageButton(int row);
     void loadAndSetImageForItem(const QString &imageUrl,
@@ -234,15 +235,12 @@ private:
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
     void switchToPlaylist(Stations station);
     void loadRadioIconsFromNetwork(int dataSize);
-    void clearRadioDataVectors();
-    void prepareRestoredConnectionMessage();
     void stopRadioBrowserStream();
     void returnRadioBrowserToPlay();
     void playCountryStream();
     void startRadioBrowserStream();
     void updatePlayPauseIcons();
     void switchToDefaultTabIfNoCountryStationPlaying();
-    void resetImageIfStopped();
 
     void updateFavoriteColumnLayout();
 };

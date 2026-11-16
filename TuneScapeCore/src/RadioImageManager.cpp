@@ -1,46 +1,47 @@
 #include "include/RadioImageManager.h"
-#include <QEventLoop>
-#include <QNetworkAccessManager>
+
 #include <QNetworkReply>
-namespace {
-constexpr auto RadioIconPath = ":/images/img/radio96x96.png";
-}
+#include <QNetworkRequest>
+
 RadioImageManager::RadioImageManager(QObject *parent)
     : QObject(parent)
 {}
 
-QPixmap RadioImageManager::downloadImageSync(const QUrl &url)
+RadioImageManager::~RadioImageManager()
 {
-    QNetworkAccessManager manager;
-    QNetworkRequest request(url);
-    QNetworkReply *reply = manager.get(request);
-
-    QEventLoop loop;
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
-
-    QPixmap pixmap;
-
-    if (reply->error() == QNetworkReply::NoError) {
-        QString contentType = reply->header(QNetworkRequest::ContentTypeHeader).toString();
-        if (contentType.startsWith("image/")) {
-            QByteArray imageData = reply->readAll();
-            pixmap.loadFromData(imageData);
-        }
-    } else {
-        qDebug() << "Image download error:" << reply->errorString();
-    }
-
-    reply->deleteLater();
-    return pixmap;
+    cancel();
 }
 
-QPixmap RadioImageManager::prepareImage(const QPixmap &pixmap) const
+void RadioImageManager::load(const QUrl &url)
 {
-    if (pixmap.isNull())
-        return QPixmap(RadioIconPath);
+    cancel();
+    if (!url.isValid() || url.isEmpty())
+        return;
 
-    const QSize imageSize(120, 120);
+    QNetworkRequest request(url);
+    request.setTransferTimeout(5000);
+    auto *reply = m_network.get(request);
+    m_reply = reply;
+    connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        if (m_reply != reply)
+            return;
+        m_reply.clear();
+        reply->deleteLater();
+        QPixmap pixmap;
+        if (reply->error() == QNetworkReply::NoError
+            && pixmap.loadFromData(reply->readAll())) {
+            emit imageLoaded(pixmap.scaled(QSize(120, 120), Qt::KeepAspectRatio, Qt::FastTransformation));
+        }
+    });
+}
 
-    return pixmap.scaled(imageSize, Qt::KeepAspectRatio, Qt::FastTransformation);
+void RadioImageManager::cancel()
+{
+    auto *reply = m_reply.data();
+    m_reply.clear();
+    if (reply) {
+        disconnect(reply, nullptr, this, nullptr);
+        reply->abort();
+        reply->deleteLater();
+    }
 }

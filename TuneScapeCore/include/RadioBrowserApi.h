@@ -1,68 +1,72 @@
 #ifndef RADIOBROWSERAPI_H
 #define RADIOBROWSERAPI_H
-#include <QHostInfo>
-#include <QNetworkInterface>
-#include <QProcess>
-#include <QDebug>
-#include <QEventLoop>
-#include <QTimer>
-#include <QMutex>
-#include <qregularexpression.h>
+
+#include <QDeadlineTimer>
 #include <QDnsLookup>
-#include <QDnsServiceRecord>
-#include <algorithm>
+#include <QHash>
+#include <QJsonArray>
+#include <QNetworkAccessManager>
+#include <QPointer>
+#include <QTimer>
+#include <QUrl>
+#include <functional>
 
-class RadioBrowserApi {
+class QNetworkReply;
+
+class RadioBrowserApi : public QObject
+{
 public:
-    static QString baseUrlForTarget(QString target)
-    {
-        if (target.endsWith('.'))
-            target.chop(1);
-        return QStringLiteral("https://") + target + '/';
-    }
+    enum class Status { Success, EmptyResult, NetworkError, InvalidResponse, Timeout, Cancelled };
+    struct Result {
+        Status status;
+        QJsonArray data;
+        QString detail;
+    };
 
-    static QStringList getRadioBrowserBaseUrls() {
-        QStringList baseUrls;
+    using RequestId = quint64;
+    using Completion = std::function<void(RequestId, const Result &)>;
 
-        //DNS SRV dla _api._tcp.radio-browser.info
-        QString baseUrl = "_api._tcp.radio-browser.info";
-        QDnsLookup lookup(QDnsLookup::SRV, baseUrl);
+    explicit RadioBrowserApi(QObject *parent = nullptr);
+    RadioBrowserApi(QList<QUrl> mirrors, int timeoutMs, QObject *parent = nullptr);
+    ~RadioBrowserApi() override;
 
-        // DNS QUERY
-        QEventLoop loop;
-        QTimer timeoutTimer;
-        timeoutTimer.setSingleShot(true);
+    RequestId request(const QUrl &endpoint, QObject *receiver, Completion completion);
+    void cancel(RequestId id);
 
-        QObject::connect(&timeoutTimer, &QTimer::timeout, &loop, &QEventLoop::quit);
-        QObject::connect(&lookup, &QDnsLookup::finished, &loop, &QEventLoop::quit);
+    static QUrl baseUrlForTarget(QString target, quint16 port = 443);
+    static QUrl endpoint(const QString &path, const QString &key, const QString &value);
 
-        timeoutTimer.start(5000);  // Timeout
-        lookup.lookup();
-        loop.exec();
+private:
+    struct Operation {
+        QUrl endpoint;
+        QPointer<QObject> receiver;
+        Completion completion;
+        QMetaObject::Connection receiverDestroyed;
+        QList<QUrl> mirrors;
+        QPointer<QNetworkReply> reply;
+        int nextMirror = 0;
+        bool waitingForDns = false;
+    };
 
-        if (timeoutTimer.isActive()) {
-            if (lookup.error() == QDnsLookup::NoError) {
-                const QList<QDnsServiceRecord> srvRecords = lookup.serviceRecords();
+    void resolve(RequestId id);
+    void discoveryFinished();
+    void finishDiscovery(const QString &error, Status failureStatus);
+    void startAttempt(RequestId id);
+    void attemptFinished(RequestId id, QNetworkReply *reply);
+    void attemptFailed(RequestId id, Result result);
+    void releaseReply(Operation &operation);
+    void complete(RequestId id, Result result);
 
-                QList<QDnsServiceRecord> sortedRecords = srvRecords;
-                std::sort(sortedRecords.begin(), sortedRecords.end(),
-                          [](const QDnsServiceRecord &a, const QDnsServiceRecord &b) {
-                              if (a.priority() != b.priority())
-                                  return a.priority() < b.priority();
-                              return a.weight() > b.weight();
-                          });
-
-                for (const QDnsServiceRecord &record : sortedRecords)
-                    baseUrls.append(baseUrlForTarget(record.target()));
-            } else {
-                qWarning() << "DNS SRV lookup failed:" << lookup.errorString();
-            }
-        } else {
-            qWarning() << "DNS lookup timed out.";
-        }
-
-        return baseUrls;
-    }
+    QNetworkAccessManager m_network;
+    QDnsLookup m_dns;
+    QTimer m_dnsTimeout;
+    QDeadlineTimer m_mirrorsExpiry;
+    QList<QUrl> m_mirrors;
+    QHash<RequestId, Operation> m_operations;
+    RequestId m_nextId = 0;
+    int m_timeoutMs = 5000;
+    bool m_fixedMirrors = false;
+    bool m_discovering = false;
 };
 
 #endif // RADIOBROWSERAPI_H

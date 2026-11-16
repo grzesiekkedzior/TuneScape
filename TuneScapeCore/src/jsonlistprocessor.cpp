@@ -1,304 +1,35 @@
 #include "include/jsonlistprocessor.h"
-#include <QHostInfo>
-#include <QJsonArray>
-#include <QJsonDocument>
+
 #include <QJsonObject>
-#include <QNetworkRequest>
-#include <QProgressBar>
-#include <QTcpSocket>
-#include <QTimer>
-#include "include/radiolist.h"
-#include <QMessageBox>
-#include <QProgressDialog>
+#include <QRegularExpression>
 
-JsonListProcessor::JsonListProcessor()
+QVector<RadioStation> JsonListProcessor::stationsFromJson(const QJsonArray &array)
 {
-    connectionTimer = new QTimer(this);
-    connectionTimer->setInterval(12000);
-    connect(connectionTimer, &QTimer::timeout, this, &JsonListProcessor::checkInternetConnection);
+    static const QRegularExpression namePrefix(QStringLiteral("^[\\s?_.-]+"));
+    QVector<RadioStation> stations;
+    stations.reserve(array.size());
 
-    internetConnectionChecker = new QTimer(this);
-    internetConnectionChecker->setInterval(5000);
-    connect(internetConnectionChecker,
-            &QTimer::timeout,
-            this,
-            &JsonListProcessor::retryInternetConnection);
-}
-
-void JsonListProcessor::loadEndpoint(QString endpoint)
-{
-    this->endpoint = endpoint;
-
-    RadioStations radioStations(endpoint);
-    ui->statusbar->showMessage("Connecting...");
-    if (!connectionTimer->isActive())
-        connectionTimer->start();
-    if (checkInternetConnection()) {
-        reply = checkAvailability(radioStations.getAddresses());
-        setConnection(reply);
-    } else {
-        qDebug() << "Connection checker starts";
-        internetConnectionChecker->start();
-    }
-}
-
-void JsonListProcessor::connected()
-{
-    ui->statusbar->showMessage("Connected");
-    ui->statusbar->setStyleSheet("color: green");
-}
-
-QVector<QString> &JsonListProcessor::getStreamAddresses()
-{
-    return this->streamAddresses;
-}
-
-QString JsonListProcessor::getStreamAddresses(int index) const
-{
-    return this->streamAddresses[index];
-}
-
-QString JsonListProcessor::getIconAddresses(int index) const
-{
-    return this->iconAddresses[index];
-}
-
-QVector<QString> &JsonListProcessor::getIconAddresses()
-{
-    return this->iconAddresses;
-}
-
-void JsonListProcessor::setConnection(QNetworkReply *connectionReply)
-{
-    if (connectionReply == nullptr) {
-        lostConnection();
-    } else {
-        connected();
-    }
-}
-
-const QVector<RadioStation> JsonListProcessor::getStations() const
-{
-    return stations;
-}
-
-bool JsonListProcessor::checkInternetConnection()
-{
-    isConnected = false;
-    QTimer timer;
-
-    // Connect to the DNS server and check if the name "google.com" resolves to an IP address.
-    QHostInfo hostInfo = QHostInfo::fromName("google.com");
-    if (!hostInfo.error()) {
-        isConnected = true;
-    } else {
-        lostConnection();
-        qDebug() << "connection failed: " << hostInfo.errorString();
-        internetConnectionChecker->start();
-    }
-
-    return isConnected;
-}
-
-void JsonListProcessor::lostConnection()
-{
-    if (radioList->getMainWindow()->isHidden())
-        radioList->getMainWindow()->show();
-    ui->statusbar->showMessage("Connection lost");
-    ui->statusbar->setStyleSheet("color: red");
-    messagebox.setText("Connection is lost!!!");
-    messagebox.setIcon(QMessageBox::Information);
-    messagebox.setWindowIcon(QIcon(":/images/img/radio30.png"));
-    messagebox.show();
-}
-
-void JsonListProcessor::retryInternetConnection()
-{
-    if (!checkInternetConnection()) {
-        lostConnection();
-    } else {
-        ui->statusbar->showMessage("Connected");
-        ui->statusbar->setStyleSheet("color: green");
-        internetConnectionChecker->stop();
-        connectionTimer->start();
-        //loadEndpoint(endpoint);
-        //radioList->setLoadedStationsCount(0);
-        //processJsonQuery();
-        radioList->onInternetConnectionRestored();
-    }
-}
-
-void JsonListProcessor::setUi(Ui::MainWindow *ui)
-{
-    this->ui = ui;
-}
-
-void JsonListProcessor::setRadioList(RadioList *radioList)
-{
-    this->radioList = radioList;
-}
-
-JsonListProcessor::~JsonListProcessor()
-{
-    if (reply) {
-        reply->deleteLater();
-    }
-    //    if (radioList) {
-    //        delete radioList;
-    //    }
-}
-
-void JsonListProcessor::processJsonQuery()
-{
-    stations.clear();
-    tableRows.clear();
-    streamAddresses.clear();
-    iconAddresses.clear();
-
-    if (reply)
-        doc = createJasonDocument(reply);
-
-    if (!doc.isArray())
-        return;
-
-    const QJsonArray stationsArray = doc.array();
-
-    stations.reserve(stationsArray.size());
-
-    for (const QJsonValue &value : stationsArray) {
-        const QJsonObject stationObject = value.toObject();
-
+    for (const QJsonValue &value : array) {
+        const auto object = value.toObject();
         RadioStation station;
-        station.stationUuid = QUuid(stationObject[QStringLiteral("stationuuid")].toString());
-
-        station.station = stationObject[NAME].toString().trimmed().replace(QRegularExpression(
-                                                                               QStringLiteral(
-                                                                                   "^[\\s?_.-]+")),
-                                                                           QString());
-
-        station.genre = stationObject[GENRE].toString();
-
-        const qsizetype commaIndex = station.genre.indexOf(',');
-
-        if (commaIndex >= 0)
-            station.genre = station.genre.left(commaIndex);
-
-        station.genre = station.genre.trimmed();
-
-        station.country = stationObject[COUNTRY].toString().trimmed();
-
-        station.homepage = stationObject[URL].toString().trimmed();
-
-        station.streamUrl = stationObject[URL_RESOLVED].toString().trimmed();
-
-        station.iconUrl = stationObject[FAVICON].toString().trimmed();
-
-        // Dodatkowe dane do okna Details
-        station.codec = stationObject[QStringLiteral("codec")].toString().trimmed();
-
-        station.language = stationObject[QStringLiteral("language")].toString().trimmed();
-
-        station.state = stationObject[QStringLiteral("state")].toString().trimmed();
-
-        station.countryCode = stationObject[QStringLiteral("countrycode")].toString().trimmed();
-
-        station.bitrate = stationObject[QStringLiteral("bitrate")].toInt();
-
-        station.votes = stationObject[QStringLiteral("votes")].toInt();
-
-        station.clickCount = stationObject[QStringLiteral("clickcount")].toInt();
-
-        stations.push_back(station);
-
-        // Legacy model
-        TableRow row;
-        row.station = station.station;
-        row.genre = station.genre;
-        row.country = station.country;
-        row.stationUrl = station.homepage;
-
-        tableRows.push_back(row);
-        streamAddresses.push_back(station.streamUrl);
-        iconAddresses.push_back(station.iconUrl);
-    }
-}
-
-QVector<TableRow> &JsonListProcessor::getTableRows()
-{
-    return tableRows;
-}
-
-QNetworkReply* JsonListProcessor::checkAvailability(const QStringList& radioAddresses)
-{
-    QEventLoop loop;
-    int status;
-
-    // Creating "Connecting..." dialog
-    QProgressDialog progressDialog("Connecting to servers...", "Cancel", 0, radioAddresses.size());
-    progressDialog.setWindowModality(Qt::WindowModal);
-    progressDialog.setMinimumDuration(500); // Shows only if the operation lasts >500ms
-    progressDialog.setWindowIcon(QIcon(":/images/img/radio30.png"));
-    progressDialog.setAutoClose(true);
-
-    for (int i = 0; i < radioAddresses.size(); ++i) {
-        const QString& address = radioAddresses[i];
-        progressDialog.setValue(i);
-        progressDialog.setLabelText(QString("Attempting connection to %1...").arg(address));
-
-        // If the user cancels, break the loop
-        if (progressDialog.wasCanceled()) {
-            qDebug() << "Connection check canceled by user";
-            break;
-        }
-
-        QNetworkRequest request((QUrl(address)));
-        reply = manager.get(request);
-        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        loop.exec();
-
-        status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        QString errorString = reply->errorString();
-
-        if (reply->error() == QNetworkReply::NoError) {
-            qDebug() << "Connection successful:" << address << "Status code:" << status;
-            progressDialog.close();  // Force immediate dialog closure
-            return reply;
-        } else {
-            qDebug() << "Connection failed:" << address << "Status:" << status
-                     << "Error:" << errorString;
-
-            QMessageBox::critical(nullptr, "Connection Error",
-                                  QString("Failed to connect to %1.\nError: %2")
-                                      .arg(address, errorString));
-
-            reply->deleteLater();
-        }
+        station.stationUuid = QUuid(object["stationuuid"].toString());
+        station.station = object["name"].toString().trimmed().remove(namePrefix);
+        station.genre = object["tags"].toString().section(',', 0, 0).trimmed();
+        station.country = object["country"].toString().trimmed();
+        station.homepage = object["homepage"].toString().trimmed();
+        station.streamUrl = object["url_resolved"].toString().trimmed();
+        if (station.streamUrl.isEmpty())
+            station.streamUrl = object["url"].toString().trimmed();
+        station.iconUrl = object["favicon"].toString().trimmed();
+        station.codec = object["codec"].toString().trimmed();
+        station.language = object["language"].toString().trimmed();
+        station.state = object["state"].toString().trimmed();
+        station.countryCode = object["countrycode"].toString().trimmed();
+        station.bitrate = object["bitrate"].toInt();
+        station.votes = object["votes"].toInt();
+        station.clickCount = object["clickcount"].toInt();
+        stations.append(std::move(station));
     }
 
-    progressDialog.setValue(radioAddresses.size()); // Complete progress if all attempts failed
-    qDebug() << "No available servers found";
-    return nullptr;
-}
-
-
-QJsonDocument JsonListProcessor::createJasonDocument(QNetworkReply *reply)
-{
-    QByteArray data = reply->readAll();
-    doc = QJsonDocument::fromJson(data);
-    return doc;
-}
-
-void JsonListProcessor::setTableRows(const QVector<TableRow> &rows)
-{
-    tableRows = rows;
-}
-
-void JsonListProcessor::setStreamAddresses(const QVector<QString> &addresses)
-{
-    streamAddresses = addresses;
-}
-
-void JsonListProcessor::setIconAddresses(const QVector<QString> &icons)
-{
-    iconAddresses = icons;
+    return stations;
 }

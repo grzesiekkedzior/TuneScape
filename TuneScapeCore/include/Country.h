@@ -3,22 +3,19 @@
 
 #include <QDesktopServices>
 #include <QMenu>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QObject>
 #include <QPixmap>
 #include <QSharedPointer>
 #include <QString>
 #include <QUrl>
 #include <QVector>
-#include "RadioImageManager.h"
+#include "RadioBrowserApi.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
 #include "customcolordelegate.h"
 #include "include/IconLoader.h"
 #include "include/theme.h"
-#include "jsonlistprocessor.h"
 #include "model/RadioStationsModel.h"
 
 namespace Ui {
@@ -31,16 +28,8 @@ class Country : public QObject
 {
     Q_OBJECT
 
-    struct CountriesData
-    {
-        QString countryName;
-        QString countryIso;
-        QString countryCount;
-    };
-
 public:
     Country() = default;
-    Country(const IconLoader &iconLoader, QObject *parent = nullptr);
 
     ~Country() override = default;
 
@@ -68,23 +57,16 @@ private slots:
     void onDoubleListClicked(const QModelIndex &index);
 
 private:
-    void loadCountriesToComboBox();
-
-    QNetworkReply *setConnection(const QString &endpoint);
-    bool createCountryArray(QNetworkReply *reply);
-    bool createTable(QNetworkReply *reply);
-
+    void loadCountriesToComboBox(const QJsonArray &countries);
+    void cancelStationSearch();
     void setIndexColor(const QModelIndex &index);
 
     Ui::MainWindow *ui = nullptr;
     RadioList *radioList = nullptr;
 
-    QNetworkReply *reply = nullptr;
-    QNetworkAccessManager manager;
-
-    JsonListProcessor jsonListProcessor;
-
-    QVector<CountriesData> countriesData;
+    RadioBrowserApi::RequestId countriesRequest = 0;
+    RadioBrowserApi::RequestId stationsRequest = 0;
+    bool countriesLoaded = false;
 
     QPixmap pixmap;
     QSharedPointer<CustomColorDelegate> customColor;
@@ -94,7 +76,6 @@ private:
 
     RadioStationsModel *countryStationsModel = nullptr;
     RadioStation currentStation;
-    RadioImageManager imageManager;
     IconLoader iconLoader;
 
     PlaybackController &playbackController = SingletonContainer::getSingleton()
@@ -105,21 +86,6 @@ private:
 
     Theme *theme = nullptr;
 
-    inline static const QString NameKey = QStringLiteral("name");
-    inline static const QString GenreKey = QStringLiteral("tags");
-    inline static const QString CountryKey = QStringLiteral("country");
-    inline static const QString HomepageKey = QStringLiteral("homepage");
-    inline static const QString ResolvedUrlKey = QStringLiteral("url_resolved");
-    inline static const QString FaviconKey = QStringLiteral("favicon");
-
-    inline static const QString CountryNameKey = QStringLiteral("name");
-    inline static const QString CountryIsoKey = QStringLiteral("iso_3166_1");
-    inline static const QString CountryCountKey = QStringLiteral("stationcount");
-
-    inline static const QString CountrySearchEndpoint = QStringLiteral(
-        "json/stations/search?country=");
-
-    inline static const QString CountriesEndpoint = QStringLiteral("json/countries");
 };
 
 #endif // COUNTRY_H
