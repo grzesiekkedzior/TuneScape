@@ -8,7 +8,7 @@ class Menu : public QObject
 {
     Q_OBJECT
 public:
-    Menu(Ui::MainWindow *ui, RadioList *radioList);
+    Menu(Ui::MainWindow *ui, RadioList *radioList, FavoriteManager *favoriteManager);
 
 private slots:
     void importPlaylists();
@@ -18,6 +18,7 @@ private slots:
 private:
     Ui::MainWindow *ui = nullptr;
     RadioList *radioList = nullptr;
+    FavoriteManager *favoriteManager = nullptr;
 
     QMenu *mainMenu = nullptr;
     QMenu *exportPls = nullptr;
@@ -25,15 +26,7 @@ private:
     QAction *exportRadioBrowser = nullptr;
     QAction *exportRadioBrowserM3U = nullptr;
 
-    const QString RADIO_BROWSER = "radiobrowser.txt";
-    const QString RADIO_BROWSER_M3U = "radiobrowser.m3u";
-    const QString FORMAT_M3U = ".m3u";
-
-    const QString TUNSCAPE_FORMAT = "txt";
-    const QString M3U_FORMAT = "m3u";
-
-    void exportRadio(const QString &playlist, QString format);
-    void generateM3Uplaylist(const QString &radio, const QString &radioM3u);
+    void exportPlaylist(FavoriteManager::Format format);
 };
 
 #endif // MENU_H

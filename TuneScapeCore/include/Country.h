@@ -11,7 +11,6 @@
 #include <QString>
 #include <QUrl>
 #include <QVector>
-#include "FavoriteManager.h"
 #include "RadioImageManager.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
@@ -58,9 +57,6 @@ public:
 
     void clearTableColor();
 
-    FavoriteManager *getFavoriteManager() const;
-    void setFavoriteManager(FavoriteManager *favoriteManager);
-
     void setTheme(Theme *newTheme);
     void loadStationIcons();
 public slots:
@@ -82,7 +78,6 @@ private:
 
     Ui::MainWindow *ui = nullptr;
     RadioList *radioList = nullptr;
-    FavoriteManager *favoriteManager = nullptr;
 
     QNetworkReply *reply = nullptr;
     QNetworkAccessManager manager;
@@ -125,8 +120,6 @@ private:
         "json/stations/search?country=");
 
     inline static const QString CountriesEndpoint = QStringLiteral("json/countries");
-
-    inline static const QString RadioBrowserPlaylist = QStringLiteral("radiobrowser.txt");
 };
 
 #endif // COUNTRY_H

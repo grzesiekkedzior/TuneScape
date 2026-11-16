@@ -11,7 +11,6 @@
 #include "ui_mainwindow.h"
 #include "Country.h"
 #include "FavoriteManager.h"
-#include "PlaylistEditor.h"
 #include "container.h"
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
@@ -45,9 +44,8 @@ public:
     void onInternetConnectionRestored();
 
     void clearTableViewColor();
-    void checkIsRadioOnPlaylist(const QString &station);
-    bool isAddressExists(const QString address, const QString playlist);
-    void setFavoriteStatons();
+    bool isFavorite(const RadioStation &station) const;
+    void setFavorite(const RadioStation &station, bool favorite);
 
     void onPlayPauseButtonCliced();
     RadioAudioManager &getRadioManager();
@@ -87,8 +85,6 @@ public:
 
     void resetTreeItemIfSearch();
 
-    QScopedPointer<PlaylistEditor> playlistEditor;
-
     // Add and remove the playlists!!!
     void updateStationColoring();
 
@@ -105,13 +101,11 @@ public:
     const QVector<RadioStation> &stations(Stations station) const;
     bool isIceCastFavoriteMode() const;
     void handleIceCastFavorite();
-    void handleRadioBrowserFavorite();
-    void handleCountryFavorite();
 
     void updateThemeAppearance();
     void setTheme(Theme *theme);
     void loadStationIcons();
-    void refreshFavoritePlaylist();
+    void applyFavoritePlaylist(QVector<RadioStation> stations);
 
 signals:
     void playIconButtonDoubleClicked(int radioNumber);
@@ -198,7 +192,6 @@ private:
     const QString FAVORITE_TREE = "Favorite";
     const QString FAVORITE_ICECAST = "IceCastFavorite";
     const QString ICECAST_PLAYLIST = "icecast.txt";
-    const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
 
     const QString RADIO_ICON = ":/images/img/radio96x96.png";
     const QString TUNESCAPE_ICON = ":/images/img/TuneScape.ico";
@@ -240,7 +233,6 @@ private:
     QString getCurrentStreamUrl() const;
 
     QScopedPointer<CustomColorDelegate> customColor{nullptr};
-    void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
     void switchToPlaylist(Stations station);
     void loadRadioIconsFromNetwork(int dataSize);
     void clearRadioDataVectors();

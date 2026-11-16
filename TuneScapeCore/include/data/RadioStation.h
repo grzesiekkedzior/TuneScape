@@ -2,6 +2,7 @@
 #define RADIOSTATION_H
 #include <QIcon>
 #include <QString>
+#include <QUuid>
 
 struct RadioStation
 {
@@ -23,5 +24,6 @@ struct RadioStation
     int clickCount = 0;
 
     QIcon icon;
+    QUuid stationUuid;
 };
 #endif // RADIOSTATION_H

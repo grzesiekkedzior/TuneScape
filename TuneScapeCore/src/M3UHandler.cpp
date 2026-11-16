@@ -1,167 +1,93 @@
 #include "include/M3UHandler.h"
-#include <QFile>
-#include <QDebug>
-#include <QMessageBox>
 
-M3UHandler::M3UHandler(QObject *parent)
+#include <QObject>
+#include <QRegularExpression>
+#include <QStringList>
+#include <QUrl>
+#include <utility>
+
+namespace {
+
+bool isHttpStream(const QString &address)
 {
-
+    const QUrl url(address, QUrl::StrictMode);
+    return url.isValid() && !url.host().isEmpty()
+           && (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https"));
 }
 
-void M3UHandler::importM3Ufile(const QString path ,const QString playlist)
+qsizetype titleSeparator(QStringView info)
 {
-    bool extInf = false;
-    QString stationName{};
-    QString streamAddress{};
-    isClear = false;
-
-    if(!isM3Ufile(path))
-        return;
-
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + path);
-        qWarning() << "Can not open file." << path;
-        return;
+    bool quoted = false;
+    for (qsizetype i = 0; i < info.size(); ++i) {
+        if (info[i] == '"' && (i == 0 || info[i - 1] != '\\'))
+            quoted = !quoted;
+        else if (info[i] == ',' && !quoted)
+            return i;
     }
+    return -1;
+}
 
-    while (!file.atEnd()) {
-        QString line = file.readLine().trimmed();
-        if (line.isEmpty())
+} // namespace
+
+QString M3UHandler::parse(const QString &text, QVector<RadioStation> &stations)
+{
+    const QStringList lines = text.split('\n');
+    const QString prefix = QStringLiteral("#EXTINF:");
+    static const QRegularExpression Duration(QStringLiteral(R"(^[+-]?\d+(?:\.\d+)?(?:\s|$))"));
+    QVector<RadioStation> parsed;
+    QString title;
+
+    for (qsizetype i = 0; i < lines.size(); ++i) {
+        QString line = lines[i];
+        if (line.endsWith('\r'))
+            line.chop(1);
+        const QString trimmed = line.trimmed();
+        if (trimmed.isEmpty())
             continue;
 
-        if (line.startsWith("#EXTINF:")) {
-            extInf = true;
-            stationName = line.section(',', 1).trimmed();
-            qDebug() << "stationName " << stationName;
-        } else if (extInf && line.startsWith("http")) {
-            //if (!isRadioInPlaylist(stationName, playlist)) {
-                streamAddress = line;
-                qDebug() << "streamAddress " << streamAddress;
-                if (stationName.isEmpty() || streamAddress.isEmpty())
-                    continue;
-                saveOnTuneScapeFile(stationName, streamAddress, playlist, isClear);
-            //}
-
-            extInf = false;
+        if (trimmed.startsWith(QStringLiteral("#EXTINF"))) {
+            if (!trimmed.startsWith(prefix))
+                return QObject::tr("Invalid EXTINF entry on line %1.").arg(i + 1);
+            if (!title.isEmpty())
+                return QObject::tr("Missing stream URL before line %1 in the M3U playlist.").arg(i + 1);
+            const QStringView info = QStringView(line).sliced(line.indexOf(prefix) + prefix.size());
+            const qsizetype separator = titleSeparator(info);
+            if (separator < 0 || !Duration.match(info.left(separator).trimmed().toString()).hasMatch())
+                return QObject::tr("Invalid EXTINF entry on line %1.").arg(i + 1);
+            title = info.sliced(separator + 1).toString();
+            if (title.trimmed().isEmpty() || title.contains('\r') || title.contains(QChar::Null))
+                return QObject::tr("Invalid station title on line %1 in the M3U playlist.").arg(i + 1);
+        } else if (!trimmed.startsWith('#')) {
+            if (title.isEmpty() || !isHttpStream(trimmed))
+                return QObject::tr("Expected a station title and HTTP(S) stream on line %1.").arg(i + 1);
+            RadioStation station;
+            station.station = title;
+            station.streamUrl = trimmed;
+            parsed.append(std::move(station));
+            title.clear();
         }
     }
+    if (!title.isEmpty())
+        return QObject::tr("The M3U playlist ends before the final station's stream URL.");
+    if (parsed.isEmpty())
+        return QObject::tr("The M3U playlist contains no stations.");
 
+    stations = std::move(parsed);
+    return {};
 }
 
-bool M3UHandler::isM3Ufile(const QString &path) const
+QString M3UHandler::serialize(const QVector<RadioStation> &stations, QString &text)
 {
-    return path.endsWith(".m3u", Qt::CaseInsensitive);
-}
-
-bool M3UHandler::isRadioInPlaylist(const QString& stationName, const QString& playlist)
-{
-    QFile file(playlist);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        return false;
-
-    QTextStream in(&file);
-    while (!in.atEnd()) {
-        const QString line = in.readLine().trimmed();
-        const QString nameFromPlaylist = line.section(',', 2, 2).trimmed();
-
-        qDebug() << "stationName:" << stationName << "vs" << nameFromPlaylist;
-
-        if (nameFromPlaylist.compare(stationName, Qt::CaseInsensitive) == 0)
-            return true;
-    }
-
-    return false;
-}
-
-void M3UHandler::clearTunescapePlaylist(const QString &playlist)
-{
-    QFile file(playlist);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
-        file.close();
-    } else {
-        QMessageBox::critical(nullptr, "File Error", "Cannot clear file:\n" + playlist);
-    }
-}
-
-
-bool M3UHandler::saveOnTuneScapeFile(const QString &stationName, const QString &streamAddress, const QString &playlist, bool &isClear)
-{
-    if (!isClear) {
-        clearTunescapePlaylist(RADIO_BROWSER_PLAYLIST);
-        isClear = true;
-    }
-    QFile file(playlist);
-
-    if (!file.open(QIODevice::WriteOnly |QIODevice::Append | QIODevice::Text)) {  // <--- APPEND !!!
-        QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
-        qDebug() << "Error";
-        return false;
-    }
-
-    QTextStream out(&file);
-    out << "," << streamAddress << "," << stationName << "," << "," << "," << "\n" ;
-    return true;
-}
-
-
-bool M3UHandler::exportM3Ufile(const QString &playlist)
-{
-    bool createM3u = convertToM3Ufile(playlist);
-    return createM3u ? true : false;
-}
-
-bool M3UHandler::convertToM3Ufile(const QString &playlist)
-{
-    QFile file(playlist);
-
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "File Error", "Cannot open file:\n" + playlist);
-        qDebug() << "Error";
-        return false;
-    }
-
-    // Read favorite stations and convert them into a standard M3U format
-    QFile m3uFile;
-    if (playlist == RADIO_BROWSER_PLAYLIST)
-        m3uFile.setFileName(RADIO_BROWSER_M3U);
-    else
-        m3uFile.setFileName(RADIO_ICECAST_M3U);
-
-    if (!m3uFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::critical(nullptr, "File Error", "Cannot create file:\n" + playlist);
-        qDebug() << "Error";
-        return false;
-    }
-
-    QTextStream in(&file);
-    QTextStream out(&m3uFile);
-
-    out << "#EXTM3U\n";
-
-    while (!in.atEnd()) {
-        QString line = in.readLine();
-        QStringList fields = line.split(',');
-
-        if (fields.size() >= 3) {
-            QString streamUrl = fields[1].trimmed();
-            QString stationName = fields[2].trimmed();
-
-            if (!streamUrl.isEmpty() && !stationName.isEmpty()) {
-                out << "#EXTINF:-1," << stationName << "\n";
-                out << streamUrl << "\n\n";
-            }
+    QString playlist = QStringLiteral("#EXTM3U\n");
+    for (const RadioStation &station : stations) {
+        if (station.station.trimmed().isEmpty() || station.station.contains('\r')
+            || station.station.contains('\n') || station.station.contains(QChar::Null)
+            || !isHttpStream(station.streamUrl.trimmed())) {
+            return QObject::tr("Cannot export this station to M3U: %1").arg(station.station);
         }
+        playlist += QStringLiteral("#EXTINF:-1,") + station.station + '\n'
+                    + station.streamUrl.trimmed() + '\n';
     }
-
-    file.close();
-    m3uFile.close();
-
-    return true;
+    text = std::move(playlist);
+    return {};
 }
-
-bool M3UHandler::fileExists(const QString path)
-{
-
-}
-

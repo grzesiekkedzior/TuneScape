@@ -1,13 +1,14 @@
 #include "include/Menu.h"
-#include "include/M3UHandler.h"
+
 #include <QFileDialog>
 #include <QMenu>
 #include <QMessageBox>
+#include <utility>
 
-Menu::Menu(Ui::MainWindow *ui, RadioList *radioList)
+Menu::Menu(Ui::MainWindow *ui, RadioList *radioList, FavoriteManager *favoriteManager)
     : ui(ui)
     , radioList(radioList)
-
+    , favoriteManager(favoriteManager)
 {
     mainMenu = new QMenu("Menu");
     importPls = new QAction("import pls");
@@ -35,113 +36,51 @@ Menu::Menu(Ui::MainWindow *ui, RadioList *radioList)
 
 void Menu::importPlaylists()
 {
-    QString fileName = QFileDialog::getOpenFileName(nullptr,
-                                                    "Choose the playlist file.",
-                                                    "",
-                                                    "All Files (*)");
+    auto *parent = ui->menuButton->window();
+    const QString source = QFileDialog::getOpenFileName(
+        parent, tr("Import Favorites"), {},
+        tr("Playlists (*.txt *.m3u *.m3u8);;All files (*)"));
+    if (source.isEmpty())
+        return;
 
-    QString playlist{};
-
-    if (fileName.contains(RADIO_BROWSER)) {
-        playlist = RADIO_BROWSER;
-    } else if (fileName.contains(FORMAT_M3U)) {
-        playlist = RADIO_BROWSER_M3U;
-    } else {
-        QMessageBox::warning(nullptr, "Error", "This is not TuneScape playlist!");
+    QVector<RadioStation> stations;
+    const QString error = favoriteManager->importPlaylist(source, stations);
+    if (!error.isEmpty()) {
+        QMessageBox::warning(parent, tr("Cannot import Favorites"), error);
         return;
     }
 
-    if (fileName.isEmpty()) {
-        QMessageBox::warning(nullptr, "Error", "You don't choose any file.");
-        return;
-    }
-
-    QFile inputFile(fileName);
-    if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(nullptr, "Error", "Cannot open file.");
-        return;
-    }
-
-    QFile outputFile(playlist);
-    if (!outputFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(nullptr, "Error", "Cannot open file to save.");
-        return;
-    }
-
-    QTextStream in(&inputFile);
-    QTextStream out(&outputFile);
-
-    // For now only radiobrowser
-    if (fileName.endsWith(".m3u", Qt::CaseInsensitive)) {
-        inputFile.close();
-        outputFile.close();
-        M3UHandler m3uHandler;
-        m3uHandler.importM3Ufile(fileName, RADIO_BROWSER);
-    } else {
-        out << in.readAll();
-        inputFile.close();
-        outputFile.close();
-    }
-
-
-
-    QMessageBox::information(nullptr, "Sukccess", "Playlist is imported successfully.");
-
-    if (playlist == RADIO_BROWSER || playlist == RADIO_BROWSER_M3U) {
-        radioList->setFavoriteStatons();
-        radioList->setFavoriteLibrary();
-    }
+    radioList->applyFavoritePlaylist(std::move(stations));
+    radioList->setFavoriteLibrary();
+    QMessageBox::information(parent, tr("Import complete"), tr("The Favorites playlist was replaced."));
 }
 
 void Menu::exportRadioBrowserPlaylist()
 {
-    exportRadio(RADIO_BROWSER, TUNSCAPE_FORMAT);
+    exportPlaylist(FavoriteManager::Format::Native);
 }
 
 void Menu::exportRadioBrowserPlaylistM3U()
 {
-    generateM3Uplaylist(RADIO_BROWSER, RADIO_BROWSER_M3U);
-
+    exportPlaylist(FavoriteManager::Format::M3U);
 }
 
-void Menu::exportRadio(const QString &playlist, QString format)
+void Menu::exportPlaylist(FavoriteManager::Format format)
 {
-    QFile inputFile(playlist);
-    if (!inputFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(nullptr, "Error", "Cannot open file.");
+    auto *parent = ui->menuButton->window();
+    const bool m3u = format == FavoriteManager::Format::M3U;
+    const QString extension = m3u ? QStringLiteral(".m3u") : QStringLiteral(".txt");
+    QFileDialog dialog(parent, tr("Export Favorites"), QStringLiteral("radiobrowser") + extension,
+                       m3u ? tr("M3U playlists (*.m3u *.m3u8)") : tr("TuneScape playlists (*.txt)"));
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setDefaultSuffix(extension.mid(1));
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+
+    const QString error = favoriteManager->exportPlaylist(dialog.selectedFiles().value(0), format);
+    if (!error.isEmpty()) {
+        QMessageBox::warning(parent, tr("Cannot export Favorites"), error);
         return;
     }
-
-    QTextStream in(&inputFile);
-    QString fileContent = in.readAll();
-    inputFile.close();
-
-    QString saveFilePath = QFileDialog::getSaveFileName(nullptr,
-                                                        "Save playlist",
-                                                        playlist,
-                                                        format == "m3u" ? "M3U Playlist (*.m3u)" : "Text file (*.txt);;All files (*.*)");
-    if (saveFilePath.isEmpty()) {
-        return;
-    }
-
-    QFile outputFile(saveFilePath);
-    if (!outputFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(nullptr, "Error", "Cannot open file for writing.");
-        return;
-    }
-
-    QTextStream out(&outputFile);
-    out << fileContent;
-    outputFile.close();
-
-    QMessageBox::information(nullptr, "Sukccess", "Playlist is saved correctly.");
-}
-
-void Menu::generateM3Uplaylist(const QString &radio, const QString &radioM3u)
-{
-    M3UHandler m3uHandler;
-    if (m3uHandler.exportM3Ufile(radio))
-        exportRadio(radioM3u, M3U_FORMAT);
-    else
-        qDebug() << "M3U export failed for:" << radio;
+    QMessageBox::information(parent, tr("Export complete"), tr("The Favorites playlist was saved."));
 }

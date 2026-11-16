@@ -1,5 +1,6 @@
 #ifndef FAVORITEMANAGER_H
 #define FAVORITEMANAGER_H
+
 #include <QObject>
 #include <QVector>
 #include "data/RadioStation.h"
@@ -8,16 +9,22 @@ class FavoriteManager : public QObject
 {
     Q_OBJECT
 public:
-    explicit FavoriteManager(QObject *parent = nullptr);
+    enum class Format { Native, M3U };
 
-    bool isRadioAdded(const QString &streamUrl, const QString &playlist);
-    bool toggleFavorite(const QString &streamUrl, const QString &data, const QString &playlist);
-    void readFavoriteStationsFromFile(QVector<RadioStation> &stations);
-    void removeRadio(const QString &streamUrl, const QString &playlist);
-    bool isAddressExists(const QString streamUrl, const QString playlist);
+    explicit FavoriteManager(QObject *parent = nullptr);
+    explicit FavoriteManager(const QString &filePath, QObject *parent = nullptr);
+
+    // An empty error string means success. Output playlists are replaced only on success.
+    QString load(QVector<RadioStation> &stations) const;
+    QString setFavorite(const RadioStation &station, bool favorite,
+                        QVector<RadioStation> &stations) const;
+    QString importPlaylist(const QString &source, QVector<RadioStation> &stations) const;
+    QString exportPlaylist(const QString &destination, Format format) const;
+
+    static bool sameStation(const RadioStation &first, const RadioStation &second);
 
 private:
-    const QString RADIO_BROWSER_PLAYLIST = "radiobrowser.txt";
+    QString m_filePath;
 };
 
 #endif // FAVORITEMANAGER_H

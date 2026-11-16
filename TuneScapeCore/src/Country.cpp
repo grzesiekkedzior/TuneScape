@@ -131,6 +131,7 @@ bool Country::createTable(QNetworkReply *reply)
         const QJsonObject object = value.toObject();
 
         RadioStation station;
+        station.stationUuid = QUuid(object[QStringLiteral("stationuuid")].toString());
 
         station.station = object[NameKey].toString().trimmed().replace(QRegularExpression(
                                                                            QStringLiteral(
@@ -191,9 +192,6 @@ void Country::onDoubleListClicked(const QModelIndex &index)
     if (index.row() < 0 || index.row() >= countryStationsModel->size())
         return;
 
-    if (!favoriteManager)
-        return;
-
     currentStation = countryStationsModel->station(index.row());
 
     playbackController.play(QUrl(currentStation.streamUrl));
@@ -217,10 +215,7 @@ void Country::onDoubleListClicked(const QModelIndex &index)
 
     playerUIController.setStationImage(preparedPixmap);
 
-    const bool isFavorite = favoriteManager->isAddressExists(currentStation.streamUrl,
-                                                             RadioBrowserPlaylist);
-
-    playerUIController.setFavorite(isFavorite);
+    playerUIController.setFavorite(radioList->isFavorite(currentStation));
     playerUIController.setPauseIcon();
 
     radioList->setIsStopClicked(false);
@@ -242,16 +237,6 @@ int Country::getCurrentIndexPlaying() const
 void Country::setCurrentIndexPlaying(int index)
 {
     currentIndexPlaying = index;
-}
-
-FavoriteManager *Country::getFavoriteManager() const
-{
-    return favoriteManager;
-}
-
-void Country::setFavoriteManager(FavoriteManager *manager)
-{
-    favoriteManager = manager;
 }
 
 bool Country::getIsPlaying() const
@@ -323,7 +308,7 @@ void Country::loadStationIcons()
 
 void Country::showStationContextMenu(const QPoint &position)
 {
-    if (!countryStationsModel || !favoriteManager || !radioList)
+    if (!countryStationsModel || !radioList)
         return;
 
     const QModelIndex index = ui->tableOfCoutries->indexAt(position);
@@ -343,8 +328,7 @@ void Country::showStationContextMenu(const QPoint &position)
 
     QAction *playAction = menu.addAction(isCurrentStationPlaying ? tr("Stop") : tr("Play"));
 
-    const bool isFavorite = favoriteManager->isAddressExists(station.streamUrl,
-                                                             RadioBrowserPlaylist);
+    const bool isFavorite = radioList->isFavorite(station);
 
     QAction *favoriteAction = menu.addAction(isFavorite ? tr("Remove from favorites")
                                                         : tr("Add to favorites"));
@@ -372,18 +356,7 @@ void Country::showStationContextMenu(const QPoint &position)
     }
 
     if (selectedAction == favoriteAction) {
-        const QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
-                             + station.country + "," + station.genre + "," + station.homepage;
-
-        const bool isNowFavorite = favoriteManager->toggleFavorite(station.streamUrl,
-                                                                   data,
-                                                                   RadioBrowserPlaylist);
-
-        if (station.streamUrl == currentStation.streamUrl)
-            playerUIController.setFavorite(isNowFavorite);
-
-        radioList->refreshFavoritePlaylist();
-
+        radioList->setFavorite(station, !isFavorite);
         return;
     }
 

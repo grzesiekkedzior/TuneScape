@@ -7,7 +7,8 @@
 #include <QPainter>
 #include <QScrollBar>
 #include <QUrl>
-#include "include/RadioBrowserPlaylistEditor.h"
+#include <algorithm>
+#include <utility>
 #include "include/StationDetailsDialog.h"
 
 RadioList::RadioList(QObject *parent)
@@ -26,8 +27,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager)
 
     streamRecorder->setUI(ui);
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
-
-    playlistEditor.reset(new RadioBrowserPlaylistEditor(*this, favoriteManager));
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
     connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::setRadioImage);
@@ -102,7 +101,9 @@ void RadioList::updateThemeAppearance()
 {
     clearTableViewColor();
 
-    if (!isStopClicked)
+    if (currentPlaylistIndex == Stations::FAVORITE)
+        updateStationColoring();
+    else if (!isStopClicked)
         setIndexColor(radioIndexNumber);
 
     if (!playbackController.isPlaying() || radioInfo->getInfoData().favicon.isEmpty()) {
@@ -188,16 +189,20 @@ void RadioList::setMainWindow(QMainWindow *newMainWindow)
 
 void RadioList::setFavoriteLibrary()
 {
-    QModelIndex radioBrowserIndex = ui->treeView->model()->index(0, 0);
-    QModelIndex favoriteIndex = ui->treeView->model()->index(3, 0, radioBrowserIndex);
-    qDebug() << "index" << favoriteIndex.data().toString();
-    if (favoriteIndex.isValid()) {
-        onTreeViewItemClicked(favoriteIndex);
-        ui->treeView->selectionModel()->select(favoriteIndex, QItemSelectionModel::Select);
+    const auto *model = ui->treeView->model();
+    if (!model)
+        return;
+    const QModelIndex radioBrowserIndex = model->index(0, 0);
+    const QModelIndex favoriteIndex = model->index(3, 0, radioBrowserIndex);
+    if (!favoriteIndex.isValid())
+        return;
 
-    } else {
-        qDebug() << "Error";
-    }
+    isTreeClicked = true;
+    item = FAVORITE;
+    if (currentPlaylistIndex != Stations::FAVORITE)
+        switchToPlaylist(Stations::FAVORITE);
+    ui->treeView->selectionModel()->select(favoriteIndex, QItemSelectionModel::ClearAndSelect);
+    updateStationColoring();
 }
 
 bool RadioList::getIsSearchTablelDoubleCliced() const
@@ -277,14 +282,21 @@ void RadioList::updateFavoriteColumnLayout()
         ui->tableView->setColumnWidth(1, 16);
 }
 
-void RadioList::refreshFavoritePlaylist()
+void RadioList::applyFavoritePlaylist(QVector<RadioStation> stations)
 {
-    setFavoriteStatons();
+    if (allStations.size() <= Stations::FAVORITE)
+        allStations.resize(Stations::FAVORITE + 1);
+    allStations[Stations::FAVORITE] = std::move(stations);
 
-    if (item == FAVORITE) {
+    if (currentPlaylistIndex == Stations::FAVORITE) {
         radioStationsModel->setStations(allStations[Stations::FAVORITE]);
         loadStationIcons();
+        updateStationColoring();
     }
+
+    const bool active = playbackController.isPlaying() || playbackController.isPaused();
+    const auto &station = country.getIsPlaying() ? country.getCurrentStation() : currentPlayingStation;
+    playerUIController.setFavorite(active && isFavorite(station));
 }
 
 void RadioList::setTopListOnStart()
@@ -295,22 +307,15 @@ void RadioList::setTopListOnStart()
     ui->treeView->selectionModel()->select(topIndex, QItemSelectionModel::Select);
 }
 
-void RadioList::setFavoriteStatons()
-{
-    QVector<RadioStation> favoriteStations;
-
-    favoriteManager->readFavoriteStationsFromFile(favoriteStations);
-
-    if (allStations.size() > Stations::FAVORITE)
-        allStations[Stations::FAVORITE] = favoriteStations;
-    else
-        allStations.push_back(favoriteStations);
-}
-
 void RadioList::loadAllData()
 {
     allStations.resize(Stations::FAVORITE + 1);
-    setFavoriteStatons();
+    QVector<RadioStation> favorites;
+    const QString error = favoriteManager->load(favorites);
+    if (error.isEmpty())
+        applyFavoritePlaylist(std::move(favorites));
+    else
+        QMessageBox::warning(mainWindow, tr("Cannot read Favorites"), error);
 
     if (!jsonListProcesor.checkInternetConnection()) {
         radioStationsModel->setStations(allStations[Stations::FAVORITE]);
@@ -390,6 +395,20 @@ void RadioList::switchToPlaylist(Stations station)
 
 void RadioList::updateStationColoring()
 {
+    if (currentPlaylistIndex == Stations::FAVORITE) {
+        clearTableViewColor();
+        if (currentPlayListPlaying == Stations::FAVORITE && playbackController.isPlaying()
+            && !country.getIsPlaying()) {
+            const auto &favorites = allStations[Stations::FAVORITE];
+            const auto selected = std::find_if(favorites.cbegin(), favorites.cend(), [this](const auto &entry) {
+                return FavoriteManager::sameStation(currentPlayingStation, entry);
+            });
+            if (selected != favorites.cend())
+                setIndexColor(static_cast<int>(selected - favorites.cbegin()));
+        }
+        return;
+    }
+
     if (currentPlayListPlaying == currentPlaylistIndex) {
         if (playbackController.isPlaying())
             setIndexColor(radioIndexNumber);
@@ -406,11 +425,26 @@ void RadioList::getSongTitle(const QString &url)
     streamReader.startStreaming(url);
 }
 
-void RadioList::checkIsRadioOnPlaylist(const QString &station)
+bool RadioList::isFavorite(const RadioStation &station) const
 {
-    const bool isFavorite = favoriteManager->isAddressExists(station, RADIO_BROWSER_PLAYLIST);
+    if (allStations.size() <= Stations::FAVORITE)
+        return false;
 
-    playerUIController.setFavorite(isFavorite);
+    const auto &favorites = allStations[Stations::FAVORITE];
+    return std::any_of(favorites.cbegin(), favorites.cend(), [&station](const RadioStation &entry) {
+        return FavoriteManager::sameStation(station, entry);
+    });
+}
+
+void RadioList::setFavorite(const RadioStation &station, bool favorite)
+{
+    QVector<RadioStation> updated;
+    const QString error = favoriteManager->setFavorite(station, favorite, updated);
+    if (!error.isEmpty()) {
+        QMessageBox::warning(mainWindow, tr("Cannot update Favorites"), error);
+        return;
+    }
+    applyFavoritePlaylist(std::move(updated));
 }
 
 void RadioList::onInternetConnectionRestored()
@@ -440,7 +474,10 @@ void RadioList::prepareRestoredConnectionMessage()
 
 void RadioList::clearRadioDataVectors()
 {
+    auto favorites = allStations.value(Stations::FAVORITE);
     allStations.clear();
+    allStations.resize(Stations::FAVORITE + 1);
+    allStations[Stations::FAVORITE] = std::move(favorites);
 }
 
 void RadioList::playSelectedStation(int radioNumber)
@@ -451,7 +488,7 @@ void RadioList::playSelectedStation(int radioNumber)
     currentPlayingStation = radioStationsModel->station(radioNumber);
     currentRadioPlayingAddress = currentPlayingStation.streamUrl;
 
-    checkIsRadioOnPlaylist(currentRadioPlayingAddress);
+    playerUIController.setFavorite(isFavorite(currentPlayingStation));
     getSongTitle(currentRadioPlayingAddress);
 
     playbackController.play(QUrl(currentRadioPlayingAddress));
@@ -660,6 +697,7 @@ void RadioList::onStopButtonClicked()
     playbackController.stop();
 
     currentRadioPlayingAddress.clear();
+    playerUIController.setFavorite(false);
 
     playerUIController.setDefaultImage();
     playerUIController.clearMetadata();
@@ -698,45 +736,11 @@ void RadioList::tableViewActivated(const QModelIndex &index)
 void RadioList::addRadioToFavorite()
 {
     if (country.getIsPlaying()) {
-        handleCountryFavorite();
+        const auto &station = country.getCurrentStation();
+        setFavorite(station, !isFavorite(station));
     } else if (playbackController.isPlaying()) {
-        handleRadioBrowserFavorite();
+        setFavorite(currentPlayingStation, !isFavorite(currentPlayingStation));
     }
-}
-
-void RadioList::handleRadioBrowserFavorite()
-{
-    if (!playbackController.isPlaying())
-        return;
-
-    QString data = currentPlayingStation.iconUrl + "," + currentPlayingStation.streamUrl + ","
-                   + currentPlayingStation.station + "," + currentPlayingStation.country + ","
-                   + currentPlayingStation.genre + "," + currentPlayingStation.homepage;
-
-    bool isFavorite = favoriteManager->toggleFavorite(currentPlayingStation.streamUrl,
-                                                      data,
-                                                      RADIO_BROWSER_PLAYLIST);
-
-    playerUIController.setFavorite(isFavorite);
-    refreshFavoritePlaylist();
-}
-
-void RadioList::handleCountryFavorite()
-{
-    if (!country.getIsPlaying())
-        return;
-
-    const RadioStation &station = country.getCurrentStation();
-
-    const QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
-                         + station.country + "," + station.genre + "," + station.homepage;
-
-    const bool isFavorite = favoriteManager->toggleFavorite(station.streamUrl,
-                                                            data,
-                                                            RADIO_BROWSER_PLAYLIST);
-
-    playerUIController.setFavorite(isFavorite);
-    refreshFavoritePlaylist();
 }
 
 void RadioList::handleDataReceived(const QString &data)
@@ -864,11 +868,10 @@ void RadioList::showStationContextMenu(const QPoint &position)
 
     QAction *playAction = menu.addAction(isCurrentStationPlaying ? tr("Stop") : tr("Play"));
 
-    const bool isFavorite = favoriteManager->isAddressExists(station.streamUrl,
-                                                             RADIO_BROWSER_PLAYLIST);
+    const bool favorite = isFavorite(station);
 
-    QAction *favoriteAction = menu.addAction(isFavorite ? tr("Remove from favorites")
-                                                        : tr("Add to favorites"));
+    QAction *favoriteAction = menu.addAction(favorite ? tr("Remove from favorites")
+                                                      : tr("Add to favorites"));
 
     QAction *detailsAction = menu.addAction(tr("Details"));
 
@@ -887,6 +890,7 @@ void RadioList::showStationContextMenu(const QPoint &position)
             playbackController.stop();
 
             currentRadioPlayingAddress.clear();
+            playerUIController.setFavorite(false);
 
             playerUIController.setPlayIcon();
             playerUIController.setDefaultImage();
@@ -908,18 +912,7 @@ void RadioList::showStationContextMenu(const QPoint &position)
     }
 
     if (selectedAction == favoriteAction) {
-        const QString data = station.iconUrl + "," + station.streamUrl + "," + station.station + ","
-                             + station.country + "," + station.genre + "," + station.homepage;
-
-        const bool isNowFavorite = favoriteManager->toggleFavorite(station.streamUrl,
-                                                                   data,
-                                                                   RADIO_BROWSER_PLAYLIST);
-
-        if (station.streamUrl == currentPlayingStation.streamUrl)
-            playerUIController.setFavorite(isNowFavorite);
-
-        refreshFavoritePlaylist();
-
+        setFavorite(station, !favorite);
         return;
     }
 

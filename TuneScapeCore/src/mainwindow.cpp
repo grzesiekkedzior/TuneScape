@@ -115,10 +115,9 @@ void MainWindow::start()
     trayIcon->setRadioList(radioList);
     trayIcon->loadTrayLists();
 
-    appMenu = new Menu(ui, radioList);
+    appMenu = new Menu(ui, radioList, favoriteManager);
 
     country.setData(ui, radioList);
-    country.setFavoriteManager(favoriteManager);
     country.setTheme(&m_theme);
 
     connect(radioList, &RadioList::internetConnectionRestored, &country, &Country::load);

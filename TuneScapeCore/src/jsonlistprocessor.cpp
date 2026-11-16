@@ -173,6 +173,7 @@ void JsonListProcessor::processJsonQuery()
         const QJsonObject stationObject = value.toObject();
 
         RadioStation station;
+        station.stationUuid = QUuid(stationObject[QStringLiteral("stationuuid")].toString());
 
         station.station = stationObject[NAME].toString().trimmed().replace(QRegularExpression(
                                                                                QStringLiteral(
