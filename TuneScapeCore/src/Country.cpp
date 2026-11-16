@@ -21,7 +21,6 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
     this->ui = ui;
     this->radioList = radioList;
     connect(radioList, &QObject::destroyed, this, [this] {
-        iconLoader.cancelPending();
         delete countryStationsModel;
         countryStationsModel = nullptr;
         customColor.clear();
@@ -44,12 +43,8 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 
     countryStationsModel = new RadioStationsModel(this);
     ui->tableOfCoutries->setModel(countryStationsModel);
-    connect(&iconLoader,
-            &IconLoader::iconLoaded,
-            countryStationsModel,
-            &RadioStationsModel::setStationIcon);
-
     ui->tableOfCoutries->setIconSize(QSize(20, 20));
+    countryStationsModel->bindIcons(ui->tableOfCoutries, &radioList->stationImages());
 
     connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
 
@@ -123,7 +118,6 @@ void Country::searchCountry(const QString &country)
     cancelStationSearch();
     ui->tableOfCoutries->show();
     ui->worldImage->hide();
-    iconLoader.cancelPending();
     countryStationsModel->setStations({});
     clearTableColor();
 
@@ -139,7 +133,6 @@ void Country::searchCountry(const QString &country)
             radioList->showCatalogResult(id, result);
             if (result.status == RadioBrowserApi::Status::Success) {
                 countryStationsModel->setStations(JsonListProcessor::stationsFromJson(result.data));
-                loadStationIcons();
             }
         });
     radioList->showCatalogProgress(stationsRequest, tr("Loading stations for %1…").arg(country));
@@ -240,21 +233,6 @@ void Country::updateThemeAppearance()
     setIndexColor(index);
 }
 
-void Country::loadStationIcons()
-{
-    if (!countryStationsModel)
-        return;
-
-    for (int row = 0; row < countryStationsModel->rowCount(QModelIndex()); ++row) {
-        const RadioStation &station = countryStationsModel->station(row);
-
-        if (station.iconUrl.isEmpty())
-            continue;
-
-        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(128, 128));
-    }
-}
-
 void Country::showStationContextMenu(const QPoint &position)
 {
     if (!countryStationsModel || !radioList)
@@ -310,7 +288,7 @@ void Country::showStationContextMenu(const QPoint &position)
     }
 
     if (selectedAction == detailsAction) {
-        StationDetailsDialog dialog(station, ui->tableOfCoutries);
+        StationDetailsDialog dialog(station, radioList->stationImages(), ui->tableOfCoutries);
 
         dialog.exec();
         return;

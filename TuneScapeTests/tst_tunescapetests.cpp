@@ -1,3 +1,4 @@
+#include <QBuffer>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -7,6 +8,7 @@
 #include <QMenu>
 #include <QNetworkProxy>
 #include <QProgressDialog>
+#include <QTableView>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTemporaryDir>
@@ -32,8 +34,12 @@ public:
             QObject::connect(socket, &QTcpSocket::readyRead, socket,
                              [this, socket, request = QByteArray()]() mutable {
                 request += socket->readAll();
-                if (request.contains("\r\n\r\n"))
-                    clients.insert(request.split(' ').value(1), socket);
+                if (request.contains("\r\n\r\n")) {
+                    const auto target = request.split(' ').value(1);
+                    clients.insert(target, socket);
+                    ++counts[target];
+                    request.clear();
+                }
             });
         });
     }
@@ -46,6 +52,14 @@ public:
     }
 
     QTcpSocket *client(const QByteArray &target) const { return clients.value(target); }
+    int requestCount(const QByteArray &target) const { return counts.value(target); }
+    int requestCount() const
+    {
+        int total = 0;
+        for (int count : counts)
+            total += count;
+        return total;
+    }
 
     static bool respond(QTcpSocket *client, const QByteArray &body, qint64 length = -1,
                         const QByteArray &status = "200 OK", const QByteArray &type = "audio/mpeg")
@@ -66,10 +80,37 @@ public:
         return true;
     }
 
+    bool respondImage(const QByteArray &target, const QByteArray &bytes, const QByteArray &status = "200 OK")
+    {
+        auto *socket = client(target);
+        if (!socket || !respond(socket, bytes, bytes.size(), status, "image/png"))
+            return false;
+        socket->disconnectFromHost();
+        return true;
+    }
+
 private:
     QHash<QByteArray, QTcpSocket *> clients;
+    QHash<QByteArray, int> counts;
     QTcpServer server;
 };
+
+QByteArray imageFixture(const QSize &size, const QColor &color)
+{
+    QImage image(size, QImage::Format_RGB32);
+    image.fill(color);
+    QByteArray bytes;
+    QBuffer output(&bytes);
+    output.open(QIODevice::WriteOnly);
+    return image.save(&output, "PNG") ? bytes : QByteArray();
+}
+
+QColor modelIconColor(const RadioStationsModel &model, int row)
+{
+    const auto icon = model.data(model.index(row, 0), Qt::DecorationRole).value<QIcon>();
+    const auto image = icon.pixmap(QSize(20, 20)).toImage();
+    return image.isNull() ? QColor() : image.pixelColor(image.width() / 2, image.height() / 2);
+}
 
 class LimitedWritesRecorder : public StreamRecorder
 {
@@ -137,6 +178,14 @@ private slots:
     void testCatalogSearchReplacementAndCancellation();
     void testCatalogStationDetailsIgnorePreviousRequest();
     void testCatalogFailureLeavesPlaybackAndRecordingRunning();
+    void testImagesShareDownloadsAndCacheAcrossViews();
+    void testImageFailures_data();
+    void testImageFailures();
+    void testImageTimeoutAndConcurrencyLimit();
+    void testImageCacheEviction();
+    void testLargeImageAndHighDpi();
+    void testTableImagesFollowStationIdentity();
+    void testTableImagesLoadVisibleRowsAndCancelOnClose();
     void testAppConfigCheckFileIsExists();
     void testAppConfigCheckBoolState();
     void testAppConfigChangeBoolState();
@@ -649,6 +698,226 @@ void TuneScapeTests::testCatalogFailureLeavesPlaybackAndRecordingRunning()
     ui.stop->click();
     QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
     QCOMPARE(fileContents(recorder.filePath()), QByteArray("firstmore"));
+}
+
+void TuneScapeTests::testImagesShareDownloadsAndCacheAcrossViews()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader;
+    QObject table;
+    QObject tray;
+    QObject details;
+    const auto url = http.url("/shared");
+    QPixmap inTable;
+    QPixmap inTray;
+    QPixmap inDetails;
+    loader.request(url, {20, 20}, 1, &table, [&](auto, const auto &pixmap) { inTable = pixmap; });
+    loader.request(url, {32, 32}, 1, &tray, [&](auto, const auto &pixmap) { inTray = pixmap; });
+    loader.request(url, {120, 120}, 2, &details, [&](auto, const auto &pixmap) { inDetails = pixmap; });
+    QTRY_VERIFY(http.client("/shared"));
+    QVERIFY(http.respondImage("/shared", imageFixture({48, 24}, Qt::blue)));
+    QTRY_VERIFY(!inTable.isNull() && !inTray.isNull() && !inDetails.isNull());
+    QCOMPARE(inTable.size(), QSize(20, 10));
+    QCOMPARE(inTray.size(), QSize(32, 16));
+    QCOMPARE(inDetails.size(), QSize(240, 120));
+    QCOMPARE(inDetails.devicePixelRatio(), 2.0);
+
+    for (int index = 0; index < 4; ++index) {
+        loader.request(http.url(QStringLiteral("/slow-%1").arg(index)), {20, 20}, 1, &tray,
+                       [](auto, const auto &) {}, IconLoader::Priority::Background);
+    }
+    QTRY_VERIFY(http.client("/slow-3"));
+    inDetails = {};
+    loader.request(url, {120, 120}, 2, &details, [&](auto, const auto &pixmap) { inDetails = pixmap; });
+    QTRY_VERIFY_WITH_TIMEOUT(!inDetails.isNull(), 1000);
+    QCOMPARE(http.requestCount("/shared"), 1);
+    QCOMPARE(http.client("/slow-0")->state(), QAbstractSocket::ConnectedState);
+}
+
+void TuneScapeTests::testImageFailures_data()
+{
+    QTest::addColumn<QString>("target");
+    QTest::addColumn<QByteArray>("body");
+    QTest::addColumn<QByteArray>("status");
+    QTest::newRow("empty-url") << QString() << QByteArray() << QByteArray();
+    QTest::newRow("invalid-url") << QString("http://[bad") << QByteArray() << QByteArray();
+    QTest::newRow("http-404") << QString("/not-found") << QByteArray() << QByteArray("404 Not Found");
+    QTest::newRow("not-an-image") << QString("/bad-image") << QByteArray("bad") << QByteArray("200 OK");
+}
+
+void TuneScapeTests::testImageFailures()
+{
+    QFETCH(QString, target);
+    QFETCH(QByteArray, body);
+    QFETCH(QByteArray, status);
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader;
+    const QUrl url = status.isEmpty() ? QUrl(target) : http.url(target);
+    QList<QPixmap> results;
+    const auto complete = [&](auto, const auto &pixmap) { results.append(pixmap); };
+    loader.request(url, {20, 20}, 1, this, complete);
+    if (!status.isEmpty()) {
+        QTRY_VERIFY(http.client(target.toUtf8()));
+        QVERIFY(http.respondImage(target.toUtf8(), body, status));
+    }
+    QTRY_COMPARE(results.size(), 1);
+    QVERIFY(results.first().isNull());
+    loader.request(url, {32, 32}, 1, this, complete);
+    QTRY_COMPARE(results.size(), 2);
+    QVERIFY(results.last().isNull());
+    QCOMPARE(http.requestCount(), status.isEmpty() ? 0 : 1);
+}
+
+void TuneScapeTests::testImageTimeoutAndConcurrencyLimit()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader(nullptr, 4096, 700);
+    int failed = 0;
+    const auto completed = [&](auto, const auto &pixmap) { failed += pixmap.isNull(); };
+    for (int index = 0; index < 5; ++index) {
+        loader.request(http.url(QStringLiteral("/%1").arg(index)), {20, 20}, 1, this,
+                       completed, IconLoader::Priority::Background);
+    }
+    loader.request(http.url("/visible"), {20, 20}, 1, this, completed);
+    QTRY_COMPARE(http.requestCount(), 4);
+    QVERIFY(http.client("/visible"));
+    QVERIFY(!http.client("/3"));
+    QVERIFY(!http.client("/4"));
+    QTRY_COMPARE(http.requestCount(), 6);
+    QTRY_COMPARE(failed, 6);
+    for (int index = 0; index < 5; ++index)
+        QTRY_COMPARE(http.client("/" + QByteArray::number(index))->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testImageCacheEviction()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader(nullptr, 2400);
+    const auto png = imageFixture({24, 24}, Qt::red);
+    QVERIFY(!png.isEmpty());
+    QPixmap result;
+    const auto load = [&](const QString &path) {
+        result = {};
+        loader.request(http.url(path), {20, 20}, 1, this,
+                       [&](auto, const auto &pixmap) { result = pixmap; });
+    };
+    load("/first");
+    QTRY_VERIFY(http.client("/first"));
+    QVERIFY(http.respondImage("/first", png));
+    QTRY_VERIFY(!result.isNull());
+    load("/second");
+    QTRY_VERIFY(http.client("/second"));
+    QVERIFY(http.respondImage("/second", png));
+    QTRY_VERIFY(!result.isNull());
+    load("/second");
+    QTRY_VERIFY(!result.isNull());
+    QCOMPARE(http.requestCount("/second"), 1);
+    load("/first");
+    QTRY_COMPARE(http.requestCount("/first"), 2);
+    QVERIFY(http.respondImage("/first", png));
+    QTRY_VERIFY(!result.isNull());
+}
+
+void TuneScapeTests::testLargeImageAndHighDpi()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader(nullptr, 700000);
+    QPixmap result;
+    const auto complete = [&](auto, const auto &pixmap) { result = pixmap; };
+    const auto url = http.url("/large");
+    loader.request(url, {120, 120}, 2.5, this, complete);
+    QTRY_VERIFY(http.client("/large"));
+    const auto png = imageFixture({3200, 1600}, Qt::green);
+    QVERIFY(!png.isEmpty());
+    QVERIFY(http.respondImage("/large", png));
+    QTRY_VERIFY(!result.isNull());
+    QCOMPARE(result.size(), QSize(300, 150));
+    QCOMPARE(result.deviceIndependentSize(), QSizeF(120, 60));
+    QCOMPARE(result.toImage().pixelColor(15, 15), QColor(Qt::green));
+
+    result = {};
+    loader.request(url, {20, 20}, 1.5, this, complete);
+    QTRY_VERIFY(!result.isNull());
+    QCOMPARE(result.size(), QSize(30, 15));
+    QCOMPARE(result.devicePixelRatio(), 1.5);
+    QCOMPARE(http.requestCount("/large"), 1);
+}
+
+void TuneScapeTests::testTableImagesFollowStationIdentity()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader;
+    RadioStationsModel model;
+    QTableView view;
+    view.setIconSize({20, 20});
+    view.resize(380, 210);
+    view.setModel(&model);
+    model.bindIcons(&view, &loader);
+    view.show();
+    const auto station = [&](const QString &name, const QString &path) {
+        RadioStation item;
+        item.station = name;
+        item.stationUuid = QUuid::createUuid();
+        item.streamUrl = http.url("/stream-" + name).toString();
+        item.iconUrl = http.url(path).toString();
+        return item;
+    };
+    model.setStations({station("Old", "/old")});
+    QTRY_VERIFY(http.client("/old"));
+    model.setStations({station("First", "/first"), station("Second", "/second")});
+    QTRY_COMPARE(http.client("/old")->state(), QAbstractSocket::UnconnectedState);
+    QTRY_VERIFY(http.client("/first") && http.client("/second"));
+    QSignalSpy updates(&model, &RadioStationsModel::dataChanged);
+    QVERIFY(http.respondImage("/second", imageFixture({24, 24}, Qt::blue)));
+    QTRY_COMPARE(modelIconColor(model, 1), QColor(Qt::blue));
+    QVERIFY(http.respondImage("/first", imageFixture({24, 24}, Qt::red)));
+    QTRY_COMPARE(modelIconColor(model, 0), QColor(Qt::red));
+    QCOMPARE(modelIconColor(model, 1), QColor(Qt::blue));
+    QCOMPARE(updates.size(), 2);
+}
+
+void TuneScapeTests::testTableImagesLoadVisibleRowsAndCancelOnClose()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    IconLoader loader;
+    RadioStationsModel model;
+    auto view = std::make_unique<QTableView>();
+    view->setIconSize({20, 20});
+    view->resize(320, 150);
+    view->setModel(&model);
+    model.bindIcons(view.get(), &loader);
+    QVector<RadioStation> stations(80);
+    for (int row = 0; row < stations.size(); ++row)
+        stations[row].iconUrl = http.url(QStringLiteral("/row-%1").arg(row)).toString();
+    model.setStations(stations);
+    view->show();
+    QTRY_VERIFY(http.client("/row-0"));
+    const int last = view->rowAt(view->viewport()->height() - 1);
+    QVERIFY(last >= 0 && last < 79);
+    QSignalSpy initialUpdates(&model, &RadioStationsModel::dataChanged);
+    const auto png = imageFixture({24, 24}, Qt::blue);
+    for (int row = 0; row <= last; ++row) {
+        const QByteArray target = "/row-" + QByteArray::number(row);
+        QTRY_VERIFY(http.client(target));
+        QVERIFY(http.respondImage(target, png));
+    }
+    QTRY_COMPARE(initialUpdates.size(), last + 1);
+    QCOMPARE(http.requestCount(), last + 1);
+    qInfo() << "Initial icon GETs for 80 rows:" << http.requestCount();
+
+    view->scrollTo(model.index(79, 0), QAbstractItemView::PositionAtBottom);
+    QTRY_VERIFY(http.client("/row-79"));
+    QSignalSpy updates(&model, &RadioStationsModel::dataChanged);
+    view.reset();
+    QTRY_COMPARE(http.client("/row-79")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(updates.size(), 0);
 }
 
 void TuneScapeTests::testAppConfigCheckFileIsExists()

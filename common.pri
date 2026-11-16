@@ -1,4 +1,4 @@
-QT += core gui widgets network multimedia svg
+QT += core gui widgets network multimedia svg concurrent
 CONFIG += c++17
 
 TUNESCAPE_CORE = $$PWD/TuneScapeCore

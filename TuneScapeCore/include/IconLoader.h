@@ -1,40 +1,71 @@
 #ifndef ICONLOADER_H
 #define ICONLOADER_H
 
+#include <QCache>
+#include <QDeadlineTimer>
 #include <QHash>
-#include <QIcon>
+#include <QImage>
 #include <QNetworkAccessManager>
-#include <QObject>
+#include <QPixmap>
 #include <QPointer>
+#include <QQueue>
+#include <QThreadPool>
+#include <QTimer>
 #include <QUrl>
-#include <QVector>
+#include <functional>
 
 class QNetworkReply;
 
 class IconLoader : public QObject
 {
-    Q_OBJECT
-
 public:
-    explicit IconLoader(QObject *parent = nullptr);
+    using RequestId = quint64;
+    using Completion = std::function<void(RequestId, const QPixmap &)>;
+    enum class Priority { Visible, Background };
+
+    explicit IconLoader(QObject *parent = nullptr, qsizetype cacheBytes = 16 * 1024 * 1024,
+                        int timeoutMs = 5000);
     ~IconLoader() override;
 
-    void loadIcon(int row, const QUrl &url, const QSize &size);
-    void cancelPending();
-
-signals:
-    void iconLoaded(int row, const QIcon &icon);
-    void iconLoadFailed(int row);
+    RequestId request(const QUrl &url, const QSize &size, qreal dpr,
+                      QObject *receiver, Completion completion, Priority priority = Priority::Visible);
+    void cancel(RequestId id);
 
 private:
-    struct Pending {
-        QPointer<QNetworkReply> reply;
-        QVector<int> rows;
+    struct Subscriber {
+        QSize size;
+        qreal dpr;
+        QPointer<QObject> receiver;
+        QMetaObject::Connection destroyed;
+        Completion completion;
     };
 
-    QNetworkAccessManager m_networkManager;
-    QHash<QString, QIcon> m_cache;
-    QHash<QString, Pending> m_pending;
-    quint64 m_generation = 0;
+    struct Pending {
+        QHash<RequestId, Subscriber> subscribers;
+        QPointer<QNetworkReply> reply;
+        QByteArray bytes;
+        bool active = false;
+    };
+
+    void pump();
+    void start(const QUrl &url, Pending &job);
+    bool read(const QUrl &url, QNetworkReply *reply);
+    void downloaded(const QUrl &url, QNetworkReply *reply);
+    void finish(const QUrl &url, const QImage &image, bool remember);
+    void releaseReply(Pending &job);
+
+    QNetworkAccessManager m_network;
+    QThreadPool m_decoder;
+    QTimer m_pump;
+    QCache<QUrl, QImage> m_cache;
+    QCache<QUrl, QDeadlineTimer> m_failures{128 * 1024};
+    QHash<QUrl, Pending> m_pending;
+    QHash<RequestId, QUrl> m_requests;
+    QQueue<QUrl> m_waiting;
+    QQueue<QUrl> m_background;
+    RequestId m_nextId = 0;
+    int m_active = 0;
+    int m_timeoutMs;
 };
+
 #endif // ICONLOADER_H

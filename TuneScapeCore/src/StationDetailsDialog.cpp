@@ -1,4 +1,5 @@
 #include "include/StationDetailsDialog.h"
+#include "include/IconLoader.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -18,7 +19,7 @@ constexpr auto DefaultRadioIconPath = ":/images/img/radio30.png";
 
 }
 
-StationDetailsDialog::StationDetailsDialog(const RadioStation &station, QWidget *parent)
+StationDetailsDialog::StationDetailsDialog(const RadioStation &station, IconLoader &loader, QWidget *parent)
     : QDialog(parent)
     , m_station(station)
 {
@@ -50,6 +51,13 @@ StationDetailsDialog::StationDetailsDialog(const RadioStation &station, QWidget 
         stationIcon = QIcon(DefaultRadioIconPath);
 
     m_iconLabel->setPixmap(stationIcon.pixmap(QSize(112, 112), devicePixelRatioF()));
+    if (!station.iconUrl.isEmpty()) {
+        loader.request(QUrl(station.iconUrl), QSize(112, 112), devicePixelRatioF(), this,
+                       [this](auto, const QPixmap &pixmap) {
+                           if (!pixmap.isNull())
+                               m_iconLabel->setPixmap(pixmap);
+                       });
+    }
 
     auto *titleLayout = new QVBoxLayout;
     titleLayout->setSpacing(4);

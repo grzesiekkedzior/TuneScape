@@ -43,10 +43,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
                 hideCatalogProgress(m_playlistRequests[currentPlaylistIndex]);
         }
     });
-    connect(&imageManager, &RadioImageManager::imageLoaded, this, [this](const QPixmap &image) {
-        m_hasStationImage = true;
-        playerUIController.setStationImage(image);
-    });
 
     ui->playPause->setShortcut(QKeySequence(Qt::Key_Space));
 
@@ -92,10 +88,6 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
-    connect(&iconLoader,
-            &IconLoader::iconLoaded,
-            radioStationsModel,
-            &RadioStationsModel::setStationIcon);
 
     //trash header signal
     ui->tableView->setModel(radioStationsModel);
@@ -107,6 +99,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
     miniPlayer.setRadioList(this);
     playerUIController.initialize(ui, &miniPlayer);
     ui->tableView->setIconSize(QSize(20, 20));
+    radioStationsModel->bindIcons(ui->tableView, &iconLoader);
 
     ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -129,6 +122,11 @@ RadioList::~RadioList()
 RadioBrowserApi &RadioList::catalog() const
 {
     return *m_catalog;
+}
+
+IconLoader &RadioList::stationImages()
+{
+    return iconLoader;
 }
 
 void RadioList::showCatalogProgress(RadioBrowserApi::RequestId id, const QString &message)
@@ -346,7 +344,6 @@ void RadioList::applyFavoritePlaylist(QVector<RadioStation> stations)
 
     if (currentPlaylistIndex == Stations::FAVORITE) {
         radioStationsModel->setStations(allStations[Stations::FAVORITE]);
-        loadStationIcons();
         updateStationColoring();
     }
 
@@ -508,7 +505,16 @@ void RadioList::loadPlayingStationDetails(const RadioStation &station)
     clearPlayingStationDetails();
     radioInfo.showStation(station);
     playerUIController.setDefaultImage();
-    imageManager.load(QUrl(station.iconUrl));
+    m_imageRequest = iconLoader.request(QUrl(station.iconUrl), QSize(120, 120),
+        ui->infoLabel->devicePixelRatioF(), this, [this](auto id, const QPixmap &image) {
+            if (id != m_imageRequest)
+                return;
+            m_imageRequest = 0;
+            if (!image.isNull()) {
+                m_hasStationImage = true;
+                playerUIController.setStationImage(image);
+            }
+        });
 
     QUrl endpoint;
     if (station.stationUuid.isNull()) {
@@ -546,7 +552,7 @@ void RadioList::clearPlayingStationDetails()
     const auto id = std::exchange(m_detailsRequest, 0);
     hideCatalogProgress(id);
     m_catalog->cancel(id);
-    imageManager.cancel();
+    iconLoader.cancel(std::exchange(m_imageRequest, 0));
     m_hasStationImage = false;
     m_detailsCodec.clear();
     radioInfo.clearInfo();
@@ -827,7 +833,6 @@ void RadioList::displayPlaylist()
         return;
     m_playlistDisplayPending = false;
     radioStationsModel->setStations(allStations[currentPlaylistIndex]);
-    loadStationIcons();
     updateStationColoring();
 }
 
@@ -880,19 +885,6 @@ void RadioList::setIndexColor(int row)
 
     ui->tableView->setItemDelegate(customColor.get());
     ui->tableView->viewport()->update();
-}
-
-void RadioList::loadStationIcons()
-{
-    iconLoader.cancelPending();
-    for (int row = 0; row < radioStationsModel->rowCount(QModelIndex()); ++row) {
-        const RadioStation &station = radioStationsModel->station(row);
-
-        if (station.iconUrl.isEmpty())
-            continue;
-
-        iconLoader.loadIcon(row, QUrl(station.iconUrl), QSize(128, 128));
-    }
 }
 
 void RadioList::showStationContextMenu(const QPoint &position)
@@ -966,7 +958,7 @@ void RadioList::showStationContextMenu(const QPoint &position)
     }
 
     if (selectedAction == detailsAction) {
-        StationDetailsDialog dialog(station, ui->tableView);
+        StationDetailsDialog dialog(station, iconLoader, ui->tableView);
         dialog.exec();
         return;
     }

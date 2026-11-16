@@ -17,7 +17,6 @@
 #include "controller/PlayerUIController.h"
 #include "include/IconLoader.h"
 #include "include/RadioBrowserApi.h"
-#include "include/RadioImageManager.h"
 #include "include/customcolordelegate.h"
 #include "include/jsonlistprocessor.h"
 #include "include/radioaudiomanager.h"
@@ -44,6 +43,7 @@ public:
     void loadPlayingStationDetails(const RadioStation &station);
 
     RadioBrowserApi &catalog() const;
+    IconLoader &stationImages();
     void showCatalogProgress(RadioBrowserApi::RequestId id, const QString &message);
     void showCatalogResult(RadioBrowserApi::RequestId id, const RadioBrowserApi::Result &result);
     void hideCatalogProgress(RadioBrowserApi::RequestId id);
@@ -105,7 +105,6 @@ public:
 
     void updateThemeAppearance();
     void setTheme(Theme *theme);
-    void loadStationIcons();
     void applyFavoritePlaylist(QVector<RadioStation> stations);
 
 signals:
@@ -155,7 +154,6 @@ private:
     QString item = "";
 
     QMainWindow *mainWindow = nullptr;
-    RadioImageManager imageManager;
     FavoriteManager *favoriteManager = nullptr;
 
     //Singletons
@@ -168,6 +166,7 @@ private:
 
     RadioStation currentPlayingStation;
     IconLoader iconLoader;
+    IconLoader::RequestId m_imageRequest = 0;
     Theme *theme = nullptr;
 
     int radioIndexNumber = 0;

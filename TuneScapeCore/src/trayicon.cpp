@@ -26,9 +26,6 @@ constexpr auto PauseIconPath = ":/images/img/pause30.png";
 TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     : ui(ui)
     , mainWindow(&mainWindow)
-    , topIconLoader(this)
-    , popularIconLoader(this)
-    , newIconLoader(this)
 {
     appConfig = new AppConfig("application.properties");
 
@@ -110,47 +107,6 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
 
     connect(trayMenu, &QMenu::triggered, this, &TrayIcon::trayMenuClicked);
 
-    connect(&topIconLoader, &IconLoader::iconLoaded, this, [this](int row, const QIcon &icon) {
-        if (row < 0 || row >= topVector.size() || row >= topIcons.size()) {
-            return;
-        }
-
-        topIcons[row] = icon;
-        topVector[row]->setIcon(icon);
-
-        if (playbackController.isPlaying())
-            setTrayListIcon();
-
-        updateNowPlayingPanel();
-    });
-
-    connect(&popularIconLoader, &IconLoader::iconLoaded, this, [this](int row, const QIcon &icon) {
-        if (row < 0 || row >= popularVector.size() || row >= popularIcons.size()) {
-            return;
-        }
-
-        popularIcons[row] = icon;
-        popularVector[row]->setIcon(icon);
-
-        if (playbackController.isPlaying())
-            setTrayListIcon();
-
-        updateNowPlayingPanel();
-    });
-
-    connect(&newIconLoader, &IconLoader::iconLoaded, this, [this](int row, const QIcon &icon) {
-        if (row < 0 || row >= newRadioVector.size() || row >= newRadioIcons.size()) {
-            return;
-        }
-
-        newRadioIcons[row] = icon;
-        newRadioVector[row]->setIcon(icon);
-
-        if (playbackController.isPlaying())
-            setTrayListIcon();
-
-        updateNowPlayingPanel();
-    });
 }
 
 void TrayIcon::createNowPlayingPanel()
@@ -656,9 +612,7 @@ void TrayIcon::loadTrayList(Stations station)
 
     const QIcon defaultIcon(DefaultStationIconPath);
     const auto &stations = radioList->stations(station);
-    const auto load = [&](QMenu *menu, QVector<QAction *> &actions, QVector<QIcon> &icons,
-                          IconLoader &loader) {
-        loader.cancelPending();
+    const auto load = [&](QMenu *menu, QVector<QAction *> &actions, QVector<QIcon> &icons) {
         menu->clear();
         actions.clear();
         icons.fill(defaultIcon, stations.size());
@@ -668,24 +622,36 @@ void TrayIcon::loadTrayList(Stations station)
             action->setCheckable(true);
             actions.append(action);
             const QUrl iconUrl(stations[row].iconUrl);
-            if (!iconUrl.isEmpty())
-                loader.loadIcon(row, iconUrl, QSize(32, 32));
+            if (!iconUrl.isEmpty()) {
+                radioList->stationImages().request(iconUrl, QSize(32, 32), mainWindow->devicePixelRatioF(),
+                    action, [this, action, row, &actions, &icons](auto, const QPixmap &pixmap) {
+                        if (pixmap.isNull() || actions.value(row) != action)
+                            return;
+                        icons[row] = QIcon(pixmap);
+                        if (action->isChecked())
+                            updateNowPlayingPanel();
+                        else
+                            action->setIcon(icons[row]);
+                    }, IconLoader::Priority::Background);
+            }
         }
     };
 
     switch (station) {
     case Stations::TOP:
-        load(top, topVector, topIcons, topIconLoader);
+        load(top, topVector, topIcons);
         break;
     case Stations::POPULAR:
-        load(popular, popularVector, popularIcons, popularIconLoader);
+        load(popular, popularVector, popularIcons);
         break;
     case Stations::NEW:
-        load(newRadio, newRadioVector, newRadioIcons, newIconLoader);
+        load(newRadio, newRadioVector, newRadioIcons);
         break;
     default:
         return;
     }
+    if (playbackController.isPlaying())
+        setTrayListIcon();
 }
 
 void TrayIcon::clearIcon()
@@ -878,14 +844,6 @@ void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
     case QSystemTrayIcon::Unknown:
         break;
     }
-}
-
-QIcon TrayIcon::stationTrayIcon(const RadioStation &station) const
-{
-    if (!station.icon.isNull())
-        return station.icon;
-
-    return QIcon(DefaultStationIconPath);
 }
 
 void TrayIcon::restoreStationIcons()

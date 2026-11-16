@@ -14,7 +14,6 @@
 #include "controller/PlaybackController.h"
 #include "controller/PlayerUIController.h"
 #include "customcolordelegate.h"
-#include "include/IconLoader.h"
 #include "include/theme.h"
 #include "model/RadioStationsModel.h"
 
@@ -47,7 +46,6 @@ public:
     void clearTableColor();
 
     void setTheme(Theme *newTheme);
-    void loadStationIcons();
 public slots:
     void updateThemeAppearance();
     void showStationContextMenu(const QPoint &position);
@@ -76,7 +74,6 @@ private:
 
     RadioStationsModel *countryStationsModel = nullptr;
     RadioStation currentStation;
-    IconLoader iconLoader;
 
     PlaybackController &playbackController = SingletonContainer::getSingleton()
                                                  .getInstance<PlaybackController>();

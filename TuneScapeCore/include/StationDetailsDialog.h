@@ -6,13 +6,14 @@
 
 class QLabel;
 class QPushButton;
+class IconLoader;
 
 class StationDetailsDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit StationDetailsDialog(const RadioStation &station, QWidget *parent = nullptr);
+    StationDetailsDialog(const RadioStation &station, IconLoader &loader, QWidget *parent = nullptr);
 
 private:
     QLabel *createValueLabel(const QString &text) const;

@@ -12,7 +12,6 @@
 
 #include "ui_mainwindow.h"
 #include "AppConfig.h"
-#include "IconLoader.h"
 #include "radioaudiomanager.h"
 #include "radiolist.h"
 
@@ -86,7 +85,6 @@ private:
     QIcon currentStationIcon() const;
     QString currentStationName() const;
 
-    QIcon stationTrayIcon(const RadioStation &station) const;
     QModelIndex createTrayRadioLists(QAction *action);
 
     Ui::MainWindow *ui = nullptr;
@@ -127,9 +125,6 @@ private:
     QVector<QIcon> popularIcons;
     QVector<QIcon> newRadioIcons;
 
-    IconLoader topIconLoader;
-    IconLoader popularIconLoader;
-    IconLoader newIconLoader;
 
     AppConfig *appConfig = nullptr;
     bool isNotificationEnabled = true;

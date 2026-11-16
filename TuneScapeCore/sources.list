@@ -4,7 +4,6 @@ src/FavoriteManager.cpp
 src/IconLoader.cpp
 src/M3UHandler.cpp
 src/Menu.cpp
-src/RadioImageManager.cpp
 src/StationDetailsDialog.cpp
 src/controller/PlaybackController.cpp
 src/controller/PlayerUIController.cpp
@@ -35,7 +34,6 @@ include/M3UHandler.h
 include/Menu.h
 include/PlaybackState.h
 include/RadioBrowserApi.h
-include/RadioImageManager.h
 include/StationDetailsDialog.h
 include/container.h
 include/controller/PlaybackController.h

@@ -2,7 +2,10 @@
 #define RADIOSTATIONSMODEL_H
 #include <QAbstractTableModel>
 #include <QObject>
+#include "include/IconLoader.h"
 #include "include/data/RadioStation.h"
+
+class QTableView;
 
 enum class Column { StationColumn, GenreColumn, CountryColumn, HomepageColumn, ColumnCount };
 
@@ -12,6 +15,7 @@ class RadioStationsModel : public QAbstractTableModel
 
 public:
     RadioStationsModel(QObject *parent = nullptr);
+    ~RadioStationsModel() override;
 
     int rowCount(const QModelIndex &parent) const override;
     int columnCount(const QModelIndex &parent) const override;
@@ -22,13 +26,31 @@ public:
     const RadioStation &station(int row) const;
     int size() const;
     bool isEmpty() const;
-    void setStationIcon(int row, const QIcon &icon);
+    void bindIcons(QTableView *view, IconLoader *loader);
 
     const QVector<RadioStation> &stations() const;
 
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private:
+    struct VisibleIcon {
+        IconLoader::RequestId request = 0;
+        QIcon icon;
+    };
+
+    void scheduleIcons();
+    void updateVisibleIcons();
+    void clearIcons();
+
     QVector<RadioStation> m_stations;
-    Column column = Column::ColumnCount;
+    QPointer<QTableView> m_view;
+    QPointer<IconLoader> m_loader;
+    QHash<int, VisibleIcon> m_icons;
+    QTimer m_iconUpdate;
+    quint64 m_generation = 0;
+    qreal m_dpr = 0;
+    QSize m_iconSize;
 };
 
 #endif // RADIOSTATIONSMODEL_H

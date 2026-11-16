@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Svg)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Core Gui Widgets Network Multimedia Svg Concurrent)
 qt_standard_project_setup()
 
 set(core_dir "${CMAKE_CURRENT_SOURCE_DIR}/TuneScapeCore")
@@ -20,7 +20,7 @@ function(tunescape_add_executable target)
     qt_add_executable(${target} ${ARGN} ${core_files})
     target_include_directories(${target} PRIVATE "${core_dir}")
     target_link_libraries(${target} PRIVATE
-        Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::Svg)
+        Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::Svg Qt6::Concurrent)
 endfunction()
 
 tunescape_add_executable(TuneScapeCore WIN32 "${core_dir}/src/main.cpp")

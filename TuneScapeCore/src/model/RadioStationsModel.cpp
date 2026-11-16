@@ -1,9 +1,23 @@
 #include "include/model/RadioStationsModel.h"
+#include <QEvent>
+#include <QHeaderView>
+#include <QScrollBar>
+#include <QScreen>
+#include <QTableView>
 #include <QUrl>
+#include <QWindow>
 
 RadioStationsModel::RadioStationsModel(QObject *parent)
     : QAbstractTableModel(parent)
-{}
+{
+    m_iconUpdate.setSingleShot(true);
+    connect(&m_iconUpdate, &QTimer::timeout, this, &RadioStationsModel::updateVisibleIcons);
+}
+
+RadioStationsModel::~RadioStationsModel()
+{
+    clearIcons();
+}
 
 int RadioStationsModel::rowCount(const QModelIndex &parent) const
 {
@@ -32,10 +46,14 @@ QVariant RadioStationsModel::data(const QModelIndex &index, int role) const
 
     if (index.column() == static_cast<int>(Column::StationColumn)) {
         if (role == Qt::DecorationRole) {
+            const auto visible = m_icons.constFind(index.row());
+            if (visible != m_icons.cend() && !visible->icon.isNull())
+                return visible->icon;
             if (!station.icon.isNull())
                 return station.icon;
 
-            return QIcon(QStringLiteral(":/images/img/radio96x96.png"));
+            static const QIcon fallback(QStringLiteral(":/images/img/radio96x96.png"));
+            return fallback;
         }
 
         if (role == Qt::DisplayRole)
@@ -93,11 +111,14 @@ QVariant RadioStationsModel::headerData(int section, Qt::Orientation orientation
 
 void RadioStationsModel::setStations(const QVector<RadioStation> &stations)
 {
+    ++m_generation;
+    clearIcons();
     beginResetModel();
 
     m_stations = stations;
 
     endResetModel();
+    scheduleIcons();
 }
 
 const RadioStation &RadioStationsModel::station(int row) const
@@ -120,18 +141,107 @@ const QVector<RadioStation> &RadioStationsModel::stations() const
     return m_stations;
 }
 
-void RadioStationsModel::setStationIcon(int row, const QIcon &icon)
+void RadioStationsModel::bindIcons(QTableView *view, IconLoader *loader)
 {
-    qDebug() << "setStationIcon row:" << row << "isNull:" << icon.isNull();
+    m_view = view;
+    m_loader = loader;
+    view->installEventFilter(this);
+    view->viewport()->installEventFilter(this);
+    connect(view->verticalScrollBar(), &QScrollBar::valueChanged, this, &RadioStationsModel::scheduleIcons);
+    connect(view->verticalHeader(), &QHeaderView::sectionResized, this, &RadioStationsModel::scheduleIcons);
+    connect(view, &QTableView::iconSizeChanged, this, &RadioStationsModel::scheduleIcons);
+    connect(view, &QObject::destroyed, this, &RadioStationsModel::clearIcons);
+    scheduleIcons();
+}
 
-    if (row < 0 || row >= m_stations.size()) {
-        qDebug() << "Invalid row, model size:" << m_stations.size();
+bool RadioStationsModel::eventFilter(QObject *watched, QEvent *event)
+{
+    switch (event->type()) {
+    case QEvent::Show:
+        if (m_view) {
+            if (auto *window = m_view->window()->windowHandle()) {
+                connect(window, &QWindow::screenChanged, this, &RadioStationsModel::scheduleIcons,
+                        Qt::UniqueConnection);
+            }
+        }
+        scheduleIcons();
+        break;
+    case QEvent::Resize:
+    case QEvent::Hide:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+    case QEvent::DevicePixelRatioChange:
+#endif
+        scheduleIcons();
+        break;
+    default:
+        break;
+    }
+    return QAbstractTableModel::eventFilter(watched, event);
+}
+
+void RadioStationsModel::scheduleIcons()
+{
+    if (m_view)
+        m_iconUpdate.start(0);
+}
+
+void RadioStationsModel::clearIcons()
+{
+    if (m_loader) {
+        for (const auto &entry : m_icons)
+            m_loader->cancel(entry.request);
+    }
+    m_icons.clear();
+}
+
+void RadioStationsModel::updateVisibleIcons()
+{
+    if (!m_view || !m_loader || m_view->model() != this || !m_view->isVisible() || m_stations.isEmpty()) {
+        clearIcons();
         return;
     }
-
-    m_stations[row].icon = icon;
-
-    const QModelIndex changedIndex = index(row, static_cast<int>(Column::StationColumn));
-
-    emit dataChanged(changedIndex, changedIndex, {Qt::DecorationRole});
+    const auto iconSize = m_view->iconSize();
+    const auto dpr = m_view->devicePixelRatioF();
+    if (m_dpr != dpr || m_iconSize != iconSize) {
+        clearIcons();
+        m_dpr = dpr;
+        m_iconSize = iconSize;
+    }
+    const int first = m_view->rowAt(0);
+    const int bottomRow = m_view->rowAt(m_view->viewport()->height() - 1);
+    const int last = bottomRow < 0 ? size() - 1 : qMin(bottomRow, size() - 1);
+    for (auto it = m_icons.begin(); it != m_icons.end();) {
+        if (first < 0 || it.key() < first || it.key() > last) {
+            m_loader->cancel(it->request);
+            it = m_icons.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    if (first < 0)
+        return;
+    for (int row = first; row <= last; ++row) {
+        const auto &station = m_stations.at(row);
+        if (station.iconUrl.isEmpty() || m_icons.contains(row) || m_view->isRowHidden(row))
+            continue;
+        const QPersistentModelIndex target(index(row, static_cast<int>(Column::StationColumn)));
+        const auto generation = m_generation;
+        const auto request = m_loader->request(QUrl(station.iconUrl), iconSize, dpr, this,
+            [this, target, generation, uuid = station.stationUuid, stream = station.streamUrl,
+             url = station.iconUrl](auto id, const QPixmap &pixmap) {
+                if (!target.isValid() || generation != m_generation)
+                    return;
+                auto entry = m_icons.find(target.row());
+                if (entry == m_icons.end() || entry->request != id)
+                    return;
+                entry->request = 0;
+                const auto &current = m_stations.at(target.row());
+                if (pixmap.isNull() || current.stationUuid != uuid
+                    || current.streamUrl != stream || current.iconUrl != url)
+                    return;
+                entry->icon = QIcon(pixmap);
+                emit dataChanged(target, target, {Qt::DecorationRole});
+            });
+        m_icons.insert(row, {request, {}});
+    }
 }
