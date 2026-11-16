@@ -1,24 +1,25 @@
 #include "include/radiolist.h"
 #include <QCoreApplication>
 #include <QDesktopServices>
-#include <QFile>
+#include <QMenu>
+#include <QMessageBox>
+#include "include/jsonlistprocessor.h"
 #include <QProgressDialog>
 #include <QPersistentModelIndex>
 #include <QTimer>
 #include <QHeaderView>
-#include <QJsonArray>
 #include <QJsonObject>
-#include <QPainter>
-#include <QScrollBar>
 #include <QUrl>
 #include <algorithm>
 #include <utility>
 #include "include/StationDetailsDialog.h"
 
-RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, RadioBrowserApi *catalog)
+RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, RadioBrowserApi *catalog,
+                     PlaybackController *playback)
     : radioStationsModel(new RadioStationsModel{this})
     , ui(ui)
     , m_catalog(catalog ? catalog : new RadioBrowserApi(this))
+    , m_playback(playback ? playback : new PlaybackController(this))
     , m_catalogProgress(new QProgressDialog(ui->centralwidget))
     , radioInfo(ui)
     , favoriteManager{favoriteManager}
@@ -48,16 +49,17 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
 
     connect(ui->treeView, &QTreeView::clicked, this, &RadioList::onTreeViewItemClicked);
 
-    connect(ui->playPause, &QPushButton::clicked, this, &RadioList::onPlayPauseButtonCliced);
-    connect(ui->next, &QPushButton::clicked, this, &RadioList::onNextButtonClicked);
-    connect(ui->previous, &QPushButton::clicked, this, &RadioList::onPrevButtonClicked);
-    connect(ui->stop, &QPushButton::clicked, this, &RadioList::onStopButtonClicked);
-    connect(ui->tableView, &QTableView::clicked, this, &RadioList::onTableViewClicked);
-    connect(ui->tableView, &QTableView::activated, this, &RadioList::tableViewActivated);
+    connect(ui->playPause, &QPushButton::clicked, this, &RadioList::togglePlayback);
+    connect(miniPlayer.getMui()->play, &QPushButton::clicked, this, &RadioList::togglePlayback);
+    connect(ui->next, &QPushButton::clicked, this, [this] { playAdjacentStation(1); });
+    connect(ui->previous, &QPushButton::clicked, this, [this] { playAdjacentStation(-1); });
+    connect(ui->stop, &QPushButton::clicked, m_playback, &PlaybackController::stop);
+    connect(ui->tableView, &QTableView::activated, this, &RadioList::playIndex);
+    connect(ui->tableView, &QTableView::doubleClicked, this, &RadioList::playIndex);
+    connect(m_playback, &PlaybackController::sessionChanged, this, &RadioList::onSessionChanged);
+    connect(radioStationsModel, &RadioStationsModel::modelReset, this, &RadioList::updateStationColoring);
 
-    connect(ui->horizontalVolumeSlider, &QSlider::sliderMoved, this, &RadioList::sliderMoved);
     connect(ui->horizontalVolumeSlider, &QSlider::valueChanged, this, &RadioList::sliderMoved);
-    connect(miniPlayer.getMui()->dial, &QDial::sliderMoved, this, &RadioList::sliderMoved);
     connect(miniPlayer.getMui()->dial, &QDial::valueChanged, this, &RadioList::sliderMoved);
 
     connect(&streamReader, &StreamReader::dataReceived, this, &RadioList::handleDataReceived);
@@ -82,7 +84,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
                 this->ui->statusbar->showMessage(error, 10000);
             });
     connect(QCoreApplication::instance(), &QCoreApplication::aboutToQuit,
-            this, &RadioList::stopStreamServices);
+            m_playback, &PlaybackController::stop);
     updateRecordButton(streamRecorder.state());
     connect(ui->serachInput, &QLineEdit::returnPressed, this, &RadioList::searchStations);
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
@@ -91,13 +93,12 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
 
     //trash header signal
     ui->tableView->setModel(radioStationsModel);
-    header = ui->tableView->horizontalHeader();
+    auto *header = ui->tableView->horizontalHeader();
     header->setSectionResizeMode(QHeaderView::Interactive);
     ui->tableView->verticalHeader()->setDefaultSectionSize(ui->tableView->fontMetrics().height()
                                                            + 2);
-    miniPlayer.setUi(ui);
-    miniPlayer.setRadioList(this);
-    playerUIController.initialize(ui, &miniPlayer);
+    playerUIController.initialize(ui, &miniPlayer, *m_playback);
+    m_playback->setVolume(ui->horizontalVolumeSlider->value());
     ui->tableView->setIconSize(QSize(20, 20));
     radioStationsModel->bindIcons(ui->tableView, &iconLoader);
 
@@ -116,6 +117,8 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
 
 RadioList::~RadioList()
 {
+    if (m_playback)
+        m_playback->stop();
     delete m_catalogProgress;
 }
 
@@ -178,7 +181,7 @@ void RadioList::showCatalogResult(RadioBrowserApi::RequestId id, const RadioBrow
 
 void RadioList::showMiniplayer()
 {
-    miniPlayer.showMiniPlayer();
+    miniPlayer.show();
     int value = ui->horizontalVolumeSlider->value();
     miniPlayer.getMui()->dial->setValue(value);
     mainWindow->hide();
@@ -194,146 +197,50 @@ void RadioList::maximizeWindow()
 
 void RadioList::updateThemeAppearance()
 {
-    clearTableViewColor();
-
-    if (currentPlaylistIndex == Stations::FAVORITE)
-        updateStationColoring();
-    else if (!isStopClicked)
-        setIndexColor(radioIndexNumber);
-
-    if (!playbackController.isPlaying() || !m_hasStationImage) {
-        playerUIController.setDefaultImage();
-    }
+    updateStationColoring();
 }
 
-int RadioList::getCurrentStationIndex() const
+PlaybackController &RadioList::playback() const
 {
-    return currentStationIndex;
+    return *m_playback;
 }
 
-void RadioList::setCurrentStationIndex(int newCurrentStationIndex)
+miniplayer &RadioList::miniPlayerWindow()
 {
-    currentStationIndex = newCurrentStationIndex;
+    return miniPlayer;
 }
 
 const QVector<RadioStation> &RadioList::stations(Stations station) const
 {
-    return allStations[station];
+    static const QVector<RadioStation> empty;
+    return station >= 0 && station < allStations.size() ? allStations.at(station) : empty;
 }
 
-void RadioList::setRadioIndexNumber(int newRadioIndexNumber)
+void RadioList::setMainWindow(QMainWindow *window)
 {
-    radioIndexNumber = newRadioIndexNumber;
-}
-
-Ui::MainWindow *RadioList::getUi() const
-{
-    return ui;
-}
-
-bool RadioList::getIsStopClicked() const
-{
-    return isStopClicked;
-}
-
-void RadioList::setIsStopClicked(bool newIsStopClicked)
-{
-    isStopClicked = newIsStopClicked;
-}
-
-QMainWindow *RadioList::getMainWindow() const
-{
-    return mainWindow;
-}
-
-void RadioList::setMainWindow(QMainWindow *newMainWindow)
-{
-    mainWindow = newMainWindow;
+    mainWindow = window;
 }
 
 void RadioList::setFavoriteLibrary()
 {
+    selectPlaylist(Stations::FAVORITE);
+}
+
+void RadioList::selectPlaylist(Stations station)
+{
     const auto *model = ui->treeView->model();
     if (!model)
         return;
-    const QModelIndex radioBrowserIndex = model->index(0, 0);
-    const QModelIndex favoriteIndex = model->index(3, 0, radioBrowserIndex);
-    if (!favoriteIndex.isValid())
+    const auto index = model->index(station, 0, model->index(0, 0));
+    if (!index.isValid())
         return;
-
-    isTreeClicked = true;
-    item = FAVORITE;
-    if (currentPlaylistIndex != Stations::FAVORITE)
-        switchToPlaylist(Stations::FAVORITE);
-    ui->treeView->selectionModel()->select(favoriteIndex, QItemSelectionModel::ClearAndSelect);
-    updateStationColoring();
-}
-
-bool RadioList::getIsSearchTablelDoubleCliced() const
-{
-    return isSearchTablelDoubleCliced;
-}
-
-void RadioList::setIsSearchTablelDoubleCliced(bool newIsSearchTablelDoubleCliced)
-{
-    isSearchTablelDoubleCliced = newIsSearchTablelDoubleCliced;
-}
-
-QString RadioList::getTreeItem() const
-{
-    return treeItem;
-}
-
-int RadioList::getRadioIndexNumber() const
-{
-    return radioIndexNumber;
-}
-
-QString RadioList::getItem() const
-{
-    return item;
-}
-
-void RadioList::setIsTreeClicked(bool newIsTreeClicked)
-{
-    isTreeClicked = newIsTreeClicked;
-}
-
-void RadioList::onTrayViewItemClicked(const QModelIndex &index)
-{
-    if (index.isValid()) {
-        onTreeViewItemClicked(index);
-    } else {
-        qDebug() << "Wrong index.";
-    }
-}
-
-void RadioList::onTrayClickedandPlay(const QModelIndex &index)
-{
-    onTableViewDoubleClicked(index);
-}
-
-bool RadioList::getIsBrowseStationLoaded() const
-{
-    return isBrowseStationLoaded;
-}
-
-void RadioList::setIsBrowseStationLoaded(bool newIsBrowseStationLoaded)
-{
-    isBrowseStationLoaded = newIsBrowseStationLoaded;
+    ui->treeView->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect);
+    onTreeViewItemClicked(index);
 }
 
 StreamRecorder &RadioList::getStreamRecorder()
 {
     return streamRecorder;
-}
-
-void RadioList::updateFavoriteColumnLayout()
-{
-    header->setSectionResizeMode(QHeaderView::Interactive);
-
-    if (item == FAVORITE)
-        ui->tableView->setColumnWidth(1, 16);
 }
 
 void RadioList::applyFavoritePlaylist(QVector<RadioStation> stations)
@@ -344,12 +251,10 @@ void RadioList::applyFavoritePlaylist(QVector<RadioStation> stations)
 
     if (currentPlaylistIndex == Stations::FAVORITE) {
         radioStationsModel->setStations(allStations[Stations::FAVORITE]);
-        updateStationColoring();
     }
 
-    const bool active = playbackController.isPlaying() || playbackController.isPaused();
-    const auto &station = country.getIsPlaying() ? country.getCurrentStation() : currentPlayingStation;
-    playerUIController.setFavorite(active && isFavorite(station));
+    const auto &station = m_playback->station();
+    playerUIController.setFavorite(m_playback->hasActiveSession() && station && isFavorite(*station));
 }
 
 void RadioList::setTopListOnStart()
@@ -375,34 +280,20 @@ void RadioList::loadAllData()
     requestPlaylist(Stations::NEW, false);
 }
 
-auto checkItem = [](const QString &item, const QString &target) { return item == target; };
-
-//Main function
 void RadioList::onTreeViewItemClicked(const QModelIndex &index)
 {
     if (!index.isValid() || !index.parent().isValid())
         return;
-    isTreeClicked = true;
-    item = index.data().toString();
 
-    if (checkItem(item, LIBRARY_TREE))
-        return;
-
-    if (checkItem(item, "Top"))
+    const auto name = index.data().toString();
+    if (name == "Top")
         switchToPlaylist(Stations::TOP);
-    else if (checkItem(item, "Popular"))
+    else if (name == "Popular")
         switchToPlaylist(Stations::POPULAR);
-    else if (checkItem(item, "New"))
+    else if (name == "New")
         switchToPlaylist(Stations::NEW);
-    else if (checkItem(item, "Favorite"))
+    else if (name == "Favorite")
         switchToPlaylist(Stations::FAVORITE);
-    updateStationColoring();
-}
-
-void RadioList::resetTreeItemIfSearch()
-{
-    if (this->treeItem == "Search")
-        this->treeItem = "";
 }
 
 void RadioList::switchToPlaylist(Stations station)
@@ -410,7 +301,6 @@ void RadioList::switchToPlaylist(Stations station)
     cancelSearch();
     for (auto id : m_playlistRequests)
         hideCatalogProgress(id);
-    resetTreeItemIfSearch();
     currentPlaylistIndex = station;
     displayPlaylist();
     if (station <= Stations::NEW)
@@ -419,35 +309,17 @@ void RadioList::switchToPlaylist(Stations station)
 
 void RadioList::updateStationColoring()
 {
-    if (currentPlaylistIndex == Stations::FAVORITE) {
-        clearTableViewColor();
-        if (currentPlayListPlaying == Stations::FAVORITE && playbackController.isPlaying()
-            && !country.getIsPlaying()) {
-            const auto &favorites = allStations[Stations::FAVORITE];
-            const auto selected = std::find_if(favorites.cbegin(), favorites.cend(), [this](const auto &entry) {
-                return FavoriteManager::sameStation(currentPlayingStation, entry);
-            });
-            if (selected != favorites.cend())
-                setIndexColor(static_cast<int>(selected - favorites.cbegin()));
-        }
+    if (!theme || !m_playback)
         return;
+    if (!customColor) {
+        customColor = new CustomColorDelegate(-1, theme->playingRowColor(), this);
+        ui->tableView->setItemDelegate(customColor);
     }
-
-    if (currentPlayListPlaying == currentPlaylistIndex) {
-        if (playbackController.isPlaying())
-            setIndexColor(radioIndexNumber);
-    } else {
-        // Clear the color-marked station when changing tree items.
-        if (customColor)
-            customColor->clearRowColor();
-    }
-}
-//end
-
-void RadioList::prepareStationChange(const QUrl &url)
-{
-    streamRecorder.stopRecording();
-    streamReader.startStreaming(url);
+    const auto &station = m_playback->station();
+    const int row = m_playback->hasActiveSession() && station
+        ? radioStationsModel->rowForStation(*station) : -1;
+    customColor->setPlayingRow(row, theme->playingRowColor());
+    ui->tableView->viewport()->update();
 }
 
 bool RadioList::isFavorite(const RadioStation &station) const
@@ -472,47 +344,60 @@ void RadioList::setFavorite(const RadioStation &station, bool favorite)
     applyFavoritePlaylist(std::move(updated));
 }
 
-void RadioList::playSelectedStation(int radioNumber)
-{
-    if (radioNumber < 0 || radioNumber >= radioStationsModel->size())
-        return;
-    radioIndexCurrentPlaying = radioNumber;
-    currentPlayListPlaying = currentPlaylistIndex;
-
-    currentPlayingStation = radioStationsModel->station(radioNumber);
-    currentRadioPlayingAddress = currentPlayingStation.streamUrl;
-
-    playerUIController.setFavorite(isFavorite(currentPlayingStation));
-    const QUrl streamUrl(currentRadioPlayingAddress);
-    prepareStationChange(streamUrl);
-    playbackController.play(streamUrl);
-    loadPlayingStationDetails(currentPlayingStation);
-}
-
 void RadioList::setTheme(Theme *newTheme)
 {
     theme = newTheme;
+    updateStationColoring();
 }
 
-void RadioList::sliderMoved(int move)
+void RadioList::sliderMoved(int volume)
 {
-    playbackController.setVolume(move);
-    playerUIController.setVolumeIcon(move);
+    m_playback->setVolume(volume);
+    playerUIController.setVolumeIcon(volume);
+}
+
+void RadioList::onSessionChanged()
+{
+    stopStreamServices();
+    clearPlayingStationDetails();
+    m_trackTitle.clear();
+    playerUIController.clearMetadata();
+    playerUIController.setDefaultImage();
+
+    if (!m_playbackStatus.isEmpty() && ui->statusbar->currentMessage() == m_playbackStatus)
+        ui->statusbar->clearMessage();
+    m_playbackStatus.clear();
+
+    const auto &station = m_playback->station();
+    const bool active = m_playback->hasActiveSession() && station.has_value();
+    playerUIController.setFavorite(active && isFavorite(*station));
+    updateStationColoring();
+    if (active) {
+        const auto current = *station;
+        streamReader.startStreaming(m_playback->streamUrl(), m_playback->generation());
+        loadPlayingStationDetails(current);
+    } else if (m_playback->state() == PlaybackController::State::Error) {
+        if (station)
+            radioInfo.showStation(*station);
+        m_playbackStatus = station
+            ? tr("Playback failed for %1: %2").arg(station->station, m_playback->lastError())
+            : tr("Playback failed: %1").arg(m_playback->lastError());
+        ui->statusbar->showMessage(m_playbackStatus, 10000);
+    }
 }
 
 void RadioList::loadPlayingStationDetails(const RadioStation &station)
 {
-    clearPlayingStationDetails();
     radioInfo.showStation(station);
-    playerUIController.setDefaultImage();
+    const auto generation = m_playback->generation();
     m_imageRequest = iconLoader.request(QUrl(station.iconUrl), QSize(120, 120),
-        ui->infoLabel->devicePixelRatioF(), this, [this](auto id, const QPixmap &image) {
-            if (id != m_imageRequest)
+        ui->infoLabel->devicePixelRatioF(), this, [this, generation](auto id, const QPixmap &image) {
+            if (id != m_imageRequest || generation != m_playback->generation())
                 return;
             m_imageRequest = 0;
             if (!image.isNull()) {
-                m_hasStationImage = true;
                 playerUIController.setStationImage(image);
+                emit stationImageChanged();
             }
         });
 
@@ -523,8 +408,8 @@ void RadioList::loadPlayingStationDetails(const RadioStation &station)
     } else {
         endpoint = QUrl("json/stations/byuuid/" + station.stationUuid.toString(QUuid::WithoutBraces));
     }
-    m_detailsRequest = m_catalog->request(endpoint, this, [this, station](auto id, const auto &result) {
-        if (id != m_detailsRequest)
+    m_detailsRequest = m_catalog->request(endpoint, this, [this, station, generation](auto id, const auto &result) {
+        if (id != m_detailsRequest || generation != m_playback->generation())
             return;
         m_detailsRequest = 0;
         showCatalogResult(id, result);
@@ -553,207 +438,75 @@ void RadioList::clearPlayingStationDetails()
     hideCatalogProgress(id);
     m_catalog->cancel(id);
     iconLoader.cancel(std::exchange(m_imageRequest, 0));
-    m_hasStationImage = false;
     m_detailsCodec.clear();
     radioInfo.clearInfo();
 }
 
-void RadioList::onTableViewDoubleClicked(const QModelIndex &index)
+void RadioList::playIndex(const QModelIndex &index)
 {
-    if (!index.isValid() || index.row() < 0 || index.row() >= radioStationsModel->size())
+    if (index.isValid() && index.model() == radioStationsModel
+        && index.row() >= 0 && index.row() < radioStationsModel->size()) {
+        m_playback->play(radioStationsModel->station(index.row()));
+    }
+}
+
+QTableView *RadioList::currentStationView() const
+{
+    return ui->tabRadioListWidget->currentWidget() == ui->listCountries
+        ? ui->tableOfCoutries : ui->tableView;
+}
+
+void RadioList::togglePlayback()
+{
+    if (m_playback->hasActiveSession() || m_playback->state() == PlaybackController::State::Error) {
+        m_playback->toggle();
         return;
+    }
 
-    radioIndexNumber = index.row();
-    currentStationIndex = index.row();
-    playSelectedStation(radioIndexNumber);
-    clearTableViewColor();
-    country.clearTableColor();
-    country.setIsPlaying(false);
-    country.setCurrentIndexPlaying(-1);
-    setIndexColor(radioIndexNumber);
-    setIsBrowseStationLoaded(true);
-    playerUIController.setPauseIcon();
-    isStopClicked = false;
-    playerUIController.clearMetadata();
-    setIsSearchTablelDoubleCliced(treeItem == "Search");
-}
-
-//Main function
-void RadioList::onPlayPauseButtonCliced()
-{
-    if (!isTreeClicked && !playbackController.isPlaying() && !playbackController.isPaused())
+    const auto *view = currentStationView();
+    const auto *model = qobject_cast<RadioStationsModel *>(view->model());
+    if (!model || model->isEmpty())
         return;
-
-    if (playbackController.isPlaying()) {
-        playbackController.pause();
-    } else if (playbackController.isPaused()) {
-        playbackController.resume();
-    } else if (country.getCurrentIndexPlaying() != -1) {
-        playCountryStream();
-
-    } else if (currentRadioPlayingAddress.isEmpty() && !radioStationsModel->isEmpty()) {
-        startRadioBrowserStream();
-
-    } else if (playbackController.isAvailable()) {
-        playbackController.resume();
-    } else if (ui->tableView->currentIndex().isValid()) {
-        playSelectedStation(ui->tableView->currentIndex().row());
-    }
-
-    if (currentPlayListPlaying == currentPlaylistIndex)
-        setIndexColor(radioIndexNumber);
-
-    updatePlayPauseIcons();
-    setIsBrowseStationLoaded(playbackController.isPlaying() || playbackController.isPaused());
-    switchToDefaultTabIfNoCountryStationPlaying();
-    if (playbackController.isPlaying())
-        isStopClicked = false;
+    const auto index = view->currentIndex();
+    const int selected = index.isValid() && index.model() == model ? index.row() : 0;
+    if (selected >= 0 && selected < model->size())
+        m_playback->toggle(model->station(selected));
 }
 
-void RadioList::stopRadioBrowserStream()
+void RadioList::playAdjacentStation(int offset)
 {
-    stopStreamServices();
-    playbackController.stop();
-}
-
-void RadioList::returnRadioBrowserToPlay()
-{
-    playbackController.resume();
-}
-
-void RadioList::playCountryStream()
-{
-    playbackController.resume();
-    country.setIsPlaying(true);
-}
-
-void RadioList::startRadioBrowserStream()
-{
-    if (radioIndexNumber < 0 || radioIndexNumber >= radioStationsModel->size())
-        radioIndexNumber = 0;
-    playSelectedStation(radioIndexNumber);
-
-    const QModelIndex newIndex = ui->tableView->model()->index(radioIndexNumber, 0);
-    ui->tableView->setCurrentIndex(newIndex);
-
-    country.setCurrentIndexPlaying(-1);
-    country.setIsPlaying(false);
-}
-
-void RadioList::updatePlayPauseIcons() {
-    if (playbackController.isPlaying())
-        playerUIController.setPauseIcon();
-    else
-        playerUIController.setPlayIcon();
-}
-
-void RadioList::switchToDefaultTabIfNoCountryStationPlaying()
-{
-    if (!country.getIsPlaying() && country.getCurrentIndexPlaying() == -1)
-        ui->tabRadioListWidget->setCurrentIndex(0);
-}
-
-//End
-
-// Not use for now
-void RadioList::onNextButtonClicked()
-{
-    if (playbackController.isPlaying() && radioIndexNumber < radioStationsModel->size() - 1) {
-        ++radioIndexNumber;
-        clearTableViewColor();
-        setIndexColor(radioIndexNumber);
-        playSelectedStation(radioIndexNumber);
-    }
-}
-
-// Not use for now
-void RadioList::onPrevButtonClicked()
-{
-    if (playbackController.isPlaying() && radioIndexNumber > 0) {
-        --radioIndexNumber;
-        playSelectedStation(radioIndexNumber);
-
-        clearTableViewColor();
-        setIndexColor(radioIndexNumber);
-    }
-}
-
-void RadioList::clearTableViewColor()
-{
-    if (customColor) {
-        customColor->clearRowColor();
-        ui->tableView->update();
-    }
-}
-
-void RadioList::onStopButtonClicked()
-{
-    stopStreamServices();
-    clearPlayingStationDetails();
-    if (!playbackController.isPlaying() && !playbackController.isPaused())
+    const auto &station = m_playback->station();
+    if (!m_playback->hasActiveSession() || !station)
         return;
-
-    isStopClicked = true;
-
-    playerUIController.setPlayIcon();
-
-    playbackController.stop();
-
-    currentRadioPlayingAddress.clear();
-    playerUIController.setFavorite(false);
-
-    playerUIController.setDefaultImage();
-    playerUIController.clearMetadata();
-
-    const QModelIndex newIndex = ui->tableView->model()->index(0, 0);
-    ui->tableView->setCurrentIndex(newIndex);
-
-    radioIndexNumber = 0;
-
-    clearTableViewColor();
-
-    setIsBrowseStationLoaded(false);
-
-    country.clearTableColor();
-    country.setCurrentIndexPlaying(-1);
-    country.setIsPlaying(false);
-}
-
-// Not use now
-void RadioList::onTableViewClicked(const QModelIndex &index)
-{
-    qDebug() << this->radioIndexNumber;
-}
-
-void RadioList::tableViewActivated(const QModelIndex &index)
-{
-    onTableViewDoubleClicked(index);
+    const auto *model = qobject_cast<RadioStationsModel *>(currentStationView()->model());
+    if (!model)
+        return;
+    const int current = model->rowForStation(*station);
+    if (current >= 0 && current + offset >= 0 && current + offset < model->size())
+        m_playback->play(model->station(current + offset));
 }
 
 void RadioList::addRadioToFavorite()
 {
-    if (country.getIsPlaying()) {
-        const auto &station = country.getCurrentStation();
-        setFavorite(station, !isFavorite(station));
-    } else if (playbackController.isPlaying()) {
-        setFavorite(currentPlayingStation, !isFavorite(currentPlayingStation));
-    }
+    const auto &station = m_playback->station();
+    if (m_playback->hasActiveSession() && station)
+        setFavorite(*station, !isFavorite(*station));
 }
 
-void RadioList::handleDataReceived(const QString &data)
+void RadioList::handleDataReceived(quint64 generation, const QString &data)
 {
-    QString metaData = data;
-    int titleStart = metaData.indexOf("StreamTitle='");
-    int titleEnd = metaData.indexOf("';", titleStart);
-
-    if (titleStart != -1 && titleEnd != -1) {
-        QString title = metaData.mid(titleStart + 13, titleEnd - (titleStart + 13));
-        qDebug() << title;
-        playerUIController.setMetadata(title);
-        emit trackTitleReceived(title);
-        emit sendTitleToTray(title);
-    }
-    //metaData = "";
+    if (generation != m_playback->generation() || !m_playback->hasActiveSession())
+        return;
+    const int start = data.indexOf("StreamTitle='");
+    const int end = data.indexOf("';", start);
+    if (start < 0 || end < 0)
+        return;
+    const QString title = data.mid(start + 13, end - (start + 13));
+    if (title == m_trackTitle)
+        return;
+    m_trackTitle = title;
+    playerUIController.setMetadata(title);
+    emit trackTitleReceived(title);
 }
 
 void RadioList::startStopRecord()
@@ -763,16 +516,13 @@ void RadioList::startStopRecord()
         return;
     }
 
-    if (!playbackController.isPlaying()) {
+    const auto &station = m_playback->station();
+    if (m_playback->state() != PlaybackController::State::Playing || !station) {
         ui->statusbar->showMessage(tr("Play a station to start recording."), 5000);
         return;
     }
-
-    const auto &station = country.getIsPlaying() ? country.getCurrentStation() : currentPlayingStation;
-    QString codec = station.codec;
-    if (codec.isEmpty())
-        codec = m_detailsCodec;
-    streamRecorder.startRecording(QUrl(station.streamUrl), station.station, codec);
+    const auto codec = station->codec.isEmpty() ? m_detailsCodec : station->codec;
+    streamRecorder.startRecording(m_playback->streamUrl(), station->station, codec);
 }
 
 void RadioList::updateRecordButton(StreamRecorder::State state)
@@ -824,7 +574,8 @@ void RadioList::requestPlaylist(Stations station, bool showProgress)
         });
     }
     if (showProgress)
-        showCatalogProgress(request, tr("Loading %1 stations…").arg(item));
+        showCatalogProgress(request, tr("Loading %1 stations…").arg(ui->treeView->model()->index(
+            station, 0, ui->treeView->model()->index(0, 0)).data().toString()));
 }
 
 void RadioList::displayPlaylist()
@@ -833,7 +584,6 @@ void RadioList::displayPlaylist()
         return;
     m_playlistDisplayPending = false;
     radioStationsModel->setStations(allStations[currentPlaylistIndex]);
-    updateStationColoring();
 }
 
 void RadioList::cancelSearch()
@@ -853,8 +603,6 @@ void RadioList::searchStations()
         allStations.resize(Stations::SEARCH + 1);
     allStations[Stations::SEARCH].clear();
     currentPlaylistIndex = Stations::SEARCH;
-    treeItem = "Search";
-    item = "Search";
     ui->tabRadioListWidget->setCurrentIndex(0);
     displayPlaylist();
 
@@ -871,20 +619,6 @@ void RadioList::searchStations()
         }
     });
     showCatalogProgress(m_searchRequest, tr("Searching Radio Browser…"));
-}
-
-void RadioList::setIndexColor(int row)
-{
-    if (row < 0 || row >= radioStationsModel->size())
-        return;
-
-    if (!theme)
-        return;
-
-    customColor.reset(new CustomColorDelegate(row, theme->playingRowColor(), this));
-
-    ui->tableView->setItemDelegate(customColor.get());
-    ui->tableView->viewport()->update();
 }
 
 void RadioList::showStationContextMenu(const QPoint &position)
@@ -904,10 +638,10 @@ void RadioList::showStationContextMenu(const QPoint &position)
 
     QMenu menu(ui->tableView);
 
-    const bool isCurrentStationPlaying = playbackController.isPlaying() && !country.getIsPlaying()
-                                         && station.streamUrl == currentPlayingStation.streamUrl;
+    const bool activeStation = m_playback->hasActiveSession() && m_playback->matches(station);
+    const auto generation = m_playback->generation();
 
-    QAction *playAction = menu.addAction(isCurrentStationPlaying ? tr("Stop") : tr("Play"));
+    QAction *playAction = menu.addAction(activeStation ? tr("Stop") : tr("Play"));
 
     const bool favorite = isFavorite(station);
 
@@ -927,26 +661,11 @@ void RadioList::showStationContextMenu(const QPoint &position)
         return;
 
     if (selectedAction == playAction) {
-        if (isCurrentStationPlaying) {
-            stopRadioBrowserStream();
-
-            currentRadioPlayingAddress.clear();
-            playerUIController.setFavorite(false);
-
-            playerUIController.setPlayIcon();
-            playerUIController.setDefaultImage();
-            playerUIController.clearMetadata();
-
-            clearTableViewColor();
-            clearPlayingStationDetails();
-
-            setIsBrowseStationLoaded(false);
-            setIsStopClicked(true);
-        } else {
-            radioIndexNumber = index.row();
-            currentStationIndex = index.row();
-
-            onTableViewDoubleClicked(index);
+        if (activeStation) {
+            if (m_playback->generation() == generation && m_playback->matches(station))
+                m_playback->stop();
+        } else if (index.isValid()) {
+            m_playback->play(station);
         }
 
         return;

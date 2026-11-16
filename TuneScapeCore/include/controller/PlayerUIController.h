@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QPixmap>
 class miniplayer;
+class PlaybackController;
 namespace Ui {
 class MainWindow;
 }
@@ -12,8 +13,6 @@ class PlayerUIController : public QObject
     Q_OBJECT
 public:
     explicit PlayerUIController() = default;
-    void setPlayIcon();
-    void setPauseIcon();
 
     void setDefaultImage();
     void setStationImage(const QPixmap &);
@@ -22,13 +21,13 @@ public:
     void clearMetadata();
 
     void setFavorite(bool isFavorite);
-    void showDefaultImage();
 
     void setVolumeIcon(int volume);
 
-    void initialize(Ui::MainWindow *ui, miniplayer *miniPlayer);
+    void initialize(Ui::MainWindow *ui, miniplayer *miniPlayer, PlaybackController &playback);
 
 private:
+    void updatePlaybackControls(bool canPause);
     Ui::MainWindow *m_ui = nullptr;
     miniplayer *m_miniPlayer = nullptr;
 };

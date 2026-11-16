@@ -38,7 +38,7 @@ private:
     Ui::MainWindow *ui;
     RadioExplorer *radioExplorer;
     RadioList *radioList;
-    Country &country = SingletonContainer::getSingleton().getInstance<Country>();
+    Country country;
     QDialog *licenseDialog;
     QLabel *licenseLabel;
     QLabel *aboutTuneScape;
@@ -49,10 +49,7 @@ private:
     FavoriteManager *favoriteManager;
     Theme &m_theme;
 
-    music_data::MusicBrainzClient *m_musicBrainzCient;
     music_data::ResolverService *m_resolverService;
-    music_data::CoverArtClient *m_coverArtClient;
-    music_data::ExternalLinksClient *m_externalLinksClient;
 
     void set_icon_btn();
     void start();

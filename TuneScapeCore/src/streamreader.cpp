@@ -2,7 +2,6 @@
 
 #include <QNetworkReply>
 #include <QNetworkRequest>
-#include <utility>
 
 StreamReader::StreamReader(QObject *parent)
     : QObject(parent)
@@ -13,7 +12,7 @@ StreamReader::~StreamReader()
     stopStreaming();
 }
 
-void StreamReader::startStreaming(const QUrl &url)
+void StreamReader::startStreaming(const QUrl &url, quint64 generation)
 {
     stopStreaming();
     if (!url.isValid() || url.isEmpty())
@@ -24,9 +23,11 @@ void StreamReader::startStreaming(const QUrl &url)
     auto *reply = m_manager.get(request);
     m_reply = reply;
 
-    connect(reply, &QNetworkReply::readyRead, this, [this, reply] { readAvailable(reply); });
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
-        readAvailable(reply);
+    connect(reply, &QNetworkReply::readyRead, this, [this, reply, generation] {
+        readAvailable(reply, generation);
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, generation] {
+        readAvailable(reply, generation);
         if (m_reply == reply)
             stopStreaming();
     });
@@ -34,7 +35,9 @@ void StreamReader::startStreaming(const QUrl &url)
 
 void StreamReader::stopStreaming()
 {
-    if (auto *reply = std::exchange(m_reply, nullptr)) {
+    auto *reply = m_reply.data();
+    m_reply.clear();
+    if (reply) {
         disconnect(reply, nullptr, this, nullptr);
         if (!reply->isFinished())
             reply->abort();
@@ -42,12 +45,12 @@ void StreamReader::stopStreaming()
     }
 }
 
-void StreamReader::readAvailable(QNetworkReply *reply)
+void StreamReader::readAvailable(QNetworkReply *reply, quint64 generation)
 {
     if (m_reply != reply || reply->error() != QNetworkReply::NoError)
         return;
 
     const QByteArray data = reply->readAll();
     if (!data.isEmpty())
-        emit dataReceived(QString::fromUtf8(data));
+        emit dataReceived(generation, QString::fromUtf8(data));
 }

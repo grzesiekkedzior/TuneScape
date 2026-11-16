@@ -6,8 +6,10 @@
 #include <QLockFile>
 #include <QMainWindow>
 #include <QMenu>
+#include <QMessageBox>
 #include <QNetworkProxy>
 #include <QProgressDialog>
+#include <QStandardItemModel>
 #include <QTableView>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -15,6 +17,11 @@
 #include <QTimer>
 #include <QtTest>
 #include "include/AppConfig.h"
+#include "include/Country.h"
+#include "include/jsonlistprocessor.h"
+#include "include/trayicon.h"
+#include "include/music_data/models/Track.h"
+#include "include/view/TrackView.h"
 #include "include/RadioBrowserApi.h"
 #include "include/miniplayer.h"
 #include "include/radioexplorer.h"
@@ -132,6 +139,44 @@ private:
     qint64 remaining;
 };
 
+class ControlledAudio : public RadioAudioManager
+{
+public:
+    struct Attempt { QUrl url; quint64 id; };
+
+    void start(const QUrl &url, quint64 id) override
+    {
+        attempts.append({url, id});
+        active = id;
+    }
+
+    void stop() override
+    {
+        if (active)
+            ++stops;
+        active = 0;
+    }
+
+    void confirmPlaying()
+    {
+        emit mediaStatusChanged(active, QMediaPlayer::BufferedMedia);
+        emit playbackStateChanged(active, QMediaPlayer::PlayingState);
+    }
+
+    QList<Attempt> attempts;
+    quint64 active = 0;
+    int stops = 0;
+};
+
+RadioStation playbackStation(const QString &name, const QUrl &url)
+{
+    RadioStation station;
+    station.station = name;
+    station.streamUrl = url.toString();
+    station.codec = "MP3";
+    return station;
+}
+
 bool writeFixture(const QString &path, const QByteArray &bytes)
 {
     QFile file(path);
@@ -162,6 +207,14 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
     void testRadioListPause();
+    void testPlaybackSwitchAndStop_data();
+    void testPlaybackSwitchAndStop();
+    void testPlaybackErrors_data();
+    void testPlaybackErrors();
+    void testPlaybackStallAndSystemWake();
+    void testPlaybackModelIdentity();
+    void testPlaybackViewsAndTray();
+    void testPlaybackShutdownFinalizesRecording();
     void testJsonListProcessorConnection();
     void testJsonListProcessorStationLoaded();
     void testCatalogResponseErrors_data();
@@ -240,21 +293,353 @@ void TuneScapeTests::cleanupTestCase()
 
 void TuneScapeTests::testRadioListPause()
 {
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
     QMainWindow window;
     Ui::MainWindow ui;
     ui.setupUi(&window);
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites);
-    radioList.setIsTreeClicked(true);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList radioList(&ui, &favorites, &api, &playback);
+    using State = PlaybackController::State;
+    QSignalSpy states(&playback, &PlaybackController::stateChanged);
+    QSignalSpy sessions(&playback, &PlaybackController::sessionChanged);
+    const auto station = playbackStation("Station", http.url("/metadata"));
 
-    auto &playback = SingletonContainer::getSingleton().getInstance<PlaybackController>();
-    playback.stop();
-    playback.setPlaying(true);
+    radioList.radioStationsModel->setStations({station});
     ui.playPause->click();
+    QCOMPARE(playback.state(), State::Connecting);
+    audio.confirmPlaying();
+    QCOMPARE(playback.state(), State::Playing);
+    radioList.miniPlayerWindow().getMui()->play->click();
+    QCOMPARE(playback.state(), State::Paused);
+    QCOMPARE(playback.streamUrl(), QUrl(station.streamUrl));
+    QCOMPARE(audio.stops, 1);
 
-    QVERIFY(playback.isPaused());
-    QVERIFY(!playback.isPlaying());
+    ui.playPause->click();
+    QCOMPARE(playback.state(), State::Connecting);
+    QCOMPARE(audio.attempts.size(), 2);
+    QCOMPARE(audio.attempts.last().url, QUrl(station.streamUrl));
+    QCOMPARE(sessions.size(), 1);
+    audio.confirmPlaying();
+    ui.stop->click();
+    QCOMPARE(playback.state(), State::Stopped);
+    QCOMPARE(states.size(), 6);
+    QCOMPARE(sessions.size(), 2);
+    QVERIFY(!playback.station());
+}
+
+void TuneScapeTests::testPlaybackSwitchAndStop_data()
+{
+    QTest::addColumn<bool>("switchStation");
+    QTest::addColumn<bool>("confirmNewStation");
+    QTest::newRow("play-stop") << false << true;
+    QTest::newRow("play-a-play-b") << true << true;
+    QTest::newRow("quick-a-b-stop") << true << false;
+}
+
+void TuneScapeTests::testPlaybackSwitchAndStop()
+{
+    QFETCH(bool, switchStation);
+    QFETCH(bool, confirmNewStation);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    using State = PlaybackController::State;
+    QSignalSpy sessions(&playback, &PlaybackController::sessionChanged);
+    QSignalSpy states(&playback, &PlaybackController::stateChanged);
+    auto first = playbackStation("A", QUrl("http://127.0.0.1/shared"));
+    first.stationUuid = QUuid::createUuid();
+    auto second = first;
+    second.station = "B";
+    second.stationUuid = QUuid::createUuid();
+
+    QCOMPARE(playback.state(), State::Idle);
     playback.stop();
+    QCOMPARE(sessions.size(), 0);
+    playback.play(first);
+    QCOMPARE(playback.state(), State::Connecting);
+    const auto originalAttempt = audio.active;
+    const auto originalGeneration = playback.generation();
+    playback.play(first);
+    QCOMPARE(audio.attempts.size(), 1);
+    QCOMPARE(playback.generation(), originalGeneration);
+    if (switchStation) {
+        playback.play(second);
+        QCOMPARE(playback.state(), State::Connecting);
+        QVERIFY(playback.generation() > originalGeneration);
+        QCOMPARE(playback.station()->stationUuid, second.stationUuid);
+        emit audio.playbackError(originalAttempt, "Obsolete error");
+        emit audio.mediaStatusChanged(originalAttempt, QMediaPlayer::EndOfMedia);
+        emit audio.playbackStateChanged(originalAttempt, QMediaPlayer::PlayingState);
+        QCOMPARE(playback.state(), State::Connecting);
+        QVERIFY(playback.lastError().isEmpty());
+    }
+    const auto currentAttempt = audio.active;
+    if (confirmNewStation) {
+        emit audio.playbackStateChanged(currentAttempt, QMediaPlayer::PlayingState);
+        QCOMPARE(playback.state(), State::Connecting);
+        emit audio.mediaStatusChanged(currentAttempt, QMediaPlayer::BufferedMedia);
+        QCOMPARE(playback.state(), State::Playing);
+    }
+    playback.stop();
+    playback.stop();
+    emit audio.playbackError(currentAttempt, "Error after Stop");
+    emit audio.mediaStatusChanged(currentAttempt, QMediaPlayer::BufferedMedia);
+    QCOMPARE(playback.state(), State::Stopped);
+    QVERIFY(!playback.station());
+    QVERIFY(playback.streamUrl().isEmpty());
+    QCOMPARE(audio.active, 0);
+    QCOMPARE(audio.stops, switchStation ? 2 : 1);
+    QCOMPARE(sessions.size(), switchStation ? 3 : 2);
+    QCOMPARE(states.last().first().value<State>(), State::Stopped);
+}
+
+void TuneScapeTests::testPlaybackErrors_data()
+{
+    QTest::addColumn<int>("phase");
+    QTest::addColumn<QString>("message");
+    using State = PlaybackController::State;
+    QTest::newRow("connecting-resource-error") << int(State::Connecting) << QString("Stream unavailable");
+    QTest::newRow("buffering-decoder-error") << int(State::Buffering) << QString("Unsupported codec");
+    QTest::newRow("playing-network-error") << int(State::Playing) << QString("Connection lost");
+}
+
+void TuneScapeTests::testPlaybackErrors()
+{
+    QFETCH(int, phase);
+    QFETCH(QString, message);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    using State = PlaybackController::State;
+    QSignalSpy sessions(&playback, &PlaybackController::sessionChanged);
+    QSignalSpy states(&playback, &PlaybackController::stateChanged);
+    const auto station = playbackStation("Faulty", QUrl("http://127.0.0.1/faulty"));
+    playback.play(station);
+    if (phase == int(State::Buffering))
+        emit audio.mediaStatusChanged(audio.active, QMediaPlayer::BufferingMedia);
+    if (phase == int(State::Playing))
+        audio.confirmPlaying();
+    QCOMPARE(int(playback.state()), phase);
+    const auto attempt = audio.active;
+    emit audio.playbackError(attempt, message);
+    QCOMPARE(playback.state(), State::Error);
+    QCOMPARE(playback.lastError(), message);
+    QCOMPARE(playback.streamUrl(), QUrl(station.streamUrl));
+    QVERIFY(!playback.hasActiveSession());
+    QCOMPARE(audio.active, 0);
+    QCOMPARE(sessions.size(), 2);
+    QCOMPARE(states.last().first().value<State>(), State::Error);
+
+    playback.toggle();
+    QCOMPARE(playback.state(), State::Connecting);
+    QVERIFY(playback.lastError().isEmpty());
+    QVERIFY(audio.active != attempt);
+    emit audio.playbackError(attempt, "Late error during retry");
+    audio.confirmPlaying();
+    QCOMPARE(playback.state(), State::Playing);
+}
+
+void TuneScapeTests::testPlaybackStallAndSystemWake()
+{
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    using State = PlaybackController::State;
+    const auto station = playbackStation("Radio", QUrl("http://127.0.0.1/live"));
+    playback.play(station);
+    audio.confirmPlaying();
+    const auto original = audio.active;
+    const auto generation = playback.generation();
+    emit audio.mediaStatusChanged(original, QMediaPlayer::StalledMedia);
+    QCOMPARE(playback.state(), State::Buffering);
+    emit audio.mediaStatusChanged(original, QMediaPlayer::BufferingMedia);
+    QCOMPARE(playback.state(), State::Playing);
+    emit audio.systemSuspended();
+    QCOMPARE(playback.state(), State::Connecting);
+    QCOMPARE(audio.active, 0);
+    emit audio.playbackError(original, "Stale during system sleep");
+    emit audio.systemResumed();
+    emit audio.systemResumed();
+    QCOMPARE(audio.attempts.size(), 2);
+    QCOMPARE(playback.generation(), generation);
+    audio.confirmPlaying();
+    emit audio.systemSuspended();
+    playback.pause();
+    emit audio.systemResumed();
+    QCOMPARE(playback.state(), State::Paused);
+    QCOMPARE(audio.attempts.size(), 2);
+    playback.resume();
+    audio.confirmPlaying();
+    emit audio.playbackStateChanged(audio.active, QMediaPlayer::StoppedState);
+    QTRY_COMPARE(playback.state(), State::Error);
+    QVERIFY(!playback.lastError().isEmpty());
+}
+
+void TuneScapeTests::testPlaybackModelIdentity()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi catalog({http.url("/")}, 1500);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    RadioExplorer explorer(&ui);
+    explorer.createMenu();
+    FavoriteManager favorites(directory.filePath("favorites.txt"));
+    Theme theme(*qApp);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList list(&ui, &favorites, &catalog, &playback);
+    list.setTheme(&theme);
+    const auto one = playbackStation("One", http.url("/one"));
+    const auto two = playbackStation("Two", http.url("/two"));
+    list.setFavorite(one, true);
+    list.setFavorite(two, true);
+    list.setFavoriteLibrary();
+
+    emit ui.tableView->activated({});
+    QStandardItemModel foreign(1, 1);
+    emit ui.tableView->doubleClicked(foreign.index(0, 0));
+    QVERIFY(audio.attempts.isEmpty());
+    const auto index = list.radioStationsModel->index(0, 0);
+    emit ui.tableView->activated(index);
+    emit ui.tableView->doubleClicked(index);
+    audio.confirmPlaying();
+    auto *selection = qobject_cast<CustomColorDelegate *>(ui.tableView->itemDelegate());
+    QVERIFY(selection);
+    QCOMPARE(selection->playingRow(), 0);
+    QCOMPARE(audio.attempts.size(), 1);
+    const auto generation = playback.generation();
+
+    list.radioStationsModel->setStations({two, one});
+    QCOMPARE(selection->playingRow(), 1);
+    list.selectPlaylist(Stations::TOP);
+    QCOMPARE(selection->playingRow(), -1);
+    list.setFavoriteLibrary();
+    QCOMPARE(selection->playingRow(), 0);
+    list.setFavorite(one, false);
+    QCOMPARE(selection->playingRow(), -1);
+    QCOMPARE(playback.streamUrl(), QUrl(one.streamUrl));
+    QCOMPARE(playback.generation(), generation);
+    QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(audio.attempts.size(), 1);
+}
+
+void TuneScapeTests::testPlaybackViewsAndTray()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi catalog({http.url("/")}, 1500);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    RadioExplorer explorer(&ui);
+    explorer.createMenu();
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList list(&ui, &favorites, &catalog, &playback);
+    TrayIcon tray(&ui, window);
+    tray.setRadioList(&list);
+    auto *menu = tray.getSystemTrayIcon()->contextMenu();
+    QVERIFY(menu);
+    auto *playPause = menu->actions().value(0);
+    QVERIFY(playPause);
+    QWidget *panel = nullptr;
+    for (auto *widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == "nowPlayingWindow")
+            panel = widget;
+    }
+    QVERIFY(panel);
+    auto *status = panel->findChild<QLabel *>("nowPlayingStatus");
+    auto *name = panel->findChild<QLabel *>("nowPlayingStation");
+    QVERIFY(status && name);
+
+    const auto one = playbackStation("One", http.url("/one"));
+    const auto two = playbackStation("Two", http.url("/two"));
+    list.allStations.resize(Stations::SEARCH + 1);
+    list.allStations[Stations::TOP] = {one, two};
+    tray.loadTrayList(Stations::TOP);
+    QMenu *top = nullptr;
+    for (auto *action : menu->actions()) {
+        if (action->menu() && action->text() == TrayIcon::tr("Top"))
+            top = action->menu();
+    }
+    QVERIFY(top);
+    auto *oneAction = top->actions().value(0);
+    QVERIFY(oneAction);
+    list.allStations[Stations::TOP] = {two, one};
+    oneAction->trigger();
+    QCOMPARE(playback.streamUrl(), QUrl(one.streamUrl));
+    QCOMPARE(name->text(), one.station);
+    QCOMPARE(status->text(), TrayIcon::tr("Connecting"));
+    QCOMPARE(playPause->text(), TrayIcon::tr("Pause"));
+    QCOMPARE(ui.playPause->toolTip(), QString("Pause"));
+    QCOMPARE(list.miniPlayerWindow().getMui()->play->toolTip(), QString("Pause"));
+    QVERIFY(oneAction->isChecked());
+    audio.confirmPlaying();
+    QCOMPARE(status->text(), TrayIcon::tr("Playing"));
+    list.selectPlaylist(Stations::POPULAR);
+    QCOMPARE(name->text(), one.station);
+    QCOMPARE(audio.attempts.size(), 1);
+    playPause->trigger();
+    QCOMPARE(status->text(), TrayIcon::tr("Paused"));
+    QCOMPARE(ui.playPause->toolTip(), QString("Play"));
+    QCOMPARE(list.miniPlayerWindow().getMui()->play->toolTip(), QString("Play"));
+    list.miniPlayerWindow().getMui()->play->click();
+    QCOMPARE(status->text(), TrayIcon::tr("Connecting"));
+    emit audio.playbackError(audio.active, "Device failure");
+    QCOMPARE(status->text(), TrayIcon::tr("Playback failed"));
+    QCOMPARE(status->toolTip(), QString("Device failure"));
+    QVERIFY(ui.statusbar->currentMessage().contains("Device failure"));
+    QVERIFY(!oneAction->isChecked());
+    ui.stop->click();
+    QCOMPARE(name->text(), TrayIcon::tr("Nothing playing"));
+    QCOMPARE(playPause->text(), TrayIcon::tr("Play"));
+}
+
+void TuneScapeTests::testPlaybackShutdownFinalizesRecording()
+{
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi catalog({http.url("/")}, 1500);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    auto list = std::make_unique<RadioList>(&ui, &favorites, &catalog, &playback);
+    QSignalSpy states(&playback, &PlaybackController::stateChanged);
+    TrackView trackView(&ui);
+    connect(&playback, &PlaybackController::sessionChanged, &trackView, &TrackView::clear);
+    playback.play(playbackStation("Station", http.url("/metadata")));
+    audio.confirmPlaying();
+    auto &recorder = list->getStreamRecorder();
+    recorder.startRecording(http.url("/recording"), "Station", "MP3", directory.path());
+    music_data::Track track;
+    track.artist = "Artist";
+    track.title = "Song";
+    track.coverUrl = http.url("/pending-cover").toString();
+    trackView.setTrack(track);
+    QTRY_VERIFY(http.client("/metadata") && http.client("/recording") && http.client("/pending-cover"));
+    QVERIFY(http.respond(http.client("/recording"), "audio"));
+    QTRY_COMPARE(recorder.bytesWritten(), 5);
+    const auto path = recorder.filePath();
+    list.reset();
+    QCOMPARE(playback.state(), PlaybackController::State::Stopped);
+    QCOMPARE(states.last().first().value<PlaybackController::State>(), PlaybackController::State::Stopped);
+    QCOMPARE(audio.active, 0);
+    QCOMPARE(fileContents(path), QByteArray("audio"));
+    QVERIFY(ui.title->text().isEmpty());
+    QTRY_COMPARE(http.client("/recording")->state(), QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(http.client("/metadata")->state(), QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(http.client("/pending-cover")->state(), QAbstractSocket::UnconnectedState);
 }
 
 void TuneScapeTests::testJsonListProcessorConnection()
@@ -530,8 +915,10 @@ void TuneScapeTests::testCatalogCountrySearchAndTabChange()
     Ui::MainWindow ui;
     ui.setupUi(&window);
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites, &api);
-    auto &country = SingletonContainer::getSingleton().getInstance<Country>();
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList radioList(&ui, &favorites, &api, &playback);
+    Country country;
     country.setData(&ui, &radioList);
     ui.tabRadioListWidget->setCurrentWidget(ui.listCountries);
     QTRY_VERIFY(http.client("/json/countries"));
@@ -556,12 +943,20 @@ void TuneScapeTests::testCatalogCountrySearchAndTabChange()
     QTRY_COMPARE(model->size(), 1);
     QCOMPARE(model->station(0).station, QString("Current country"));
 
+    const auto station = playbackStation("Playing from country", http.url("/country-live"));
+    model->setStations({station});
+    emit ui.tableOfCoutries->doubleClicked(model->index(0, 0));
+    audio.confirmPlaying();
+    QCOMPARE(playback.state(), PlaybackController::State::Playing);
     selectCountry(0);
     auto *old = http.client(first);
     QTRY_VERIFY(http.client(first) != old);
     ui.tabRadioListWidget->setCurrentIndex(0);
     QTRY_COMPARE(http.client(first)->state(), QAbstractSocket::UnconnectedState);
     QCOMPARE(model->size(), 0);
+    QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(playback.streamUrl(), QUrl(station.streamUrl));
+    QCOMPARE(audio.attempts.size(), 1);
 }
 
 void TuneScapeTests::testCatalogSearchReplacementAndCancellation()
@@ -619,19 +1014,19 @@ void TuneScapeTests::testCatalogStationDetailsIgnorePreviousRequest()
     Ui::MainWindow ui;
     ui.setupUi(&window);
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites, &api);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList radioList(&ui, &favorites, &api, &playback);
 
-    RadioStation previous;
-    previous.station = "Previous";
+    auto previous = playbackStation("Previous", http.url("/previous-live"));
     previous.iconUrl = http.url("/old-icon").toString();
-    radioList.loadPlayingStationDetails(previous);
+    playback.play(previous);
     const QByteArray first = "/json/stations/search?name=Previous&nameExact=true";
     QTRY_VERIFY(http.client(first) && http.client("/old-icon"));
 
-    RadioStation current;
-    current.station = "Cached";
+    auto current = playbackStation("Cached", http.url("/current-live"));
     current.stationUuid = QUuid("87654321-4321-4321-4321-123456789abc");
-    radioList.loadPlayingStationDetails(current);
+    playback.play(current);
     const QByteArray second = "/json/stations/byuuid/87654321-4321-4321-4321-123456789abc";
     QCOMPARE(ui.tableWidget->item(0, 1)->text(), current.station);
     QTRY_VERIFY(http.client(second));
@@ -642,16 +1037,14 @@ void TuneScapeTests::testCatalogStationDetailsIgnorePreviousRequest()
     QCOMPARE(ui.tableWidget->item(5, 1)->text(), QString("AAC"));
     QCOMPARE(ui.tableWidget->item(8, 1)->text(), QString("11"));
 
-    RadioStation legacy;
-    legacy.station = "Shared";
-    legacy.streamUrl = "https://stream.example/selected";
-    radioList.loadPlayingStationDetails(legacy);
+    auto legacy = playbackStation("Shared", http.url("/selected"));
+    playback.play(legacy);
     const QByteArray third = "/json/stations/search?name=Shared&nameExact=true";
     QTRY_VERIFY(http.client(third));
-    const QByteArray matches = R"([
+    const QByteArray matches = QByteArray(R"([
         {"name":"Shared","url_resolved":"https://stream.example/other","codec":"FLAC"},
-        {"name":"Shared","url_resolved":"https://stream.example/selected","codec":"MP3"}
-    ])";
+        {"name":"Shared","url_resolved":"%selected%","codec":"MP3"}
+    ])").replace("%selected%", legacy.streamUrl.toUtf8());
     QVERIFY(http.respondJson(third, matches));
     QTRY_COMPARE(ui.tableWidget->item(5, 1)->text(), QString("MP3"));
 }
@@ -667,10 +1060,11 @@ void TuneScapeTests::testCatalogFailureLeavesPlaybackAndRecordingRunning()
     Ui::MainWindow ui;
     ui.setupUi(&window);
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites, &api);
-    auto &playback = SingletonContainer::getSingleton().getInstance<PlaybackController>();
-    playback.stop();
-    playback.setPlaying(true);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList radioList(&ui, &favorites, &api, &playback);
+    playback.play(playbackStation("Station", http.url("/metadata")));
+    audio.confirmPlaying();
     auto &recorder = radioList.getStreamRecorder();
     recorder.startRecording(http.url("/live"), "Station", "MP3", directory.path());
     QTRY_VERIFY(http.client("/live"));
@@ -683,7 +1077,7 @@ void TuneScapeTests::testCatalogFailureLeavesPlaybackAndRecordingRunning()
     QTRY_VERIFY(http.client(target));
     QVERIFY(http.respondJson(target, "", "503 Service Unavailable"));
     QTRY_VERIFY(ui.statusbar->currentMessage().contains("503"));
-    QVERIFY(playback.isPlaying());
+    QCOMPARE(playback.state(), PlaybackController::State::Playing);
     QCOMPARE(recorder.state(), StreamRecorder::State::Recording);
     auto *failedRequest = http.client(target);
     emit ui.serachInput->returnPressed();
@@ -694,7 +1088,7 @@ void TuneScapeTests::testCatalogFailureLeavesPlaybackAndRecordingRunning()
     QCOMPARE(http.client("/live")->write("more"), 4);
     QTRY_COMPARE(recorder.bytesWritten(), 9);
     ui.playPause->click();
-    QVERIFY(playback.isPaused());
+    QCOMPARE(playback.state(), PlaybackController::State::Paused);
     ui.stop->click();
     QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
     QCOMPARE(fileContents(recorder.filePath()), QByteArray("firstmore"));
@@ -970,15 +1364,11 @@ void TuneScapeTests::testAppConfigChangeBoolState()
 void TuneScapeTests::testMiniPlayerIsVisible()
 {
     miniplayer miniPlayer;
-    const QWidget &window = miniPlayer;
-    QVERIFY(miniPlayer.getIsVisible());
-    QVERIFY(!window.isVisible());
-    miniPlayer.showMiniPlayer();
-    QVERIFY(window.isVisible());
-    miniPlayer.setIsVisible(false);
-    QVERIFY(!miniPlayer.getIsVisible());
-    miniPlayer.showMiniPlayer();
-    QVERIFY(!window.isVisible());
+    QVERIFY(!miniPlayer.isVisible());
+    miniPlayer.show();
+    QVERIFY(miniPlayer.isVisible());
+    miniPlayer.hide();
+    QVERIFY(!miniPlayer.isVisible());
 }
 
 void TuneScapeTests::testFavoriteAddAndRemove()
@@ -1351,24 +1741,20 @@ void TuneScapeTests::testStopCountryStationFromContextMenu()
     ui.setupUi(&window);
 
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites, &catalog);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList radioList(&ui, &favorites, &catalog, &playback);
     radioList.setMainWindow(&window);
-    auto &container = SingletonContainer::getSingleton();
-    auto &country = container.getInstance<Country>();
-    auto &playback = container.getInstance<PlaybackController>();
+    Country country;
     country.setData(&ui, &radioList);
 
-    // Seed playback state so the Stop action can be exercised without a live station.
     auto *model = qobject_cast<RadioStationsModel *>(ui.tableOfCoutries->model());
     QVERIFY(model);
-    RadioStation station = country.getCurrentStation();
-    station.station = QStringLiteral("Test station");
+    const auto station = playbackStation("Test station", server.url("/country-metadata"));
     model->setStations({station});
-    country.setCurrentIndexPlaying(0);
-    country.setIsPlaying(true);
-    playback.setPlaying(true);
-    radioList.setIsBrowseStationLoaded(true);
-    radioList.setIsStopClicked(false);
+    emit ui.tableOfCoutries->doubleClicked(model->index(0, 0));
+    audio.confirmPlaying();
+    QCOMPARE(playback.state(), PlaybackController::State::Playing);
     auto &recorder = radioList.getStreamRecorder();
     recorder.startRecording(server.url("/country"), station.station, "MP3", directory.path());
     QTRY_VERIFY(server.client("/country"));
@@ -1402,11 +1788,9 @@ void TuneScapeTests::testStopCountryStationFromContextMenu()
     emit ui.tableOfCoutries->customContextMenuRequested(stationRect.center());
 
     QVERIFY(foundStopAction);
-    QVERIFY(!playback.isPlaying());
-    QVERIFY(!country.getIsPlaying());
-    QCOMPARE(country.getCurrentIndexPlaying(), -1);
-    QVERIFY(radioList.getIsStopClicked());
-    QVERIFY(!radioList.getIsBrowseStationLoaded());
+    QCOMPARE(playback.state(), PlaybackController::State::Stopped);
+    QVERIFY(!playback.station());
+    QCOMPARE(audio.stops, 1);
     QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
     QCOMPARE(fileContents(recorder.filePath()), QByteArray("country audio"));
     QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
@@ -1652,9 +2036,13 @@ void TuneScapeTests::testStationChangeStopsRecording()
     Ui::MainWindow ui;
     ui.setupUi(&window);
     FavoriteManager favorites;
-    RadioList radioList(&ui, &favorites);
+    RadioBrowserApi api({server.url("/")}, 1500);
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList radioList(&ui, &favorites, &api, &playback);
     QSignalSpy titles(&radioList, &RadioList::trackTitleReceived);
-    radioList.prepareStationChange(server.url("/old-metadata"));
+    playback.play(playbackStation("Old station", server.url("/old-metadata")));
+    audio.confirmPlaying();
     QTRY_VERIFY(server.client("/old-metadata"));
     auto *oldMetadata = server.client("/old-metadata");
     QVERIFY(server.respond(oldMetadata, "StreamTitle='Old';"));
@@ -1669,12 +2057,18 @@ void TuneScapeTests::testStationChangeStopsRecording()
     QCOMPARE(ui.record->toolTip(), RadioList::tr("Stop recording"));
     QCOMPARE(ui.recordLabel->text(), RadioList::tr("Recording: %L1 bytes").arg(9));
 
+    ui.playPause->click();
+    QCOMPARE(playback.state(), PlaybackController::State::Paused);
+    QCOMPARE(recorder.state(), StreamRecorder::State::Recording);
+    QCOMPARE(server.client("/recording")->write(" plus"), 5);
+    QTRY_COMPARE(recorder.bytesWritten(), 14);
+
     QCOMPARE(oldMetadata->write("StreamTitle='Late';"), 19);
-    radioList.prepareStationChange(server.url("/new-metadata"));
+    playback.play(playbackStation("New station", server.url("/new-metadata")));
     QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
     QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
-    QCOMPARE(ui.recordLabel->text(), RadioList::tr("Recording saved (%L1 bytes)").arg(9));
-    QCOMPARE(fileContents(recorder.filePath()), QByteArray("old audio"));
+    QCOMPARE(ui.recordLabel->text(), RadioList::tr("Recording saved (%L1 bytes)").arg(14));
+    QCOMPARE(fileContents(recorder.filePath()), QByteArray("old audio plus"));
     QTRY_COMPARE(server.client("/recording")->state(), QAbstractSocket::UnconnectedState);
     QTRY_COMPARE(oldMetadata->state(), QAbstractSocket::UnconnectedState);
     QTRY_VERIFY(server.client("/new-metadata"));

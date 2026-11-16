@@ -2,6 +2,7 @@
 #define TRACKVIEW_H
 #include <QMap>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QUrl>
 #include <QWidget>
 
@@ -26,11 +27,13 @@ public slots:
 
 private:
     void loadCover(const QString &url);
+    void cancelCover();
     QString generateLinksHtml(const QMap<QString, QList<QUrl>> &links);
 
 private:
     Ui::MainWindow *ui;
     QNetworkAccessManager *networkManager;
+    QPointer<QNetworkReply> coverReply;
     QPixmap defaulrCoverAlbum;
 };
 #endif // TRACKVIEW_H

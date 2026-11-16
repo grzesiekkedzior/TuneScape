@@ -28,8 +28,9 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     , mainWindow(&mainWindow)
 {
     appConfig = new AppConfig("application.properties");
+    appConfig->setParent(this);
 
-    systemTrayIcon = new QSystemTrayIcon(QIcon(RadioIcon), &mainWindow);
+    systemTrayIcon = new QSystemTrayIcon(QIcon(RadioIcon), this);
 
     trayMenu = new QMenu(this);
 
@@ -130,6 +131,7 @@ void TrayIcon::createNowPlayingPanel()
     nowPlayingIcon->setScaledContents(false);
 
     nowPlayingStation = new QLabel(tr("Nothing playing"), nowPlayingFrame);
+    nowPlayingStation->setObjectName(QStringLiteral("nowPlayingStation"));
     nowPlayingStation->setTextInteractionFlags(Qt::NoTextInteraction);
 
     QFont stationFont = nowPlayingStation->font();
@@ -145,6 +147,7 @@ void TrayIcon::createNowPlayingPanel()
     nowPlayingTitle->setFont(titleFont);
 
     nowPlayingStatus = new QLabel(tr("Stopped"), nowPlayingFrame);
+    nowPlayingStatus->setObjectName(QStringLiteral("nowPlayingStatus"));
     nowPlayingStatus->setTextInteractionFlags(Qt::NoTextInteraction);
 
     nowPlayingPlayPauseButton = new QPushButton(nowPlayingFrame);
@@ -154,19 +157,8 @@ void TrayIcon::createNowPlayingPanel()
     nowPlayingPlayPauseButton->setToolTip(tr("Play"));
 
     connect(nowPlayingPlayPauseButton, &QPushButton::clicked, this, [this]() {
-        if (!radioList)
-            return;
-
-        radioList->onPlayPauseButtonCliced();
-        updatePlayPauseAction();
-        updateNowPlayingPanel();
-
-        if (playbackController.isPlaying()) {
-            setTrayListIcon();
-        } else {
-            restoreStationIcons();
-            clearStationHighlights();
-        }
+        if (radioList)
+            radioList->togglePlayback();
     });
 
     QFont statusFont = nowPlayingStatus->font();
@@ -412,82 +404,56 @@ void TrayIcon::clearNowPlayingPanel()
     nowPlayingStation->setText(tr("Nothing playing"));
     nowPlayingTitle->setText(tr("Select a station"));
     nowPlayingStatus->setText(tr("Stopped"));
+    nowPlayingStatus->setToolTip({});
 
     updateNowPlayingButton();
 }
 
-QString TrayIcon::currentStationName() const
-{
-    if (!radioList)
-        return {};
-
-    const int position = radioList->getRadioIndexNumber();
-    const QString playlistName = radioList->getItem();
-
-    if (position < 0)
-        return {};
-
-    const QVector<RadioStation> *stations = nullptr;
-
-    if (playlistName == radioPlaylist.TOP)
-        stations = &radioList->stations(Stations::TOP);
-    else if (playlistName == radioPlaylist.POPULAR)
-        stations = &radioList->stations(Stations::POPULAR);
-    else if (playlistName == radioPlaylist.NEW)
-        stations = &radioList->stations(Stations::NEW);
-
-    if (!stations || position >= stations->size())
-        return {};
-
-    return stations->at(position).station;
-}
-
-QIcon TrayIcon::currentStationIcon() const
-{
-    if (!radioList)
-        return QIcon(DefaultStationIconPath);
-
-    const int position = radioList->getRadioIndexNumber();
-    const QString playlistName = radioList->getItem();
-
-    if (position < 0)
-        return QIcon(DefaultStationIconPath);
-
-    if (playlistName == radioPlaylist.TOP && position < topIcons.size())
-        return topIcons.at(position);
-
-    if (playlistName == radioPlaylist.POPULAR && position < popularIcons.size())
-        return popularIcons.at(position);
-
-    if (playlistName == radioPlaylist.NEW && position < newRadioIcons.size())
-        return newRadioIcons.at(position);
-
-    return QIcon(DefaultStationIconPath);
-}
-
 void TrayIcon::updateNowPlayingPanel()
 {
-    if (!nowPlayingIcon || !nowPlayingStation || !nowPlayingTitle || !nowPlayingStatus)
-        return;
-
-    const QString stationName = currentStationName();
-
-    if (stationName.isEmpty()) {
+    if (!playback || !playback->station()) {
         clearNowPlayingPanel();
         return;
     }
 
-    nowPlayingIcon->setPixmap(currentStationIcon().pixmap(QSize(44, 44)));
-    nowPlayingStation->setText(stationName);
-    nowPlayingStation->setToolTip(stationName);
+    const auto &station = *playback->station();
+    const auto image = ui->infoLabel->pixmap();
+    const QSize size(44, 44);
+    nowPlayingIcon->setPixmap(image.isNull()
+        ? QIcon(DefaultStationIconPath).pixmap(size)
+        : QIcon(image).pixmap(size, nowPlayingIcon->devicePixelRatioF()));
+    nowPlayingStation->setText(station.station);
+    nowPlayingStation->setToolTip(station.station);
 
-    const QString title = currentTrackTitle.isEmpty() ? tr("Live stream") : currentTrackTitle;
-
+    const auto metadata = ui->infoData->text();
+    const auto title = metadata.isEmpty() ? tr("Live stream") : metadata;
     nowPlayingTitle->setText(title);
     nowPlayingTitle->setToolTip(title);
 
-    nowPlayingStatus->setText(playbackController.isPlaying() ? tr("Playing") : tr("Paused"));
-
+    using State = PlaybackController::State;
+    QString status;
+    switch (playback->state()) {
+    case State::Connecting:
+        status = tr("Connecting");
+        break;
+    case State::Buffering:
+        status = tr("Buffering");
+        break;
+    case State::Playing:
+        status = tr("Playing");
+        break;
+    case State::Paused:
+        status = tr("Paused");
+        break;
+    case State::Error:
+        status = tr("Playback failed");
+        break;
+    default:
+        status = tr("Stopped");
+        break;
+    }
+    nowPlayingStatus->setText(status);
+    nowPlayingStatus->setToolTip(playback->lastError());
     updateNowPlayingButton();
 }
 
@@ -496,7 +462,7 @@ void TrayIcon::updateNowPlayingButton()
     if (!nowPlayingPlayPauseButton)
         return;
 
-    if (playbackController.isPlaying()) {
+    if (playback && playback->canPause()) {
         nowPlayingPlayPauseButton->setIcon(QIcon(PauseIconPath));
         nowPlayingPlayPauseButton->setToolTip(tr("Pause"));
     } else {
@@ -521,40 +487,22 @@ void TrayIcon::setTrayListIcon()
 {
     restoreStationIcons();
     clearStationHighlights();
-
-    if (!radioList || !playbackController.isPlaying())
+    if (!playback || !playback->hasActiveSession())
         return;
 
-    const int position = radioList->getRadioIndexNumber();
-    const QString treeItem = radioList->getItem();
-
-    if (position < 0 || treeItem.isEmpty())
-        return;
-
-    QAction *playingAction = nullptr;
-
-    if (treeItem == radioPlaylist.TOP && position < topVector.size()) {
-        playingAction = topVector[position];
-    } else if (treeItem == radioPlaylist.POPULAR && position < popularVector.size()) {
-        playingAction = popularVector[position];
-    } else if (treeItem == radioPlaylist.NEW && position < newRadioVector.size()) {
-        playingAction = newRadioVector[position];
+    for (auto it = stationActions.cbegin(); it != stationActions.cend(); ++it) {
+        if (!playback->matches(it.value().station))
+            continue;
+        auto *action = it.key();
+        if (playback->state() == PlaybackController::State::Playing)
+            action->setIcon(QIcon(PlayingIconPath));
+        action->setChecked(true);
+        QFont playingFont = action->font();
+        playingFont.setBold(true);
+        if (playingFont.pointSize() > 0)
+            playingFont.setPointSize(playingFont.pointSize() + 1);
+        action->setFont(playingFont);
     }
-
-    if (!playingAction)
-        return;
-
-    playingAction->setIcon(QIcon(PlayingIconPath));
-    playingAction->setChecked(true);
-
-    QFont playingFont = playingAction->font();
-    playingFont.setBold(true);
-
-    if (playingFont.pointSize() > 0)
-        playingFont.setPointSize(playingFont.pointSize() + 1);
-
-    playingAction->setFont(playingFont);
-    updateNowPlayingPanel();
 }
 
 void TrayIcon::trayIconButtonClicked()
@@ -564,45 +512,14 @@ void TrayIcon::trayIconButtonClicked()
 
     mainWindow->hide();
 
-    updatePlayPauseAction();
-
-    if (playbackController.isPlaying()) {
-        setTrayListIcon();
-    } else {
-        restoreStationIcons();
-        clearStationHighlights();
-        updateNowPlayingPanel();
-    }
+    updateNowPlayingPanel();
 }
 
-void TrayIcon::setNotifications(bool notificationsEnabled)
+void TrayIcon::setNotifications(bool enabled)
 {
-    if (notificationsEnabled) {
-        setIsNotificationEnable(false);
-
-        disconnect(radioList,
-                   &RadioList::sendTitleToTray,
-                   this,
-                   &TrayIcon::handleTitleFromRadioList);
-
-        turnOnOffNotification->setText(NOTIFICATIONS.NO);
-
-        appConfig->changeBoolState(false, NotificationsProperty);
-
-        return;
-    }
-
-    connect(radioList,
-            &RadioList::sendTitleToTray,
-            this,
-            &TrayIcon::handleTitleFromRadioList,
-            Qt::UniqueConnection);
-
-    setIsNotificationEnable(true);
-
-    turnOnOffNotification->setText(NOTIFICATIONS.YES);
-
-    appConfig->changeBoolState(true, NotificationsProperty);
+    setIsNotificationEnable(enabled);
+    turnOnOffNotification->setText(enabled ? NOTIFICATIONS.YES : NOTIFICATIONS.NO);
+    appConfig->changeBoolState(enabled, NotificationsProperty);
 }
 
 void TrayIcon::loadTrayList(Stations station)
@@ -613,6 +530,8 @@ void TrayIcon::loadTrayList(Stations station)
     const QIcon defaultIcon(DefaultStationIconPath);
     const auto &stations = radioList->stations(station);
     const auto load = [&](QMenu *menu, QVector<QAction *> &actions, QVector<QIcon> &icons) {
+        for (auto *action : actions)
+            stationActions.remove(action);
         menu->clear();
         actions.clear();
         icons.fill(defaultIcon, stations.size());
@@ -621,6 +540,7 @@ void TrayIcon::loadTrayList(Stations station)
             QAction *action = menu->addAction(defaultIcon, stations[row].station);
             action->setCheckable(true);
             actions.append(action);
+            stationActions.insert(action, {stations[row], station});
             const QUrl iconUrl(stations[row].iconUrl);
             if (!iconUrl.isEmpty()) {
                 radioList->stationImages().request(iconUrl, QSize(32, 32), mainWindow->devicePixelRatioF(),
@@ -628,7 +548,8 @@ void TrayIcon::loadTrayList(Stations station)
                         if (pixmap.isNull() || actions.value(row) != action)
                             return;
                         icons[row] = QIcon(pixmap);
-                        if (action->isChecked())
+                        if (action->isChecked() && playback
+                            && playback->state() == PlaybackController::State::Playing)
                             updateNowPlayingPanel();
                         else
                             action->setIcon(icons[row]);
@@ -650,108 +571,27 @@ void TrayIcon::loadTrayList(Stations station)
     default:
         return;
     }
-    if (playbackController.isPlaying())
-        setTrayListIcon();
-}
-
-void TrayIcon::clearIcon()
-{
-    restoreStationIcons();
-}
-
-QModelIndex TrayIcon::createTrayRadioLists(QAction *action)
-{
-    if (!action || !radioList)
-        return {};
-
-    const auto topIt = std::find(topVector.cbegin(), topVector.cend(), action);
-
-    const auto popularIt = std::find(popularVector.cbegin(), popularVector.cend(), action);
-
-    const auto newIt = std::find(newRadioVector.cbegin(), newRadioVector.cend(), action);
-
-    int treeNumber = -1;
-    int stationIndex = -1;
-
-    if (topIt != topVector.cend()) {
-        treeNumber = radioTable.TOP;
-
-        stationIndex = static_cast<int>(std::distance(topVector.cbegin(), topIt));
-
-    } else if (popularIt != popularVector.cend()) {
-        treeNumber = radioTable.POPULAR;
-
-        stationIndex = static_cast<int>(std::distance(popularVector.cbegin(), popularIt));
-
-    } else if (newIt != newRadioVector.cend()) {
-        treeNumber = radioTable.NEWRADIO;
-
-        stationIndex = static_cast<int>(std::distance(newRadioVector.cbegin(), newIt));
-    }
-
-    if (treeNumber < 0 || stationIndex < 0)
-        return {};
-
-    const QModelIndex libraryIndex = ui->treeView->model()->index(0, 0);
-
-    const QModelIndex treeIndex = ui->treeView->model()->index(treeNumber, 0, libraryIndex);
-
-    if (!treeIndex.isValid())
-        return {};
-
-    ui->treeView->selectionModel()->clearSelection();
-
-    ui->treeView->selectionModel()->select(treeIndex, QItemSelectionModel::Select);
-
-    radioList->setIsTreeClicked(true);
-    radioList->onTrayViewItemClicked(treeIndex);
-
-    return ui->tableView->model()->index(stationIndex, static_cast<int>(Column::StationColumn));
+    setTrayListIcon();
 }
 
 void TrayIcon::trayMenuClicked(QAction *action)
 {
     if (!action)
         return;
-
     if (action == exitAction) {
         QApplication::quit();
-        return;
-    }
-
-    if (action == playPauseAction) {
-        radioList->onPlayPauseButtonCliced();
-
-        updatePlayPauseAction();
-
-        if (playbackController.isPlaying()) {
-            setTrayListIcon();
-        } else {
-            restoreStationIcons();
-            clearStationHighlights();
-            updateNowPlayingPanel();
+    } else if (action == playPauseAction && radioList) {
+        radioList->togglePlayback();
+    } else if (action == turnOnOffNotification) {
+        setNotifications(!isNotificationEnabled);
+    } else if (radioList && playback) {
+        const auto entry = stationActions.constFind(action);
+        if (entry != stationActions.cend()) {
+            const auto selected = entry.value();
+            radioList->selectPlaylist(selected.playlist);
+            playback->play(selected.station);
         }
-
-        return;
     }
-
-    if (action == turnOnOffNotification) {
-        setNotifications(isNotificationEnabled);
-        return;
-    }
-
-    const QModelIndex radioIndex = createTrayRadioLists(action);
-
-    if (!radioIndex.isValid())
-        return;
-
-    currentTrackTitle.clear();
-
-    radioList->onTrayClickedandPlay(radioIndex);
-
-    updatePlayPauseAction();
-    setTrayListIcon();
-    updateNowPlayingPanel();
 }
 
 void TrayIcon::handleTitleFromRadioList(const QString &data)
@@ -759,10 +599,9 @@ void TrayIcon::handleTitleFromRadioList(const QString &data)
     if (data.isEmpty())
         return;
 
-    currentTrackTitle = data;
     updateNowPlayingPanel();
 
-    if (recentTitles.contains(data))
+    if (!isNotificationEnabled || recentTitles.contains(data))
         return;
 
     if (!mainWindow->isVisible()) {
@@ -795,38 +634,35 @@ QSystemTrayIcon *TrayIcon::getSystemTrayIcon() const
     return systemTrayIcon;
 }
 
-void TrayIcon::setRadioList(RadioList *newRadioList)
+void TrayIcon::setRadioList(RadioList *list)
 {
-    radioList = newRadioList;
-
-    if (!radioList)
+    if (radioList == list)
         return;
-
-    connect(radioList,
-            &RadioList::sendTitleToTray,
-            this,
-            &TrayIcon::handleTitleFromRadioList,
-            Qt::UniqueConnection);
-
-    if (getIsNotificationEnable())
-        setNotifications(false);
-    else
-        setNotifications(true);
-
+    if (radioList)
+        disconnect(radioList, nullptr, this, nullptr);
+    if (playback)
+        disconnect(playback, nullptr, this, nullptr);
+    radioList = list;
+    playback = list ? &list->playback() : nullptr;
+    if (list) {
+        connect(list, &RadioList::trackTitleReceived, this, &TrayIcon::handleTitleFromRadioList);
+        connect(list, &RadioList::stationImageChanged, this, &TrayIcon::updateNowPlayingPanel);
+        connect(playback, &PlaybackController::stateChanged, this, [this] {
+            updatePlayPauseAction();
+            setTrayListIcon();
+            updateNowPlayingPanel();
+        });
+        connect(playback, &PlaybackController::sessionChanged, this, [this] {
+            recentTitles.clear();
+        });
+    }
+    updatePlayPauseAction();
     updateNowPlayingPanel();
 }
 
 void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-    updatePlayPauseAction();
-
-    if (playbackController.isPlaying()) {
-        setTrayListIcon();
-    } else {
-        restoreStationIcons();
-        clearStationHighlights();
-        updateNowPlayingPanel();
-    }
+    updateNowPlayingPanel();
 
     switch (reason) {
     case QSystemTrayIcon::DoubleClick:
@@ -885,7 +721,7 @@ void TrayIcon::clearStationHighlights()
 
 void TrayIcon::updatePlayPauseAction()
 {
-    if (playbackController.isPlaying()) {
+    if (playback && playback->canPause()) {
         playPauseAction->setText(tr("Pause"));
         playPauseAction->setIcon(QIcon(PauseIconPath));
     } else {

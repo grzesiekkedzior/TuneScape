@@ -12,28 +12,12 @@
 
 #include "ui_mainwindow.h"
 #include "AppConfig.h"
-#include "radioaudiomanager.h"
 #include "radiolist.h"
 
 struct Notifications
 {
     const QString NO = "OFF";
     const QString YES = "ON";
-};
-
-struct RadioTable
-{
-    const int TOP = 0;
-    const int POPULAR = 1;
-    const int NEWRADIO = 2;
-};
-
-struct RadioPlaylistName
-{
-    const QString TOP = "Top";
-    const QString POPULAR = "Popular";
-    const QString NEW = "New";
-    const QString FAVORITE = "Favorite";
 };
 
 class TrayIcon : public QWidget
@@ -44,7 +28,6 @@ public:
     explicit TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow);
     ~TrayIcon() override;
 
-    void setRadioAudioManager(RadioAudioManager *newRadioAudioManager);
     void setRadioList(RadioList *newRadioList);
 
     QSystemTrayIcon *getSystemTrayIcon() const;
@@ -53,7 +36,6 @@ public:
     void setIsNotificationEnable(bool newIsNotificationEnable);
 
     void loadTrayList(Stations station);
-    void clearIcon();
 
 private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -82,10 +64,10 @@ private:
     void clearStationHighlights();
     void updatePlayPauseAction();
 
-    QIcon currentStationIcon() const;
-    QString currentStationName() const;
-
-    QModelIndex createTrayRadioLists(QAction *action);
+    struct StationAction {
+        RadioStation station;
+        Stations playlist;
+    };
 
     Ui::MainWindow *ui = nullptr;
     QSystemTrayIcon *systemTrayIcon = nullptr;
@@ -104,13 +86,9 @@ private:
     QLabel *nowPlayingStatus = nullptr;
     QPushButton *nowPlayingPlayPauseButton = nullptr;
 
-    RadioTable radioTable;
-    RadioPlaylistName radioPlaylist;
-
-    PlaybackController &playbackController = SingletonContainer::getSingleton()
-                                                 .getInstance<PlaybackController>();
-
-    RadioList *radioList = nullptr;
+    QPointer<PlaybackController> playback;
+    QPointer<RadioList> radioList;
+    QHash<QAction *, StationAction> stationActions;
 
     QAction *playPauseAction = nullptr;
     QAction *exitAction = nullptr;
@@ -129,8 +107,6 @@ private:
     AppConfig *appConfig = nullptr;
     bool isNotificationEnabled = true;
     bool keepNowPlayingVisible = false;
-
-    QString currentTrackTitle;
 
     QSet<QString> recentTitles;
     QTimer *clearRecentTitlesTimer = nullptr;

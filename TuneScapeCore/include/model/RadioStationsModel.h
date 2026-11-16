@@ -24,6 +24,7 @@ public:
 
     void setStations(const QVector<RadioStation> &stations);
     const RadioStation &station(int row) const;
+    int rowForStation(const RadioStation &station) const;
     int size() const;
     bool isEmpty() const;
     void bindIcons(QTableView *view, IconLoader *loader);

@@ -3,6 +3,7 @@
 
 #include <QNetworkAccessManager>
 #include <QObject>
+#include <QPointer>
 #include <QUrl>
 
 class QNetworkReply;
@@ -14,17 +15,17 @@ public:
     explicit StreamReader(QObject *parent = nullptr);
     ~StreamReader() override;
 
-    void startStreaming(const QUrl &url);
+    void startStreaming(const QUrl &url, quint64 generation);
     void stopStreaming();
 
 signals:
-    void dataReceived(const QString &data);
+    void dataReceived(quint64 generation, const QString &data);
 
 private:
-    void readAvailable(QNetworkReply *reply);
+    void readAvailable(QNetworkReply *reply, quint64 generation);
 
     QNetworkAccessManager m_manager;
-    QNetworkReply *m_reply = nullptr;
+    QPointer<QNetworkReply> m_reply;
 };
 
 #endif // STREAMREADER_H

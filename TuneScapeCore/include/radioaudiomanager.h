@@ -1,63 +1,44 @@
 #ifndef RADIOAUDIOMANAGER_H
 #define RADIOAUDIOMANAGER_H
-#include <QAudioOutput>
+
 #include <QFile>
 #include <QMediaPlayer>
-#include <QObject>
+#include <QPointer>
+#include <memory>
 
-#ifdef Q_OS_WIN
-#include <QAbstractNativeEventFilter>
-#endif
+class QAudioOutput;
+class QAbstractNativeEventFilter;
 
 class RadioAudioManager : public QObject
 {
     Q_OBJECT
 public:
-    RadioAudioManager();
-    ~RadioAudioManager();
-    void loadStream(const QUrl &url);
-    void playStream();
-    void stopStream();
-    QMediaPlayer *getMediaPlayer() const;
-    QAudioOutput *getAudioAutput() const;
-    void setVolume(int value);
-    void handleSystemSleep();
-    void handleSystemWake();
+    explicit RadioAudioManager(QObject *parent = nullptr);
+    ~RadioAudioManager() override;
 
-    bool getIsPlaying() const;
-    void setIsPlaying(bool newIsPlaying);
-    void play(const QUrl &url);
+    virtual void start(const QUrl &url, quint64 attempt);
+    virtual void stop();
+    void setVolume(int value);
 
 signals:
-
-private slots:
-    void logError(QMediaPlayer::Error error);
+    void playbackStateChanged(quint64 attempt, QMediaPlayer::PlaybackState state);
+    void mediaStatusChanged(quint64 attempt, QMediaPlayer::MediaStatus status);
+    void playbackError(quint64 attempt, const QString &message);
+    void systemSuspended();
+    void systemResumed();
 
 private:
-    QMediaPlayer *player;
-    QAudioOutput *audioOutput;
-    int logLineCount;
-    const int MAX_LOG_LINES = 10000;
-    bool isPlaying = false;
+    void logError(const QString &error);
+    void initializeAudio();
 
-    QFile logFile;
-
-    QString getErrorString(QMediaPlayer::Error error);
-    void resetLogFile();
-};
-
+    QPointer<QMediaPlayer> m_player;
+    QAudioOutput *m_audioOutput = nullptr;
+    int m_volume = 100;
+    int m_logLineCount = 0;
+    QFile m_logFile{"error_log.txt"};
 #ifdef Q_OS_WIN
-class SystemEventFilter : public QAbstractNativeEventFilter
-{
-public:
-    SystemEventFilter(RadioAudioManager *manager)
-        : manager(manager)
-    {}
-    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
-
-private:
-    RadioAudioManager *manager;
-};
+    std::unique_ptr<QAbstractNativeEventFilter> m_powerFilter;
 #endif
+};
 
 #endif // RADIOAUDIOMANAGER_H

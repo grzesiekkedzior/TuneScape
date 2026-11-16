@@ -49,14 +49,10 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
     ui->licencesTextBrowser->setOpenExternalLinks(true);
     set_icon_btn();
     start();
-    m_musicBrainzCient = new music_data::MusicBrainzClient(this);
-    m_coverArtClient = new music_data::CoverArtClient(this);
-    m_externalLinksClient = new music_data::ExternalLinksClient(this);
     trackView = new TrackView(ui, this);
-    m_resolverService = new music_data::ResolverService(m_musicBrainzCient,
-                                                        m_coverArtClient,
-                                                        m_externalLinksClient,
-                                                        this);
+    m_resolverService = new music_data::ResolverService(new music_data::MusicBrainzClient,
+                                                        new music_data::CoverArtClient,
+                                                        new music_data::ExternalLinksClient, this);
     ui->license->hide();
 
     connect(ui->infoApp, &QPushButton::clicked, this, &MainWindow::info);
@@ -68,18 +64,20 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
             &music_data::ResolverService::trackReady,
             trackView,
             &TrackView::setTrack);
-    connect(ui->tableView, &QTableView::doubleClicked, trackView, &TrackView::clear);
-    connect(ui->stop, &QPushButton::clicked, trackView, &TrackView::clear);
-    connect(ui->tableOfCoutries, &QTableView::doubleClicked, trackView, &TrackView::clear);
-    connect(radioList, &RadioList::playIconButtonDoubleClicked, trackView, &TrackView::clear);
+    connect(&radioList->playback(), &PlaybackController::sessionChanged,
+            m_resolverService, &music_data::ResolverService::cancel);
+    connect(&radioList->playback(), &PlaybackController::sessionChanged, trackView, &TrackView::clear);
     connect(&m_theme, &Theme::themeChanged, radioList, &RadioList::updateThemeAppearance);
     connect(&m_theme, &Theme::themeChanged, &country, &Country::updateThemeAppearance);
 }
 
 MainWindow::~MainWindow()
 {
+    radioList->playback().stop();
     delete trayIcon;
     delete radioList;
+    delete m_resolverService;
+    delete trackView;
     delete radioExplorer;
     delete ui;
 }

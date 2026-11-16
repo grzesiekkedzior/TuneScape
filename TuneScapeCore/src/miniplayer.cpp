@@ -1,83 +1,19 @@
 #include "include/miniplayer.h"
-#include "ui_mini_player.h"
-#include "include/radiolist.h"
 
 miniplayer::miniplayer()
-    : mui(new Ui::Frame)
 {
-    mui->setupUi(this);
-    connect(mui->play, &QPushButton::clicked, this, &miniplayer::playRadio);
-    connect(mui->stayTop, &QRadioButton::clicked, this, &miniplayer::stayOnTop);
-    this->setStyleSheet(":/src/theme/Combinear.qss");
-    qDebug() << "miniplayer";
+    mui.setupUi(this);
+    connect(mui.stayTop, &QRadioButton::clicked, this, &miniplayer::stayOnTop);
+    setStyleSheet(":/src/theme/Combinear.qss");
 }
 
-miniplayer::miniplayer(Ui::MainWindow *ui, RadioList *radioList)
-    : ui(ui)
-    , mui(new Ui::Frame)
-    , radioList(radioList)
+Ui::Frame *miniplayer::getMui()
 {
-    mui->setupUi(this);
+    return &mui;
 }
-
-bool miniplayer::getIsVisible() const
-{
-    return isVisible;
-}
-
-void miniplayer::setIsVisible(bool newIsVisible)
-{
-    isVisible = newIsVisible;
-}
-
-Ui::MainWindow *miniplayer::getUi() const
-{
-    return ui;
-}
-
-void miniplayer::setUi(Ui::MainWindow *newUi)
-{
-    ui = newUi;
-}
-
-RadioList *miniplayer::getRadioList() const
-{
-    return radioList;
-}
-
-void miniplayer::setRadioList(RadioList *newRadioList)
-{
-    radioList = newRadioList;
-}
-
-void miniplayer::showMiniPlayer()
-{
-    bool state = getIsVisible();
-    (state) ? this->show() : this->hide();
-}
-
-Ui::Frame *miniplayer::getMui() const
-{
-    return mui;
-}
-
-void miniplayer::setMui(Ui::Frame *newMui)
-{
-    mui = newMui;
-}
-
-void miniplayer::playRadio()
-{
-    radioList->onPlayPauseButtonCliced();
-}
-
-void miniplayer::maximizeWindow() {}
 
 void miniplayer::stayOnTop()
 {
-    if (mui->stayTop->isChecked())
-        this->setWindowFlags(this->windowFlags() | Qt::WindowStaysOnTopHint);
-    else
-        this->setWindowFlags(this->windowFlags() & ~Qt::WindowStaysOnTopHint);
-    this->show();
+    setWindowFlag(Qt::WindowStaysOnTopHint, mui.stayTop->isChecked());
+    show();
 }

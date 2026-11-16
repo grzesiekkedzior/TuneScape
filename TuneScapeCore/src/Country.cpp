@@ -6,6 +6,7 @@
 #include <QTableView>
 #include "include/StationDetailsDialog.h"
 #include "include/radiolist.h"
+#include "include/jsonlistprocessor.h"
 
 namespace {
 
@@ -20,19 +21,23 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 
     this->ui = ui;
     this->radioList = radioList;
+    catalog = &radioList->catalog();
     connect(radioList, &QObject::destroyed, this, [this] {
         delete countryStationsModel;
         countryStationsModel = nullptr;
-        customColor.clear();
-        countriesRequest = stationsRequest = 0;
+        delete customColor.data();
+        if (catalog) {
+            catalog->cancel(std::exchange(countriesRequest, 0));
+            catalog->cancel(std::exchange(stationsRequest, 0));
+        }
         countriesLoaded = false;
-        isPlaying = false;
-        currentIndexPlaying = -1;
         this->ui = nullptr;
         this->radioList = nullptr;
         theme = nullptr;
     });
-    connect(ui->tabRadioListWidget, &QTabWidget::currentChanged, radioList, [this] {
+    connect(ui->tabRadioListWidget, &QTabWidget::currentChanged, this, [this] {
+        if (!this->ui || !this->radioList)
+            return;
         if (this->ui->tabRadioListWidget->currentWidget() == this->ui->listCountries) {
             load();
         } else {
@@ -48,7 +53,10 @@ void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
 
     connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
 
-    connect(ui->tableOfCoutries, &QTableView::doubleClicked, this, &Country::onDoubleListClicked);
+    connect(ui->tableOfCoutries, &QTableView::doubleClicked, this, &Country::playIndex);
+    connect(ui->tableOfCoutries, &QTableView::activated, this, &Country::playIndex);
+    connect(countryStationsModel, &RadioStationsModel::modelReset, this, &Country::updateThemeAppearance);
+    connect(&radioList->playback(), &PlaybackController::sessionChanged, this, &Country::updateThemeAppearance);
 
     pixmap.load(WorldImagePath);
     ui->worldImage->setPixmap(pixmap);
@@ -76,7 +84,7 @@ void Country::load()
     if (!radioList || countriesLoaded)
         return;
     if (!countriesRequest) {
-        countriesRequest = radioList->catalog().request(QUrl("json/countries"), radioList,
+        countriesRequest = catalog->request(QUrl("json/countries"), this,
             [this](auto id, const auto &result) {
                 if (id != countriesRequest)
                     return;
@@ -119,13 +127,12 @@ void Country::searchCountry(const QString &country)
     ui->tableOfCoutries->show();
     ui->worldImage->hide();
     countryStationsModel->setStations({});
-    clearTableColor();
 
     const auto countryCode = ui->comboBox->currentData().toString();
     const QUrl endpoint = countryCode.isEmpty()
         ? RadioBrowserApi::endpoint("json/stations/search", "country", country)
         : RadioBrowserApi::endpoint("json/stations/search", "countrycode", countryCode);
-    stationsRequest = radioList->catalog().request(endpoint, radioList,
+    stationsRequest = catalog->request(endpoint, this,
         [this](auto id, const auto &result) {
             if (id != stationsRequest)
                 return;
@@ -138,99 +145,35 @@ void Country::searchCountry(const QString &country)
     radioList->showCatalogProgress(stationsRequest, tr("Loading stations for %1…").arg(country));
 }
 
-void Country::onDoubleListClicked(const QModelIndex &index)
+void Country::playIndex(const QModelIndex &index)
 {
-    if (!index.isValid())
-        return;
-
-    if (!countryStationsModel)
-        return;
-
-    if (index.row() < 0 || index.row() >= countryStationsModel->size())
-        return;
-
-    currentStation = countryStationsModel->station(index.row());
-
-    const QUrl streamUrl(currentStation.streamUrl);
-    playerUIController.clearMetadata();
-    radioList->prepareStationChange(streamUrl);
-    playbackController.play(streamUrl);
-
-    setIsPlaying(true);
-    setCurrentIndexPlaying(index.row());
-
-    setIndexColor(index);
-
-    radioList->clearTableViewColor();
-    radioList->loadPlayingStationDetails(currentStation);
-
-    playerUIController.setFavorite(radioList->isFavorite(currentStation));
-    playerUIController.setPauseIcon();
-
-    radioList->setIsStopClicked(false);
-}
-
-int Country::getCurrentIndexPlaying() const
-{
-    return currentIndexPlaying;
-}
-
-void Country::setCurrentIndexPlaying(int index)
-{
-    currentIndexPlaying = index;
-}
-
-bool Country::getIsPlaying() const
-{
-    return isPlaying;
-}
-
-void Country::setIsPlaying(bool playing)
-{
-    isPlaying = playing;
-}
-
-void Country::clearTableColor()
-{
-    if (customColor)
-        customColor->clearRowColor();
-
-    if (ui)
-        ui->tableOfCoutries->update();
-}
-
-const RadioStation &Country::getCurrentStation() const
-{
-    return currentStation;
-}
-
-void Country::setIndexColor(const QModelIndex &index)
-{
-    if (!index.isValid() || !theme)
-        return;
-
-    customColor.reset(new CustomColorDelegate(index.row(), theme->playingRowColor(), this));
-
-    ui->tableOfCoutries->setItemDelegate(customColor.get());
-    ui->tableOfCoutries->viewport()->update();
+    if (radioList && countryStationsModel && index.isValid()
+        && index.model() == countryStationsModel
+        && index.row() >= 0 && index.row() < countryStationsModel->size()) {
+        radioList->playback().play(countryStationsModel->station(index.row()));
+    }
 }
 
 void Country::setTheme(Theme *newTheme)
 {
     theme = newTheme;
+    updateThemeAppearance();
 }
 
 void Country::updateThemeAppearance()
 {
-    if (currentIndexPlaying < 0 || !countryStationsModel)
+    if (!theme || !countryStationsModel || !radioList)
         return;
-
-    const QModelIndex index = countryStationsModel->index(currentIndexPlaying, 0);
-
-    if (!index.isValid())
-        return;
-
-    setIndexColor(index);
+    if (!customColor) {
+        customColor = new CustomColorDelegate(-1, theme->playingRowColor(), ui->tableOfCoutries);
+        ui->tableOfCoutries->setItemDelegate(customColor);
+    }
+    const auto &playback = radioList->playback();
+    const auto &station = playback.station();
+    const int row = playback.hasActiveSession() && station
+        ? countryStationsModel->rowForStation(*station) : -1;
+    customColor->setPlayingRow(row, theme->playingRowColor());
+    ui->tableOfCoutries->viewport()->update();
 }
 
 void Country::showStationContextMenu(const QPoint &position)
@@ -250,10 +193,11 @@ void Country::showStationContextMenu(const QPoint &position)
 
     QMenu menu(ui->tableOfCoutries);
 
-    const bool isCurrentStationPlaying = playbackController.isPlaying() && isPlaying
-                                         && station.streamUrl == currentStation.streamUrl;
+    auto &playback = radioList->playback();
+    const bool activeStation = playback.hasActiveSession() && playback.matches(station);
+    const auto generation = playback.generation();
 
-    QAction *playAction = menu.addAction(isCurrentStationPlaying ? tr("Stop") : tr("Play"));
+    QAction *playAction = menu.addAction(activeStation ? tr("Stop") : tr("Play"));
 
     const bool isFavorite = radioList->isFavorite(station);
 
@@ -273,10 +217,11 @@ void Country::showStationContextMenu(const QPoint &position)
         return;
 
     if (selectedAction == playAction) {
-        if (isCurrentStationPlaying) {
-            radioList->onStopButtonClicked();
-        } else {
-            onDoubleListClicked(index);
+        if (activeStation) {
+            if (playback.generation() == generation && playback.matches(station))
+                playback.stop();
+        } else if (index.isValid()) {
+            playback.play(station);
         }
 
         return;

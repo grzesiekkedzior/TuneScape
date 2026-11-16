@@ -15,7 +15,8 @@ public:
                const QStyleOptionViewItem &option,
                const QModelIndex &index) const override;
 
-    void clearRowColor();
+    void setPlayingRow(int row, const QColor &color);
+    int playingRow() const;
 
 private:
     int targetRow = -1;

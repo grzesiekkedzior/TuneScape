@@ -32,6 +32,7 @@ void TrackView::setTrack(const music_data::Track &track)
 
 void TrackView::loadCover(const QString &url)
 {
+    cancelCover();
     ui->cover->setPixmap(defaulrCoverAlbum);
 
     if (url.isEmpty())
@@ -39,21 +40,33 @@ void TrackView::loadCover(const QString &url)
 
     QNetworkRequest request((QUrl(url)));
     QNetworkReply *reply = networkManager->get(request);
+    coverReply = reply;
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) {
-            reply->deleteLater();
+        if (coverReply != reply)
             return;
-        }
+        coverReply.clear();
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError)
+            return;
 
         QPixmap pixmap;
         if (pixmap.loadFromData(reply->readAll())) {
             ui->cover->setPixmap(pixmap);
             ui->cover->setScaledContents(true);
         }
-
-        reply->deleteLater();
     });
+}
+
+void TrackView::cancelCover()
+{
+    auto *reply = coverReply.data();
+    coverReply.clear();
+    if (reply) {
+        disconnect(reply, nullptr, this, nullptr);
+        reply->abort();
+        reply->deleteLater();
+    }
 }
 
 QString TrackView::generateLinksHtml(const QMap<QString, QList<QUrl>> &links)
@@ -75,6 +88,7 @@ QString TrackView::generateLinksHtml(const QMap<QString, QList<QUrl>> &links)
 
 void TrackView::clear()
 {
+    cancelCover();
     ui->cover->clear();
     ui->title->clear();
     ui->artist->clear();

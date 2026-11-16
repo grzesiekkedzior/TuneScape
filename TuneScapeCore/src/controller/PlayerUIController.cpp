@@ -1,37 +1,29 @@
 #include "include/controller/PlayerUIController.h"
+#include "include/controller/PlaybackController.h"
 #include <QIcon>
 #include "include/miniplayer.h"
 #include "ui_mainwindow.h"
 
 namespace {
 constexpr auto RadioIconPath = ":/images/img/radio96x96.png";
-constexpr auto TuneScapeIconPath = ":/images/img/TuneScape.ico";
 constexpr auto PlayIconPath = ":/images/img/play30.png";
 constexpr auto PauseIconPath = ":/images/img/pause30.png";
 constexpr auto FavoriteIconPath = ":/images/img/bookmark-file.png";
 constexpr auto EmptyFavoriteIconPath = ":/images/img/bookmark-empty.png";
 } // namespace
 
-void PlayerUIController::setPlayIcon()
+void PlayerUIController::updatePlaybackControls(bool canPause)
 {
     Q_ASSERT(m_ui);
     Q_ASSERT(m_miniPlayer);
 
-    const QIcon icon(PlayIconPath);
+    const QIcon icon(canPause ? PauseIconPath : PlayIconPath);
+    const auto action = canPause ? tr("Pause") : tr("Play");
 
     m_ui->playPause->setIcon(icon);
     m_miniPlayer->getMui()->play->setIcon(icon);
-}
-
-void PlayerUIController::setPauseIcon()
-{
-    Q_ASSERT(m_ui);
-    Q_ASSERT(m_miniPlayer);
-
-    const QIcon icon(PauseIconPath);
-
-    m_ui->playPause->setIcon(icon);
-    m_miniPlayer->getMui()->play->setIcon(icon);
+    m_ui->playPause->setToolTip(action);
+    m_miniPlayer->getMui()->play->setToolTip(action);
 }
 
 void PlayerUIController::setDefaultImage()
@@ -81,8 +73,6 @@ void PlayerUIController::setFavorite(bool isFavorite)
     m_ui->favorite->setIcon(icon);
 }
 
-void PlayerUIController::showDefaultImage() {}
-
 void PlayerUIController::setVolumeIcon(int volume)
 {
     Q_ASSERT(m_ui);
@@ -92,11 +82,15 @@ void PlayerUIController::setVolumeIcon(int volume)
     m_ui->volume->setIcon(icon);
 }
 
-void PlayerUIController::initialize(Ui::MainWindow *ui, miniplayer *miniPlayer)
+void PlayerUIController::initialize(Ui::MainWindow *ui, miniplayer *miniPlayer, PlaybackController &playback)
 {
     Q_ASSERT(ui);
     Q_ASSERT(miniPlayer);
 
     m_ui = ui;
     m_miniPlayer = miniPlayer;
+    connect(&playback, &PlaybackController::stateChanged, this, [this, &playback] {
+        updatePlaybackControls(playback.canPause());
+    });
+    updatePlaybackControls(playback.canPause());
 }

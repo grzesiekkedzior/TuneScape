@@ -1,4 +1,6 @@
 #include "include/model/RadioStationsModel.h"
+#include "include/FavoriteManager.h"
+#include <algorithm>
 #include <QEvent>
 #include <QHeaderView>
 #include <QScrollBar>
@@ -124,6 +126,14 @@ void RadioStationsModel::setStations(const QVector<RadioStation> &stations)
 const RadioStation &RadioStationsModel::station(int row) const
 {
     return m_stations.at(row);
+}
+
+int RadioStationsModel::rowForStation(const RadioStation &station) const
+{
+    const auto it = std::find_if(m_stations.cbegin(), m_stations.cend(), [&station](const auto &entry) {
+        return FavoriteManager::sameStation(station, entry);
+    });
+    return it != m_stations.cend() ? int(it - m_stations.cbegin()) : -1;
 }
 
 int RadioStationsModel::size() const

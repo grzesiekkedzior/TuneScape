@@ -1,7 +1,6 @@
 #include "include/music_data/services/ResolverService.h"
 #include <QJsonArray>
-
-music_data::ResolverService::ResolverService(QObject *parent) {}
+#include <QNetworkReply>
 
 music_data::ResolverService::ResolverService(MusicBrainzClient *mbc,
                                              CoverArtClient *cac,
@@ -39,8 +38,22 @@ music_data::ResolverService::ResolverService(MusicBrainzClient *mbc,
 
 void music_data::ResolverService::resolveTrack(const QString &query)
 {
-    m_pending = PendingTrack{};
+    cancel();
     m_musicBrainzClient->searchRecording(query);
+}
+
+void music_data::ResolverService::cancel()
+{
+    m_pending = {};
+    // The three clients own their network managers and keep their replies under them.
+    for (auto *reply : findChildren<QNetworkReply *>()) {
+        disconnect(reply, nullptr, m_musicBrainzClient, nullptr);
+        disconnect(reply, nullptr, m_coverArtClient, nullptr);
+        disconnect(reply, nullptr, m_externalLinksClient, nullptr);
+        if (!reply->isFinished())
+            reply->abort();
+        reply->deleteLater();
+    }
 }
 
 void music_data::ResolverService::handleSearchResult(const QJsonObject &json)

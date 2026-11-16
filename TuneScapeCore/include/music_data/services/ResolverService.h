@@ -12,13 +12,13 @@ class ResolverService : public QObject
     Q_OBJECT
 
 public:
-    explicit ResolverService(QObject *parent = nullptr);
     ResolverService(MusicBrainzClient *mbc,
                     CoverArtClient *cac,
                     ExternalLinksClient *elc,
                     QObject *parent = nullptr);
 
     void resolveTrack(const QString &query);
+    void cancel();
 
 signals:
     void trackReady(const Track &track);

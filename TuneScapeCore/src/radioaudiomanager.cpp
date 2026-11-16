@@ -1,186 +1,148 @@
 #include "include/radioaudiomanager.h"
+#include <QAudioOutput>
+#include <QCoreApplication>
 #include <QDateTime>
-#include <QDebug>
 #include <QTextStream>
 
 #ifdef Q_OS_WIN
-#include <QApplication>
+#include <QAbstractNativeEventFilter>
 #include <windows.h>
 #endif
 
-RadioAudioManager::RadioAudioManager()
-    : logLineCount(0)
-    , logFile("error_log.txt")
-{
-    player = new QMediaPlayer(this);
-    audioOutput = new QAudioOutput(this);
-    player->setAudioOutput(audioOutput);
-    if (logFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&logFile);
-        while (!in.atEnd()) {
-            in.readLine();
-            logLineCount++;
-        }
-        logFile.close();
-    }
-    if (logFile.open(QIODevice::Append | QIODevice::Text)) {
-        logFile.close();
-    } else {
-        qDebug() << "Cannot open log file!";
-    }
+namespace {
+constexpr int MaxLogLines = 10000;
 
 #ifdef Q_OS_WIN
-    qApp->installNativeEventFilter(new SystemEventFilter(this));
-#endif
-#ifdef __unix__
-    qputenv("QT_MEDIA_BACKEND", "gstreamer");
-    // setenv("QT_MEDIA_BACKEND", "gstreamer", 1);
-#elif defined(_WIN32) || defined(WIN32)
-    qputenv("QT_MEDIA_BACKEND", "windows");
-    qputenv("QT_MULTIMEDIA_PREFERRED_PLUGINS", "directshow");
-    // setenv("QT_MEDIA_BACKEND", "windows", 1);
-    // setenv("QT_MULTIMEDIA_PREFERRED_PLUGINS", "directshow", 1);
+class PowerEventFilter : public QAbstractNativeEventFilter
+{
+public:
+    explicit PowerEventFilter(RadioAudioManager &backend) : m_backend(backend) {}
 
+    bool nativeEventFilter(const QByteArray &type, void *message, qintptr *) override
+    {
+        if (type != "windows_generic_MSG" && type != "windows_dispatcher_MSG")
+            return false;
+        const auto *msg = static_cast<const MSG *>(message);
+        if (!msg || msg->message != WM_POWERBROADCAST)
+            return false;
+        switch (msg->wParam) {
+        case PBT_APMSUSPEND:
+            emit m_backend.systemSuspended();
+            break;
+        case PBT_APMRESUMEAUTOMATIC:
+        case PBT_APMRESUMECRITICAL:
+        case PBT_APMRESUMESUSPEND:
+            emit m_backend.systemResumed();
+            break;
+        }
+        return false;
+    }
+
+private:
+    RadioAudioManager &m_backend;
+};
 #endif
-    connect(player, &QMediaPlayer::errorOccurred, this, &RadioAudioManager::logError);
-}
+} // namespace
+
+RadioAudioManager::RadioAudioManager(QObject *parent)
+    : QObject(parent)
+{}
 
 RadioAudioManager::~RadioAudioManager()
 {
-    if (player)
-        delete player;
-    if (audioOutput)
-        delete audioOutput;
+#ifdef Q_OS_WIN
+    if (m_powerFilter && QCoreApplication::instance())
+        QCoreApplication::instance()->removeNativeEventFilter(m_powerFilter.get());
+#endif
+    stop();
 }
 
-void RadioAudioManager::loadStream(const QUrl &url)
+void RadioAudioManager::initializeAudio()
 {
+    if (m_audioOutput)
+        return;
+    m_audioOutput = new QAudioOutput(this);
+    m_audioOutput->setVolume(m_volume / 100.0);
+#ifdef Q_OS_WIN
+    if (auto *app = QCoreApplication::instance()) {
+        m_powerFilter = std::make_unique<PowerEventFilter>(*this);
+        app->installNativeEventFilter(m_powerFilter.get());
+    }
+#endif
+    if (m_logFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream input(&m_logFile);
+        while (!input.atEnd() && m_logLineCount < MaxLogLines) {
+            input.readLine();
+            ++m_logLineCount;
+        }
+        m_logFile.close();
+    }
+}
+
+void RadioAudioManager::start(const QUrl &url, quint64 attempt)
+{
+    stop();
+    initializeAudio();
+    auto *player = new QMediaPlayer(this);
+    m_player = player;
+    connect(player, &QMediaPlayer::playbackStateChanged, this, [this, player, attempt](auto state) {
+        if (m_player == player)
+            emit playbackStateChanged(attempt, state);
+    });
+    connect(player, &QMediaPlayer::mediaStatusChanged, this, [this, player, attempt](auto status) {
+        if (m_player == player)
+            emit mediaStatusChanged(attempt, status);
+    });
+    connect(player, &QMediaPlayer::errorOccurred, this,
+            [this, player, attempt](auto error, const QString &message) {
+                if (m_player != player || error == QMediaPlayer::NoError)
+                    return;
+                logError(message);
+                emit playbackError(attempt, message);
+            });
+
+    if (!player->isAvailable()) {
+        const auto message = tr("The audio backend is unavailable.");
+        logError(message);
+        emit playbackError(attempt, message);
+        return;
+    }
+    player->setAudioOutput(m_audioOutput);
+    if (m_player != player)
+        return;
     player->setSource(url);
+    if (m_player == player)
+        player->play();
 }
 
-void RadioAudioManager::playStream()
+void RadioAudioManager::stop()
 {
-    player->play();
-    setIsPlaying(true);
-}
-
-void RadioAudioManager::stopStream()
-{
+    auto *player = m_player.data();
+    m_player.clear();
+    if (!player)
+        return;
+    disconnect(player, nullptr, this, nullptr);
     player->stop();
-    setIsPlaying(false);
-}
-
-QMediaPlayer *RadioAudioManager::getMediaPlayer() const
-{
-    return this->player;
-}
-
-QAudioOutput *RadioAudioManager::getAudioAutput() const
-{
-    return this->audioOutput;
+    player->setAudioOutput(nullptr);
+    player->setSource(QUrl());
+    player->deleteLater();
 }
 
 void RadioAudioManager::setVolume(int value)
 {
-    float volume = (value * 0.01);
-    this->audioOutput->setVolume(volume);
+    m_volume = qBound(0, value, 100);
+    if (m_audioOutput)
+        m_audioOutput->setVolume(m_volume / 100.0);
 }
 
-QString RadioAudioManager::getErrorString(QMediaPlayer::Error error)
+void RadioAudioManager::logError(const QString &error)
 {
-    switch (error) {
-    case QMediaPlayer::NoError:
-        return "No error";
-    case QMediaPlayer::ResourceError:
-        return "Resource error";
-    case QMediaPlayer::FormatError:
-        return "Format error";
-    case QMediaPlayer::NetworkError:
-        return "Network error";
-    case QMediaPlayer::AccessDeniedError:
-        return "Access denied";
-    default:
-        return "Unknown error";
+    const bool truncate = m_logLineCount >= MaxLogLines;
+    if (m_logFile.open(QIODevice::Text | (truncate ? QIODevice::WriteOnly : QIODevice::Append))) {
+        QTextStream output(&m_logFile);
+        output << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss")
+               << " - " << error << Qt::endl;
+        m_logFile.close();
+        m_logLineCount = truncate ? 1 : m_logLineCount + 1;
     }
-}
-
-void RadioAudioManager::resetLogFile()
-{
-    if (logFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        logFile.close();
-        logLineCount = 0;
-    } else {
-        qDebug() << "Cannot reset log file!";
-    }
-}
-
-void RadioAudioManager::logError(QMediaPlayer::Error error)
-{
-    if (logLineCount >= MAX_LOG_LINES) {
-        resetLogFile();
-    }
-
-    QString errorMsg = getErrorString(error);
-    if (logFile.open(QIODevice::Append | QIODevice::Text)) {
-        QTextStream out(&logFile);
-        out << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss") << " - " << errorMsg
-            << Qt::endl;
-        logFile.close();
-        logLineCount++;
-    } else {
-        qDebug() << "Log file is not open!";
-    }
-    qDebug() << "Player error occurred:" << errorMsg;
-}
-
-bool RadioAudioManager::getIsPlaying() const
-{
-    return isPlaying;
-}
-
-void RadioAudioManager::setIsPlaying(bool newIsPlaying)
-{
-    isPlaying = newIsPlaying;
-}
-
-void RadioAudioManager::play(const QUrl &url)
-{
-    loadStream(url);
-    playStream();
-}
-
-#ifdef Q_OS_WIN
-bool SystemEventFilter::nativeEventFilter(const QByteArray &eventType,
-                                          void *message,
-                                          qintptr *result)
-{
-    if (eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") {
-        MSG *msg = static_cast<MSG *>(message);
-        if (msg->message == WM_POWERBROADCAST) {
-            if (msg->wParam == PBT_APMSUSPEND) {
-                manager->handleSystemSleep();
-                return true;
-            } else if (msg->wParam == PBT_APMRESUMEAUTOMATIC
-                       || msg->wParam == PBT_APMRESUMECRITICAL) {
-                manager->handleSystemWake();
-                return true;
-            }
-        }
-    }
-    return false;
-}
-#endif
-
-void RadioAudioManager::handleSystemSleep()
-{
-    qDebug() << "System is going to sleep. Stopping the player.";
-    if (getIsPlaying())
-        player->stop();
-}
-
-void RadioAudioManager::handleSystemWake()
-{
-    qDebug() << "System woke up. Restarting the player.";
-    if (getIsPlaying())
-        player->play();
 }

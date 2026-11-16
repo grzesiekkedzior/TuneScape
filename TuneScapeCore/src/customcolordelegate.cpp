@@ -32,7 +32,13 @@ void CustomColorDelegate::paint(QPainter *painter,
     QStyledItemDelegate::paint(painter, opt, index);
 }
 
-void CustomColorDelegate::clearRowColor()
+void CustomColorDelegate::setPlayingRow(int row, const QColor &color)
 {
-    targetRow = -1;
+    targetRow = row;
+    rowColor = color;
+}
+
+int CustomColorDelegate::playingRow() const
+{
+    return targetRow;
 }
