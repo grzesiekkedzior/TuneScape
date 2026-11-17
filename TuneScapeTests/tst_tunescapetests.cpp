@@ -1,4 +1,5 @@
 #include <QBuffer>
+#include <QAudioOutput>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -27,6 +28,7 @@
 #include "include/radioexplorer.h"
 #include "include/radiolist.h"
 #include <filesystem>
+#include <functional>
 #include <memory>
 
 namespace {
@@ -45,6 +47,8 @@ public:
                     const auto target = request.split(' ').value(1);
                     clients.insert(target, socket);
                     ++counts[target];
+                    if (onRequest)
+                        onRequest(socket, target);
                     request.clear();
                 }
             });
@@ -67,6 +71,16 @@ public:
             total += count;
         return total;
     }
+
+    int activeConnections() const
+    {
+        int count = 0;
+        for (auto *socket : server.findChildren<QTcpSocket *>(QString(), Qt::FindDirectChildrenOnly))
+            count += socket->state() == QAbstractSocket::ConnectedState;
+        return count;
+    }
+
+    std::function<void(QTcpSocket *, const QByteArray &)> onRequest;
 
     static bool respond(QTcpSocket *client, const QByteArray &body, qint64 length = -1,
                         const QByteArray &status = "200 OK", const QByteArray &type = "audio/mpeg")
@@ -177,6 +191,41 @@ RadioStation playbackStation(const QString &name, const QUrl &url)
     return station;
 }
 
+QByteArray mpegStream()
+{
+    // MPEG-1 Layer III, stereo, 44.1 kHz at 128 kbps. Zero spectral coefficients encode silence.
+    constexpr int FrameBytes = 417;
+    auto frame = QByteArray(FrameBytes, '\0');
+    frame.replace(0, 4, QByteArray::fromHex("fffb9000"));
+    return frame.repeated(240);
+}
+
+QByteArray monoResamplingStream()
+{
+    // Optional reproducer for the Qt 6.7/FFmpeg crash observed in swr_convert().
+    auto frame = QByteArray(417, '\0');
+    frame.replace(0, 4, QByteArray::fromHex("fffd80c0"));
+    return frame.repeated(240);
+}
+
+bool waitForAudio(PlaybackController &playback, RadioAudioManager &backend)
+{
+    const bool ready = QTest::qWaitFor([&] {
+        using State = PlaybackController::State;
+        const auto state = playback.state();
+        if (state == State::Error || state == State::Stopped)
+            return true;
+        const auto players = backend.findChildren<QMediaPlayer *>();
+        return state == State::Playing && players.size() == 1 && players.first()->position() >= 100;
+    }, 17000) && playback.state() == PlaybackController::State::Playing;
+    if (!ready) {
+        qInfo() << "Audio did not advance:" << playback.state() << playback.lastError();
+        for (auto *player : backend.findChildren<QMediaPlayer *>())
+            qInfo() << player->mediaStatus() << player->playbackState() << player->position();
+    }
+    return ready;
+}
+
 bool writeFixture(const QString &path, const QByteArray &bytes)
 {
     QFile file(path);
@@ -215,6 +264,10 @@ private slots:
     void testPlaybackModelIdentity();
     void testPlaybackViewsAndTray();
     void testPlaybackShutdownFinalizesRecording();
+    void testMediaHttpSwitchAndRelease();
+    void testMediaHttpRecordingLifecycle();
+    void testMediaHttpErrorsAndRecovery();
+    void testLiveRadioStreams();
     void testJsonListProcessorConnection();
     void testJsonListProcessorStationLoaded();
     void testCatalogResponseErrors_data();
@@ -640,6 +693,270 @@ void TuneScapeTests::testPlaybackShutdownFinalizesRecording()
     QTRY_COMPARE(http.client("/recording")->state(), QAbstractSocket::UnconnectedState);
     QTRY_COMPARE(http.client("/metadata")->state(), QAbstractSocket::UnconnectedState);
     QTRY_COMPARE(http.client("/pending-cover")->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testMediaHttpSwitchAndRelease()
+{
+    if (qEnvironmentVariableIntValue("TUNESCAPE_TEST_MEDIA") != 1)
+        QSKIP("Set TUNESCAPE_TEST_MEDIA=1 to exercise the installed multimedia backend.");
+
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    const auto audio = qEnvironmentVariableIntValue("TUNESCAPE_TEST_MONO") == 1
+        ? monoResamplingStream() : mpegStream();
+    http.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        if (target != "/pending")
+            http.respond(socket, audio, -1, "200 OK", "audio/mpeg");
+    };
+    RadioAudioManager backend;
+    PlaybackController playback(backend);
+    playback.setVolume(0);
+    using State = PlaybackController::State;
+    const auto a = playbackStation("A", http.url("/a.mp3"));
+    const auto b = playbackStation("B", http.url("/b.mp3"));
+    QSignalSpy errors(&backend, &RadioAudioManager::playbackError);
+
+    for (const auto &station : {a, b, a}) {
+        const auto previous = backend.findChild<QMediaPlayer *>();
+        const QPointer<QMediaPlayer> retired(previous);
+        playback.play(station);
+        QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+        QTRY_COMPARE(http.activeConnections(), 1);
+        QVERIFY(retired.isNull());
+        QCOMPARE(playback.streamUrl(), QUrl(station.streamUrl));
+        QCOMPARE(backend.findChildren<QAudioOutput *>().size(), 1);
+    }
+    QCOMPARE(http.requestCount("/a.mp3"), 2);
+    QCOMPARE(http.requestCount("/b.mp3"), 1);
+    const auto generation = playback.generation();
+    for (int cycle = 0; cycle < 6; ++cycle) {
+        const QPointer<QMediaPlayer> retired(backend.findChild<QMediaPlayer *>());
+        playback.pause();
+        QCOMPARE(playback.state(), State::Paused);
+        QTRY_VERIFY(retired.isNull());
+        QCOMPARE(backend.findChildren<QAudioOutput *>().size(), 1);
+        QTRY_COMPARE(http.activeConnections(), 0);
+        playback.resume();
+        QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+        QTRY_COMPARE(http.activeConnections(), 1);
+        QCOMPARE(playback.generation(), generation);
+    }
+    QCOMPARE(http.requestCount("/a.mp3"), 8);
+
+    playback.play(playbackStation("Pending", http.url("/pending")));
+    QTRY_VERIFY(http.client("/pending"));
+    QCOMPARE(playback.state(), State::Connecting);
+    const QPointer<QMediaPlayer> pendingPlayer(backend.findChild<QMediaPlayer *>());
+    playback.play(b);
+    playback.play(a);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    QTRY_VERIFY(pendingPlayer.isNull());
+    QTRY_COMPARE(http.client("/pending")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(playback.streamUrl(), QUrl(a.streamUrl));
+    playback.stop();
+    playback.stop();
+    QTRY_COMPARE(backend.findChildren<QMediaPlayer *>().size(), 0);
+    QTRY_COMPARE(http.activeConnections(), 0);
+    QCOMPARE(backend.findChildren<QAudioOutput *>().size(), 1);
+    QCOMPARE(errors.size(), 0);
+}
+
+void TuneScapeTests::testMediaHttpRecordingLifecycle()
+{
+    if (qEnvironmentVariableIntValue("TUNESCAPE_TEST_MEDIA") != 1)
+        QSKIP("Set TUNESCAPE_TEST_MEDIA=1 to exercise the installed multimedia backend.");
+
+    const QTemporaryDir recordings;
+    QVERIFY(recordings.isValid());
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    const auto audio = mpegStream();
+    http.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        if (target.startsWith("/json/")) {
+            http.respond(socket, "[]", 2, "200 OK", "application/json");
+            socket->disconnectFromHost();
+        } else {
+            http.respond(socket, audio, -1, "200 OK", "audio/mpeg");
+        }
+    };
+    RadioBrowserApi catalog({http.url("/")}, 1500);
+    RadioAudioManager backend;
+    PlaybackController playback(backend);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites(recordings.filePath("favorites.txt"));
+    RadioList list(&ui, &favorites, &catalog, &playback);
+    playback.setVolume(0);
+    using State = PlaybackController::State;
+    const auto a = playbackStation("A", http.url("/a.mp3"));
+    const auto b = playbackStation("B", http.url("/b.mp3"));
+    playback.play(a);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    QTRY_COMPARE(http.activeConnections(), 2); // Audio and ICY.
+
+    auto &recorder = list.getStreamRecorder();
+    recorder.startRecording(playback.streamUrl(), a.station, "mp3", recordings.path());
+    QTRY_COMPARE(recorder.bytesWritten(), audio.size());
+    QTRY_COMPARE(http.activeConnections(), 3);
+    auto *recordingSocket = http.client("/a.mp3");
+    ui.playPause->click();
+    QCOMPARE(playback.state(), State::Paused);
+    QTRY_COMPARE(http.activeConnections(), 2); // ICY and recording survive Pause.
+    const QByteArray silence = audio.left(417 * 10);
+    QCOMPARE(recordingSocket->write(silence), silence.size());
+    QTRY_COMPARE(recorder.bytesWritten(), audio.size() + silence.size());
+    const auto pausedFile = recorder.filePath();
+    ui.stop->click();
+    QTRY_COMPARE(http.activeConnections(), 0);
+    QCOMPARE(fileContents(pausedFile), audio + silence);
+
+    playback.play(a);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    recorder.startRecording(playback.streamUrl(), a.station, "mp3", recordings.path());
+    QTRY_COMPARE(recorder.bytesWritten(), audio.size());
+    const auto switchedFile = recorder.filePath();
+    QVERIFY(switchedFile != pausedFile);
+    playback.play(b);
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(fileContents(switchedFile), audio);
+    QCOMPARE(fileContents(pausedFile), audio + silence);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    QTRY_COMPARE(http.activeConnections(), 2);
+    playback.stop();
+    QTRY_COMPARE(http.activeConnections(), 0);
+    QTRY_COMPARE(backend.findChildren<QMediaPlayer *>().size(), 0);
+
+    RadioAudioManager fileBackend;
+    PlaybackController savedAudio(fileBackend);
+    savedAudio.setVolume(0);
+    for (const auto &path : {pausedFile, switchedFile}) {
+        savedAudio.play(playbackStation("Recorded", QUrl::fromLocalFile(path)));
+        QVERIFY2(waitForAudio(savedAudio, fileBackend), qPrintable(savedAudio.lastError()));
+        savedAudio.stop();
+    }
+}
+
+void TuneScapeTests::testMediaHttpErrorsAndRecovery()
+{
+    if (qEnvironmentVariableIntValue("TUNESCAPE_TEST_MEDIA") != 1)
+        QSKIP("Set TUNESCAPE_TEST_MEDIA=1 to exercise the installed multimedia backend.");
+
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    const auto audio = mpegStream();
+    http.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        if (target == "/404" || target == "/503") {
+            http.respond(socket, {}, 0, target == "/404" ? "404 Not Found" : "503 Service Unavailable");
+            socket->disconnectFromHost();
+        } else if (target != "/timeout") {
+            http.respond(socket, audio, audio.size() * 10, "200 OK", "audio/mpeg");
+        }
+    };
+    RadioAudioManager backend;
+    PlaybackController playback(backend);
+    playback.setVolume(0);
+    using State = PlaybackController::State;
+    auto invalid = playbackStation("Invalid", {});
+    invalid.streamUrl = "http://[invalid";
+    playback.play(invalid);
+    QCOMPARE(playback.state(), State::Error);
+    QVERIFY(backend.findChildren<QMediaPlayer *>().isEmpty());
+
+    for (const auto &path : {"/404", "/503", "/timeout"}) {
+        playback.play(playbackStation("Failing", http.url(path)));
+        QTRY_VERIFY(http.client(path));
+        QTRY_COMPARE_WITH_TIMEOUT(playback.state(), State::Error, 18000);
+        QVERIFY(!playback.lastError().isEmpty());
+        if (QByteArray(path) == "/timeout")
+            qInfo() << "Timeout result:" << playback.lastError();
+        QTRY_COMPARE(http.activeConnections(), 0);
+        QTRY_VERIFY(backend.findChildren<QMediaPlayer *>().isEmpty());
+    }
+
+    const auto station = playbackStation("Recoverable", http.url("/live.mp3"));
+    playback.play(station);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    http.client("/live.mp3")->abort();
+    // Some backends treat premature EOF as EndOfMedia, others report a network error.
+    QTRY_VERIFY_WITH_TIMEOUT(playback.state() == State::Error || playback.state() == State::Stopped, 12000);
+    qInfo() << "Backend state after truncated HTTP response:" << playback.state() << playback.lastError();
+    QTRY_VERIFY(backend.findChildren<QMediaPlayer *>().isEmpty());
+    playback.play(station);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    playback.stop();
+    QTRY_COMPARE(http.activeConnections(), 0);
+}
+
+void TuneScapeTests::testLiveRadioStreams()
+{
+    const QUrl first(qEnvironmentVariable("TUNESCAPE_LIVE_STREAM_A"));
+    const QUrl second(qEnvironmentVariable("TUNESCAPE_LIVE_STREAM_B"));
+    if (first.isEmpty() || second.isEmpty())
+        QSKIP("Supply TUNESCAPE_LIVE_STREAM_A and TUNESCAPE_LIVE_STREAM_B to test live radio.");
+    for (const auto &url : {first, second}) {
+        QVERIFY(url.isValid() && !url.host().isEmpty());
+        QVERIFY(url.scheme() == "http" || url.scheme() == "https");
+    }
+    QVERIFY(first != second);
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    RadioBrowserApi catalog({}, 1500);
+    RadioAudioManager backend;
+    PlaybackController playback(backend);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites(directory.filePath("favorites.txt"));
+    RadioList list(&ui, &favorites, &catalog, &playback);
+    playback.setVolume(0);
+    using State = PlaybackController::State;
+    const auto a = playbackStation("A", first);
+    const auto b = playbackStation("B", second);
+    for (const auto &station : {a, b, a}) {
+        const QPointer<QMediaPlayer> retired(backend.findChild<QMediaPlayer *>());
+        playback.play(station);
+        QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+        QVERIFY(retired.isNull());
+        QCOMPARE(playback.streamUrl(), QUrl(station.streamUrl));
+        qInfo() << "Decoded live audio:" << station.station << QUrl(station.streamUrl).scheme();
+    }
+    auto &recording = list.getStreamRecorder();
+    QSignalSpy failures(&recording, &StreamRecorder::recordingFailed);
+    const auto recordingError = [&] {
+        return failures.isEmpty() ? QByteArray("No bytes received before test timeout")
+                                 : failures.last().first().toString().toUtf8();
+    };
+    recording.startRecording(playback.streamUrl(), a.station, "mp3", directory.path());
+    QVERIFY2(QTest::qWaitFor([&] { return recording.bytesWritten() > 0 || !failures.isEmpty(); }, 10000)
+             && recording.bytesWritten() > 0, recordingError().constData());
+    const auto firstRecording = recording.filePath();
+    for (int cycle = 0; cycle < 2; ++cycle) {
+        playback.pause();
+        QCOMPARE(playback.state(), State::Paused);
+        QTRY_VERIFY(backend.findChildren<QMediaPlayer *>().isEmpty());
+        const auto pausedBytes = recording.bytesWritten();
+        QTRY_VERIFY_WITH_TIMEOUT(recording.bytesWritten() > pausedBytes, 10000);
+        playback.resume();
+        QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    }
+    playback.play(b);
+    QCOMPARE(recording.state(), StreamRecorder::State::Idle);
+    const auto firstBytes = recording.bytesWritten();
+    QCOMPARE(QFileInfo(firstRecording).size(), firstBytes);
+    QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
+    recording.startRecording(playback.streamUrl(), b.station, "mp3", directory.path());
+    QVERIFY2(QTest::qWaitFor([&] { return recording.bytesWritten() > 0 || !failures.isEmpty(); }, 10000)
+             && recording.bytesWritten() > 0, recordingError().constData());
+    const auto secondRecording = recording.filePath();
+    playback.stop();
+    QCOMPARE(playback.state(), State::Stopped);
+    QCOMPARE(recording.state(), StreamRecorder::State::Idle);
+    QVERIFY(recording.bytesWritten() > 0);
+    QCOMPARE(QFileInfo(secondRecording).size(), recording.bytesWritten());
+    QCOMPARE(QFileInfo(firstRecording).size(), firstBytes);
+    QTRY_VERIFY(backend.findChildren<QMediaPlayer *>().isEmpty());
+    QCOMPARE(backend.findChildren<QAudioOutput *>().size(), 1);
 }
 
 void TuneScapeTests::testJsonListProcessorConnection()
