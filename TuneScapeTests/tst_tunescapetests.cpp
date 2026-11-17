@@ -10,6 +10,7 @@
 #include <QMessageBox>
 #include <QNetworkProxy>
 #include <QProgressDialog>
+#include <QProcess>
 #include <QStandardItemModel>
 #include <QTableView>
 #include <QTcpServer>
@@ -45,6 +46,7 @@ public:
                 request += socket->readAll();
                 if (request.contains("\r\n\r\n")) {
                     const auto target = request.split(' ').value(1);
+                    requestHeaders.insert(target, request);
                     clients.insert(target, socket);
                     ++counts[target];
                     if (onRequest)
@@ -63,6 +65,7 @@ public:
     }
 
     QTcpSocket *client(const QByteArray &target) const { return clients.value(target); }
+    QByteArray request(const QByteArray &target) const { return requestHeaders.value(target); }
     int requestCount(const QByteArray &target) const { return counts.value(target); }
     int requestCount() const
     {
@@ -112,6 +115,7 @@ public:
 
 private:
     QHash<QByteArray, QTcpSocket *> clients;
+    QHash<QByteArray, QByteArray> requestHeaders;
     QHash<QByteArray, int> counts;
     QTcpServer server;
 };
@@ -226,6 +230,35 @@ bool waitForAudio(PlaybackController &playback, RadioAudioManager &backend)
     return ready;
 }
 
+QString runMediaTestInChild(const QString &name)
+{
+    const QTemporaryDir directory;
+    if (!directory.isValid())
+        return QStringLiteral("Cannot create the subprocess log directory.");
+    const auto path = directory.filePath("result.txt");
+    QProcess child;
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert("TUNESCAPE_MEDIA_CHILD", "1");
+    child.setProcessEnvironment(environment);
+    child.start(QCoreApplication::applicationFilePath(),
+                {name, "-nocrashhandler", "-o", path + ",txt"});
+    if (!child.waitForStarted(5000))
+        return child.errorString();
+    if (!child.waitForFinished(55000)) {
+        child.kill();
+        child.waitForFinished(5000);
+        return QStringLiteral("Media test subprocess exceeded 55 seconds.");
+    }
+    QFile log(path);
+    if (!log.open(QIODevice::ReadOnly))
+        return QStringLiteral("The media test subprocess produced no log.");
+    const auto result = QString::fromUtf8(log.readAll());
+    qInfo().noquote() << result;
+    return child.exitStatus() == QProcess::NormalExit && child.exitCode() == 0
+        ? QString() : QStringLiteral("Media subprocess failed (%1).\n%2")
+                          .arg(child.exitCode()).arg(result);
+}
+
 bool writeFixture(const QString &path, const QByteArray &bytes)
 {
     QFile file(path);
@@ -261,12 +294,15 @@ private slots:
     void testPlaybackErrors_data();
     void testPlaybackErrors();
     void testPlaybackStallAndSystemWake();
+    void testPlaybackStopDuringBuffering();
     void testPlaybackModelIdentity();
     void testPlaybackViewsAndTray();
     void testPlaybackShutdownFinalizesRecording();
     void testMediaHttpSwitchAndRelease();
     void testMediaHttpRecordingLifecycle();
     void testMediaHttpErrorsAndRecovery();
+    void testRecordingForbidden_data();
+    void testRecordingForbidden();
     void testLiveRadioStreams();
     void testJsonListProcessorConnection();
     void testJsonListProcessorStationLoaded();
@@ -529,6 +565,32 @@ void TuneScapeTests::testPlaybackStallAndSystemWake()
     QVERIFY(!playback.lastError().isEmpty());
 }
 
+void TuneScapeTests::testPlaybackStopDuringBuffering()
+{
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    using State = PlaybackController::State;
+    QSignalSpy sessions(&playback, &PlaybackController::sessionChanged);
+    QSignalSpy states(&playback, &PlaybackController::stateChanged);
+    playback.play(playbackStation("Buffering", QUrl("http://127.0.0.1/buffering")));
+    const auto attempt = audio.active;
+    emit audio.mediaStatusChanged(attempt, QMediaPlayer::BufferingMedia);
+    QCOMPARE(playback.state(), State::Buffering);
+    playback.stop();
+    QCOMPARE(playback.state(), State::Stopped);
+    QCOMPARE(audio.active, 0);
+    QCOMPARE(audio.stops, 1);
+    QCOMPARE(sessions.size(), 2);
+    QCOMPARE(states.size(), 3);
+    emit audio.mediaStatusChanged(attempt, QMediaPlayer::BufferedMedia);
+    emit audio.playbackStateChanged(attempt, QMediaPlayer::PlayingState);
+    emit audio.playbackError(attempt, "Late buffering error");
+    QCOMPARE(playback.state(), State::Stopped);
+    QCOMPARE(states.size(), 3);
+    QVERIFY(playback.lastError().isEmpty());
+    QVERIFY(!playback.station());
+}
+
 void TuneScapeTests::testPlaybackModelIdentity()
 {
     const QTemporaryDir directory;
@@ -699,6 +761,11 @@ void TuneScapeTests::testMediaHttpSwitchAndRelease()
 {
     if (qEnvironmentVariableIntValue("TUNESCAPE_TEST_MEDIA") != 1)
         QSKIP("Set TUNESCAPE_TEST_MEDIA=1 to exercise the installed multimedia backend.");
+    if (qEnvironmentVariableIntValue("TUNESCAPE_MEDIA_CHILD") != 1) {
+        const auto error = runMediaTestInChild(QString::fromLatin1(QTest::currentTestFunction()));
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        return;
+    }
 
     TestHttpServer http;
     QVERIFY(http.listen());
@@ -759,12 +826,35 @@ void TuneScapeTests::testMediaHttpSwitchAndRelease()
     QTRY_COMPARE(http.activeConnections(), 0);
     QCOMPARE(backend.findChildren<QAudioOutput *>().size(), 1);
     QCOMPARE(errors.size(), 0);
+
+    auto shutdownBackend = std::make_unique<RadioAudioManager>();
+    PlaybackController shutdownPlayback(*shutdownBackend);
+    shutdownPlayback.setVolume(0);
+    shutdownPlayback.play(a);
+    QVERIFY2(waitForAudio(shutdownPlayback, *shutdownBackend), qPrintable(shutdownPlayback.lastError()));
+    QStringList destruction;
+    const QPointer<QMediaPlayer> activePlayer(shutdownBackend->findChild<QMediaPlayer *>());
+    const QPointer<QAudioOutput> sharedOutput(shutdownBackend->findChild<QAudioOutput *>());
+    QVERIFY(activePlayer && sharedOutput);
+    connect(activePlayer, &QObject::destroyed, this, [&] { destruction.append("player"); });
+    connect(sharedOutput, &QObject::destroyed, this, [&] { destruction.append("output"); });
+    shutdownBackend.reset();
+    QVERIFY(activePlayer.isNull());
+    QVERIFY(sharedOutput.isNull());
+    QCOMPARE(destruction, (QStringList{"player", "output"}));
+    QTRY_COMPARE(http.activeConnections(), 0);
+    shutdownPlayback.stop();
 }
 
 void TuneScapeTests::testMediaHttpRecordingLifecycle()
 {
     if (qEnvironmentVariableIntValue("TUNESCAPE_TEST_MEDIA") != 1)
         QSKIP("Set TUNESCAPE_TEST_MEDIA=1 to exercise the installed multimedia backend.");
+    if (qEnvironmentVariableIntValue("TUNESCAPE_MEDIA_CHILD") != 1) {
+        const auto error = runMediaTestInChild(QString::fromLatin1(QTest::currentTestFunction()));
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        return;
+    }
 
     const QTemporaryDir recordings;
     QVERIFY(recordings.isValid());
@@ -841,6 +931,11 @@ void TuneScapeTests::testMediaHttpErrorsAndRecovery()
 {
     if (qEnvironmentVariableIntValue("TUNESCAPE_TEST_MEDIA") != 1)
         QSKIP("Set TUNESCAPE_TEST_MEDIA=1 to exercise the installed multimedia backend.");
+    if (qEnvironmentVariableIntValue("TUNESCAPE_MEDIA_CHILD") != 1) {
+        const auto error = runMediaTestInChild(QString::fromLatin1(QTest::currentTestFunction()));
+        QVERIFY2(error.isEmpty(), qPrintable(error));
+        return;
+    }
 
     TestHttpServer http;
     QVERIFY(http.listen());
@@ -886,6 +981,62 @@ void TuneScapeTests::testMediaHttpErrorsAndRecovery()
     QVERIFY2(waitForAudio(playback, backend), qPrintable(playback.lastError()));
     playback.stop();
     QTRY_COMPARE(http.activeConnections(), 0);
+}
+
+void TuneScapeTests::testRecordingForbidden_data()
+{
+    QTest::addColumn<bool>("redirect");
+    QTest::newRow("direct-403") << false;
+    QTest::newRow("redirect-to-403") << true;
+}
+
+void TuneScapeTests::testRecordingForbidden()
+{
+    QFETCH(bool, redirect);
+    const QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    TestHttpServer server;
+    QVERIFY(server.listen());
+    server.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        if (target == "/redirect") {
+            socket->write("HTTP/1.1 302 Found\r\nLocation: /denied\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+        } else {
+            const QByteArray body = "<html>Recording denied</html>";
+            server.respond(socket, body, body.size(), "403 Forbidden", "text/html");
+        }
+        socket->disconnectFromHost();
+    };
+    const auto existing = directory.filePath("existing.mp3");
+    QVERIFY(writeFixture(existing, "previous recording"));
+    RadioBrowserApi catalog({}, 1500);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites(directory.filePath("favorites.txt"));
+    RadioList list(&ui, &favorites, &catalog);
+    auto &recorder = list.getStreamRecorder();
+    QSignalSpy failed(&recorder, &StreamRecorder::recordingFailed);
+    QSignalSpy finished(&recorder, &StreamRecorder::recordingFinished);
+    recorder.startRecording(server.url(redirect ? "/redirect" : "/denied"),
+                            "Denied", "mp3", directory.path());
+    QTRY_COMPARE(failed.size(), 1);
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
+    QCOMPARE(finished.size(), 0);
+    QCOMPARE(recorder.bytesWritten(), 0);
+    QVERIFY(failed.first().first().toString().contains("Forbidden"));
+    QVERIFY(failed.first().first().toString().contains("HTTP 403"));
+    QCOMPARE(QFileInfo(recorder.filePath()).size(), 0);
+    QVERIFY(fileContents(recorder.filePath()).isEmpty());
+    QCOMPARE(fileContents(existing), QByteArray("previous recording"));
+    QVERIFY(ui.statusbar->currentMessage().contains("Forbidden"));
+    QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
+    QTRY_COMPARE(server.activeConnections(), 0);
+    QCOMPARE(server.requestCount("/denied"), 1);
+    QCOMPARE(server.requestCount("/redirect"), redirect ? 1 : 0);
+    QVERIFY(server.request("/denied").contains("User-Agent: TuneScape/6.0\r\n"));
+    recorder.stopRecording();
+    QCOMPARE(failed.size(), 1);
+    QCOMPARE(finished.size(), 0);
 }
 
 void TuneScapeTests::testLiveRadioStreams()

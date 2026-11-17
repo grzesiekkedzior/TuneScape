@@ -19,6 +19,7 @@ void StreamReader::startStreaming(const QUrl &url, quint64 generation)
         return;
 
     QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("TuneScape/6.0"));
     request.setRawHeader("Icy-MetaData", "1");
     auto *reply = m_manager.get(request);
     m_reply = reply;

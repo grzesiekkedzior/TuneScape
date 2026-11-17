@@ -34,6 +34,16 @@ if(BUILD_TESTING)
     set_tests_properties(TuneScapeTests PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 60)
+    qt_add_executable(TuneScapeAudioDiagnostics TuneScapeTests/audio_diagnostics/main.cpp)
+    target_link_libraries(TuneScapeAudioDiagnostics PRIVATE
+        Qt6::Core Qt6::Gui Qt6::Network Qt6::Multimedia Qt6::Test)
+    if(WIN32)
+        target_link_libraries(TuneScapeAudioDiagnostics PRIVATE psapi)
+    endif()
+    add_test(NAME TuneScapeAudioDiagnostics COMMAND TuneScapeAudioDiagnostics)
+    set_tests_properties(TuneScapeAudioDiagnostics PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        TIMEOUT 400)
 endif()
 
 install(TARGETS TuneScapeCore RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

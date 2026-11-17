@@ -55,6 +55,9 @@ RadioAudioManager::~RadioAudioManager()
         QCoreApplication::instance()->removeNativeEventFilter(m_powerFilter.get());
 #endif
     stop();
+    // QObject would delete the older shared output before its newer player children.
+    // Finish those deferred deletions while the output and audio device still exist.
+    qDeleteAll(findChildren<QMediaPlayer *>(QString(), Qt::FindDirectChildrenOnly));
 }
 
 void RadioAudioManager::initializeAudio()

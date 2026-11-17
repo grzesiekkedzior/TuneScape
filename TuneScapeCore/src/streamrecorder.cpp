@@ -129,6 +129,7 @@ void StreamRecorder::startRecording(const QUrl &url, const QString &stationName,
     }
 
     QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("TuneScape/6.0"));
     request.setTransferTimeout(TransferTimeoutMs);
     auto *reply = m_manager.get(request);
     m_reply = reply;
@@ -184,7 +185,11 @@ void StreamRecorder::handleFinished(QNetworkReply *reply)
     if (m_reply != reply)
         return;
 
-    if (reply->error() != QNetworkReply::NoError)
+    const auto status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (status >= 400)
+        finishRecording(tr("The recording server returned HTTP %1 (%2).")
+                            .arg(status).arg(reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString()));
+    else if (reply->error() != QNetworkReply::NoError)
         finishRecording(tr("The recording connection failed: %1").arg(reply->errorString()));
     else if (!isSuccessfulHttpResponse(reply))
         finishRecording(tr("The server did not return a successful HTTP response."));
