@@ -15,6 +15,7 @@
 #include <QMediaDevices>
 #include <QMediaMetaData>
 #include <QMediaPlayer>
+#include <QtMultimediaVersion>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -29,6 +30,7 @@
 #include <QSslConfiguration>
 #include <QSslSocket>
 #include <QSslCipher>
+#include <QSysInfo>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
@@ -161,6 +163,14 @@ void versions()
 {
     const auto devices = QMediaDevices::audioOutputs();
     QJsonObject info{{"qt", qVersion()}, {"build", QLibraryInfo::build()},
+                     {"compiledQt", QT_VERSION_STR},
+                     {"compiledQtMultimedia", QTMULTIMEDIA_VERSION_STR},
+                     {"architecture", QSysInfo::buildCpuArchitecture()},
+#ifdef __VERSION__
+                     {"compiler", __VERSION__},
+#elif defined(_MSC_VER)
+                     {"compiler", "MSVC " QT_STRINGIFY(_MSC_VER)},
+#endif
                      {"qtBin", QLibraryInfo::path(QLibraryInfo::BinariesPath)},
                      {"qtPlugins", QLibraryInfo::path(QLibraryInfo::PluginsPath)},
                      {"outputs", devices.size()},
@@ -343,7 +353,8 @@ int worker(const QStringList &args)
             log({{"cycle", cycle}, {"attempt", qint64(id)}, {"status", int(status)}});
         });
         QObject::connect(player, &QMediaPlayer::errorOccurred, &owner, [&, id](auto error, const QString &detail) {
-            log({{"attemptError", qint64(id)}, {"error", int(error)}, {"detail", detail}});
+            log({{"attemptError", qint64(id)}, {"error", int(error)}, {"detail", detail},
+                 {"formatUnsupported", error == QMediaPlayer::FormatError}});
         });
         player->setAudioOutput(&output);
         player->setSource(server.url(path));
@@ -512,7 +523,10 @@ int decode(const QStringList &args)
     decoder.setSource(QUrl::fromLocalFile(file.fileName()));
     decoder.start();
     const bool ready = QTest::qWaitFor([&] { return finished || decoder.error() != QAudioDecoder::NoError; }, 10000);
-    log({{"finished", finished}, {"frames", frames}, {"error", decoder.errorString()}});
+    log({{"finished", finished}, {"frames", frames}, {"error", decoder.errorString()},
+         {"decoderError", int(decoder.error())},
+         {"formatUnsupported", decoder.error() == QAudioDecoder::FormatError
+                                || decoder.error() == QAudioDecoder::NotSupportedError}});
     return ready && finished && valid && frames > 0 ? 0 : 5;
 }
 

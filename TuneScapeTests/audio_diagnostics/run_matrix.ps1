@@ -25,9 +25,13 @@ if ((Test-Path -LiteralPath $ResultsDirectory) -and
     throw 'Use a fresh, empty results directory; existing files are preserved'
 }
 New-Item -ItemType Directory -Path $ResultsDirectory -Force | Out-Null
-foreach ($required in @('bin/Qt6Core.dll','bin/Qt6Multimedia.dll','plugins/multimedia/ffmpegmediaplugin.dll')) {
+foreach ($required in @('bin/qmake.exe','bin/Qt6Core.dll','bin/Qt6Multimedia.dll','plugins/multimedia/ffmpegmediaplugin.dll')) {
     if (!(Test-Path -LiteralPath (Join-Path $QtRoot $required))) { throw "Incomplete Qt kit: $required" }
 }
+$expectedQtVersion = (& (Join-Path $QtRoot 'bin/qmake.exe') -query QT_VERSION | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $expectedQtVersion -notmatch '^6\.\d+\.\d+$') { throw 'Cannot identify the selected Qt kit' }
+$compilerExecutable=Join-Path $CompilerBin 'g++.exe'
+$expectedCompiler=if (Test-Path -LiteralPath $compilerExecutable) { (& $compilerExecutable -dumpfullversion | Out-String).Trim() } else { '' }
 if (Test-Path -LiteralPath (Join-Path (Split-Path $Executable) 'Qt6Core.dll')) {
     throw 'Use a clean build directory without deployed Qt DLLs beside the executable'
 }
@@ -81,12 +85,33 @@ foreach ($fixture in $fixtures) {
                 $output | Set-Content -LiteralPath (Join-Path $ResultsDirectory ($name + '.jsonl')) -Encoding utf8
                 $records=@($output -split '\r?\n' | Where-Object { $_.StartsWith('{') } | ForEach-Object { try { $_ | ConvertFrom-Json } catch {} })
                 $version=$records | Where-Object qt | Select-Object -First 1
-                if (!$version) { throw "No Qt inventory in $name" }
+                $environmentIssues=@()
+                if (!$version) { $environmentIssues+='Missing Qt inventory' }
+                if ($version.qt -ne $expectedQtVersion -or $version.compiledQt -ne $expectedQtVersion -or
+                    $version.compiledQtMultimedia -ne $expectedQtVersion) {
+                    $environmentIssues+='Compiled and loaded Qt/Qt Multimedia must match the selected kit'
+                }
+                if ($expectedCompiler -and $version.compiler -ne $expectedCompiler) { $environmentIssues+='Compiler does not match CompilerBin' }
                 foreach ($module in $version.loadedModules.PSObject.Properties) {
                     if (!$module.Value.StartsWith($QtRoot + '\', [StringComparison]::OrdinalIgnoreCase)) {
-                        throw "Mixed Qt/FFmpeg module: $($module.Value)"
+                        $environmentIssues+="Mixed Qt/FFmpeg module: $($module.Value)"
                     }
                 }
+                $pluginPath=$version.loadedModules.ffmpegmediaplugin
+                $pluginVersion=if ($pluginPath) { [Diagnostics.FileVersionInfo]::GetVersionInfo($pluginPath).FileVersion } else { '' }
+                if (!$pluginPath -or !$version.ffmpeg) { $environmentIssues+='FFmpeg backend inventory missing' }
+                foreach ($qtModule in @('Qt6Multimedia','ffmpegmediaplugin')) {
+                    $path=$version.loadedModules.$qtModule
+                    if (!$path) { $environmentIssues+="Missing module: $qtModule"; continue }
+                    $fileVersion=[Diagnostics.FileVersionInfo]::GetVersionInfo($path)
+                    if ("$($fileVersion.FileMajorPart).$($fileVersion.FileMinorPart).$($fileVersion.FileBuildPart)" -ne $expectedQtVersion) {
+                        $environmentIssues+="Module version mismatch: $qtModule"
+                    }
+                }
+                $outcome=if ($timedOut) { 'Timeout' } elseif ($exitCode -lt 0) { 'NativeCrash' }
+                    elseif ($exitCode -eq 0) { 'Success' }
+                    elseif (@($records | Where-Object formatUnsupported -eq $true).Count) { 'UnsupportedFormat' }
+                    else { 'Failure' }
                 $lastCycle=$records | Where-Object { $_.PSObject.Properties.Name -contains 'beginCycle' } | Select-Object -Last 1
                 $lastPhase=$records | Where-Object phase | Select-Object -Last 1
                 $results.Add([pscustomobject]@{
@@ -95,6 +120,9 @@ foreach ($fixture in $fixtures) {
                     LastCycle=$lastCycle.beginCycle; LastPhase=$lastPhase.phase; ElapsedMs=$watch.ElapsedMilliseconds
                     DumpBytes=$(if(Test-Path -LiteralPath $dump){(Get-Item -LiteralPath $dump).Length}else{0})
                     Log=$name+'.jsonl'; Qt=$version.qt; FFmpeg=$version.ffmpeg
+                    Outcome=$outcome; Comparable=($environmentIssues.Count -eq 0); EnvironmentIssues=$environmentIssues
+                    CompiledQt=$version.compiledQt; CompiledQtMultimedia=$version.compiledQtMultimedia
+                    Compiler=$version.compiler; Architecture=$version.architecture; PluginVersion=$pluginVersion
                 })
                 $results | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $ResultsDirectory 'matrix.json') -Encoding utf8
                 Write-Host "$name exit=$exitCode timeout=$timedOut lastCycle=$($lastCycle.beginCycle)"
@@ -102,7 +130,7 @@ foreach ($fixture in $fixtures) {
         }
     }
 }
-$results | Group-Object Fixture,Mode,Device | ForEach-Object {
-    [pscustomobject]@{Group=$_.Name; Trials=$_.Count; Failures=@($_.Group | Where-Object {$_.ExitCode -ne 0 -or $_.TimedOut}).Count}
+$results | Group-Object Fixture,Mode,Device,Outcome,Comparable | ForEach-Object {
+    [pscustomobject]@{Group=$_.Name; Trials=$_.Count}
 } | Format-Table
-if (@($results | Where-Object {$_.ExitCode -ne 0 -or $_.TimedOut}).Count) { exit 1 }
+if (@($results | Where-Object {$_.ExitCode -ne 0 -or $_.TimedOut -or !$_.Comparable}).Count) { exit 1 }
