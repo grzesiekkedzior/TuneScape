@@ -3,4 +3,4 @@ CONFIG += console c++17 testcase no_testcase_installs
 TEMPLATE = app
 TARGET = TuneScapeAudioDiagnostics
 SOURCES += main.cpp
-win32: LIBS += -lpsapi
+win32: LIBS += -lpsapi -ldbghelp

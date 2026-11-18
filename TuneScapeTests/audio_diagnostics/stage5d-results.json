@@ -1,0 +1,442 @@
+{
+  "SchemaVersion": 1,
+  "Stage": "5D",
+  "ReportDate": "2026-11-18",
+  "Branch": "refactor/codebase-audit",
+  "BaseCommit": "e56adae714221b3e402a31bda6e91ca7b5bd3b85",
+  "Completion": "Documented limitations; no validated safe release configuration",
+  "EvidenceRoot": "C:\\Users\\gkedzior\\AppData\\Local\\Temp\\TuneScape-stage5d-54fe4763",
+  "Environment": {
+    "avcodec-60": "60.31.102",
+    "avformat-60": "60.16.100",
+    "avutil-58": "58.29.100",
+    "build": "Qt 6.7.0 (x86_64-little_endian-llp64 shared (dynamic) release build; by GCC 11.2.0)",
+    "devices": [
+      {
+        "channels": 2,
+        "default": true,
+        "description": "G�o�niki (2 � Realtek(R) Audio)",
+        "id": "7b302e302e302e30303030303030307d2e7b31316163396333652d343861322d346666362d383265312d3535376339333535313838397d",
+        "rate": 48000,
+        "sampleFormat": 4
+      }
+    ],
+    "ffmpeg": "6.1.1",
+    "loadedModules": {
+      "Qt6Core": "C:\\Qt\\6.7.0\\mingw_64\\bin\\Qt6Core.dll",
+      "Qt6Gui": "C:\\Qt\\6.7.0\\mingw_64\\bin\\Qt6Gui.dll",
+      "Qt6Multimedia": "C:\\Qt\\6.7.0\\mingw_64\\bin\\Qt6Multimedia.dll",
+      "Qt6Network": "C:\\Qt\\6.7.0\\mingw_64\\bin\\Qt6Network.dll",
+      "Qt6Test": "C:\\Qt\\6.7.0\\mingw_64\\bin\\Qt6Test.dll",
+      "avcodec-60": "C:\\Qt\\6.7.0\\mingw_64\\bin\\avcodec-60.dll",
+      "avformat-60": "C:\\Qt\\6.7.0\\mingw_64\\bin\\avformat-60.dll",
+      "avutil-58": "C:\\Qt\\6.7.0\\mingw_64\\bin\\avutil-58.dll",
+      "ffmpegmediaplugin": "C:\\Qt\\6.7.0\\mingw_64\\plugins\\multimedia\\ffmpegmediaplugin.dll",
+      "swresample-4": "C:\\Qt\\6.7.0\\mingw_64\\bin\\swresample-4.dll"
+    },
+    "outputs": 1,
+    "qt": "6.7.0",
+    "qtBin": "C:/Qt/6.7.0/mingw_64/bin",
+    "qtPlugins": "C:/Qt/6.7.0/mingw_64/plugins",
+    "sslBuild": "Secure Channel (NTDDI: 0xA00000C)",
+    "sslRuntime": "Secure Channel, Windows 10.0.26200",
+    "swresample-4": "4.12.100"
+  },
+  "EncoderCLI": {
+    "Version": "9.0.2-essentials_build-www.gyan.dev",
+    "Role": "Independent fixture generation and validation only; Qt runtime still uses FFmpeg 6.1.1"
+  },
+  "Fixtures": [
+    {
+      "Name": "synthetic-mono-mp2",
+      "File": "synthetic-mono-mp2.mp2",
+      "Codec": "mp2",
+      "Channels": 1,
+      "Rate": 44100,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 100080,
+      "Sha256": "56D96505CFC824457F8B6AAE5FB4F6B77B8F91CADB0F60F6DB7BD0DD1677F80F",
+      "Synthetic": true,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "synthetic-stereo-mp3",
+      "File": "synthetic-stereo-mp3.mp3",
+      "Codec": "mp3",
+      "Channels": 2,
+      "Rate": 44100,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 100080,
+      "Sha256": "69863997CB9E51D66FB0921D312A655DD6CC0E1DBEF7D236184A1A06C7C24B70",
+      "Synthetic": true,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "encoded-mono-mp2-44100",
+      "File": "encoded-mono-mp2-44100.mp2",
+      "Codec": "mp2",
+      "Channels": 1,
+      "Rate": 44100,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 96130,
+      "Sha256": "965A12AC99DC09FFB471B7FB2373693D96210CDD27035573C4C9B7FD985D4D24",
+      "Synthetic": false,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "encoded-mono-mp2-48000",
+      "File": "encoded-mono-mp2-48000.mp2",
+      "Codec": "mp2",
+      "Channels": 1,
+      "Rate": 48000,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 96000,
+      "Sha256": "379264C9EC4A0CAD4252112961A30490C78663FEED45D72500FED4A40D7CD967",
+      "Synthetic": false,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "encoded-stereo-mp2",
+      "File": "encoded-stereo-mp2.mp2",
+      "Codec": "mp2",
+      "Channels": 2,
+      "Rate": 44100,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 96130,
+      "Sha256": "CA93BDCAE073F96D5D3BAA63B76E777E323454138F34FA3AEB27E646E3109130",
+      "Synthetic": false,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "encoded-mono-mp3",
+      "File": "encoded-mono-mp3.mp3",
+      "Codec": "mp3",
+      "Channels": 1,
+      "Rate": 44100,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 96548,
+      "Sha256": "8E73821017ED933DCC9C72A79AB0E170E347187EDDE32B6A43F516B3160B6E92",
+      "Synthetic": false,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "encoded-stereo-mp3",
+      "File": "encoded-stereo-mp3.mp3",
+      "Codec": "mp3",
+      "Channels": 2,
+      "Rate": 44100,
+      "SampleFormat": "fltp",
+      "BitRate": "128000",
+      "Bytes": 96548,
+      "Sha256": "350E72F61136FE180A9E08774D4DFC6167A5FFD626D18D733FFBEA7249E10036",
+      "Synthetic": false,
+      "ValidationExit": 0
+    },
+    {
+      "Name": "encoded-mono-pcm",
+      "File": "encoded-mono-pcm.wav",
+      "Codec": "pcm_s16le",
+      "Channels": 1,
+      "Rate": 44100,
+      "SampleFormat": "s16",
+      "BitRate": "705600",
+      "Bytes": 529278,
+      "Sha256": "DB75D9957B06298EC6949BDD9B60297C08E20A82A292B78FBCA5352BCD1E9A3F",
+      "Synthetic": false,
+      "ValidationExit": 0
+    }
+  ],
+  "Matrix": {
+    "Trials": 192,
+    "Successes": 170,
+    "NativeCrashes": 22,
+    "Timeouts": 0,
+    "Cells": [
+      {
+        "Fixture": "encoded-mono-mp2-44100",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 9,
+        "NativeCrashes": 3,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-mp2-44100",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-mp2-48000",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 6,
+        "NativeCrashes": 6,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-mp2-48000",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 9,
+        "NativeCrashes": 3,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-mp3",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-mp3",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-pcm",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-mono-pcm",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-stereo-mp2",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-stereo-mp2",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-stereo-mp3",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "encoded-stereo-mp3",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "synthetic-mono-mp2",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 6,
+        "NativeCrashes": 6,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "synthetic-mono-mp2",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 8,
+        "NativeCrashes": 4,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "synthetic-stereo-mp3",
+        "Mode": "decode",
+        "Device": "none",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      },
+      {
+        "Fixture": "synthetic-stereo-mp3",
+        "Mode": "worker",
+        "Device": "default",
+        "Trials": 12,
+        "RequestedCyclesPerWorker": 12,
+        "Successes": 12,
+        "NativeCrashes": 0,
+        "Timeouts": 0
+      }
+    ]
+  },
+  "Tests": {
+    "QmakeQtTest": {
+      "Passed": 84,
+      "Failed": 0,
+      "Skipped": 1,
+      "ReusedExistingResult": true,
+      "MediaEnabled": true
+    },
+    "Ctest": {
+      "Passed": 2,
+      "Failed": 0,
+      "MediaEnabled": true,
+      "Seconds": 53.91,
+      "DiagnosticsPassed": 8,
+      "DiagnosticsFailed": 0
+    },
+    "FinalQmakeBuildExit": 0,
+    "FinalCmakeBuildExit": 0,
+    "ScriptParseErrors": 0,
+    "ExistingFixtureAndResultPreservationChecks": "passed; manifest hashes unchanged",
+    "DiffCheck": "passed",
+    "Linux": "Not built; qmake6 and Qt6 development packages unavailable in WSL Ubuntu-24.04"
+  },
+  "Limits": [
+    "Only Qt 6.7.0/FFmpeg 6.1.1 available as a complete kit",
+    "Only one audio output available; no alternate device comparison",
+    "Native crash cause not proven; no production fix or backend switch",
+    "Existing dump metadata analysis covers 10 of 22 dumps; full library symbols unavailable",
+    "CTest overlaps the final part of the matrix; its success is not a crash-rate measurement"
+  ],
+  "EvidenceFiles": [
+    {
+      "RelativePath": "matrix/matrix.json",
+      "Bytes": 78350,
+      "Sha256": "0F3A217440B935EDBE97A8E95773A7628EA4A66CBB0483974AEF538B04DF5A73"
+    },
+    {
+      "RelativePath": "matrix/kit.json",
+      "Bytes": 1304,
+      "Sha256": "6B101DB0107BBE2D3A9089297ACC0EBBB521C6D4B287402A1FA12AE67C89D47E"
+    },
+    {
+      "RelativePath": "fixtures/fixtures.json",
+      "Bytes": 5744,
+      "Sha256": "413EC6627EA28D857FBA22D1672F2CE67B5EB531D2DFB3BAC1AFF856D2895270"
+    },
+    {
+      "RelativePath": "fixtures/encoder-version.txt",
+      "Bytes": 1500,
+      "Sha256": "711056F2BC922237113D5DEFE7DA4DBD97BEAAB41098E5F8D425753DBFEA99FF"
+    },
+    {
+      "RelativePath": "full-qmake.txt",
+      "Bytes": 13995,
+      "Sha256": "DB61102F52E2006E5B914B7D314B02A2B64FB4BC3BCC8EB38F5934CB0589ECCD"
+    },
+    {
+      "RelativePath": "cmake-build.log",
+      "Bytes": 7026,
+      "Sha256": "D0D0C9460B52E6F39862DDFB68A3D8618410923F0B81191A07E3F50652F9A85F"
+    },
+    {
+      "RelativePath": "verification-cmake-build.log",
+      "Bytes": 23,
+      "Sha256": "71AA391EC7D7E291B419A7F40FBA91919E14AC2394AB4E8B66ED126E267D70F6"
+    },
+    {
+      "RelativePath": "verification-qmake-build.log",
+      "Bytes": 2603,
+      "Sha256": "C753ED13B484B9098163BBBE0F525B477B98C4066D1C532A4CBB5D84CFCF0257"
+    },
+    {
+      "RelativePath": "verification-ctest.log",
+      "Bytes": 378,
+      "Sha256": "F0610696C4246EADEE1ECE1586DD7477FD9423589E0C3773BB5BBC6ED84A1FFF"
+    },
+    {
+      "RelativePath": "crash-worker-4-lldb.txt",
+      "Bytes": 8093,
+      "Sha256": "CE40B58816B5045A3C81B66A81F3B2CBE36EC2A610F8FDAD99A1614A057392B9"
+    },
+    {
+      "RelativePath": "dump-exceptions.json",
+      "Bytes": 7833,
+      "Sha256": "2945DB3BCC61F77442A126EAC9A40CD9E5823FEDF1523D8EDAFE88B0E2D517C8"
+    },
+    {
+      "RelativePath": "cmake/TuneScapeAudioDiagnostics.exe",
+      "Bytes": 2053625,
+      "Sha256": "CA3A56808FCFAA84902D4499118983F93BB18EAB258D74059084DD2DFF3F904A"
+    },
+    {
+      "RelativePath": "qmake/TuneScapeTests/audio_diagnostics/release/TuneScapeAudioDiagnostics.exe",
+      "Bytes": 91648,
+      "Sha256": "C4036D8136567828CD95D3A8FB92345579E436B0F2D02C962B260D5F0C9D0208"
+    }
+  ],
+  "SourceFilesAtFinalVerification": [
+    {
+      "Path": "CMakeLists.txt",
+      "Sha256": "78F889939E06CD9AE1F41AE73AE40B754ADE9DDA6BDFC9402E0D54D7F0960401"
+    },
+    {
+      "Path": "TuneScapeTests/audio_diagnostics/main.cpp",
+      "Sha256": "8AD9BABEAC0E4CE356152914200E5DCE1E63FF82D348CAC6B0C3506843955AD6"
+    },
+    {
+      "Path": "TuneScapeTests/audio_diagnostics/audio_diagnostics.pro",
+      "Sha256": "CC5ED6392F04FBE7CD11746F6C64037C4D1AB06D56EA0D11B50E90248E2C50D7"
+    },
+    {
+      "Path": "TuneScapeTests/audio_diagnostics/prepare_fixtures.ps1",
+      "Sha256": "D11AD69524D95B1A8036AC0D2941ECD011C71B1E0D0C8763565CF2A5C235805F"
+    },
+    {
+      "Path": "TuneScapeTests/audio_diagnostics/run_matrix.ps1",
+      "Sha256": "2DFBC131956E3CB26789C1C0AF101B8BE04A7C3DCCF2EB1D3AB129AC0F582919"
+    }
+  ]
+}

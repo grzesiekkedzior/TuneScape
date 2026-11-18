@@ -38,7 +38,7 @@ if(BUILD_TESTING)
     target_link_libraries(TuneScapeAudioDiagnostics PRIVATE
         Qt6::Core Qt6::Gui Qt6::Network Qt6::Multimedia Qt6::Test)
     if(WIN32)
-        target_link_libraries(TuneScapeAudioDiagnostics PRIVATE psapi)
+        target_link_libraries(TuneScapeAudioDiagnostics PRIVATE psapi dbghelp)
     endif()
     add_test(NAME TuneScapeAudioDiagnostics COMMAND TuneScapeAudioDiagnostics)
     set_tests_properties(TuneScapeAudioDiagnostics PROPERTIES
