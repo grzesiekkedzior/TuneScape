@@ -1,4 +1,5 @@
 #include "include/music_data/services/ResolverService.h"
+#include <QDebug>
 #include <QJsonArray>
 #include <QNetworkReply>
 
@@ -193,7 +194,7 @@ void music_data::ResolverService::checkReady()
     qDebug() << "Title:" << m_pending.track.title;
     qDebug() << "Album:" << m_pending.track.album;
     qDebug() << "ReleaseDate:" << m_pending.track.releaseDate;
-    qDebug() << "Cover URL:" << m_pending.track.coverUrl.toStdString();
+    qDebug() << "Cover URL:" << m_pending.track.coverUrl;
 
     qDebug() << "\n--- LINKS ---";
     if (m_pending.track.links.isEmpty()) {

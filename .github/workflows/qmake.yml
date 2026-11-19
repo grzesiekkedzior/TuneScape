@@ -88,22 +88,44 @@ jobs:
   linux:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    env:
+      TUNESCAPE_TEST_MEDIA: "0"
     steps:
       - uses: actions/checkout@v5
 
       - name: Install Qt and GCC
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ make qmake6 qt6-base-dev qt6-multimedia-dev qt6-svg-dev
+          sudo apt-get install -y g++ make cmake ninja-build qmake6 qt6-base-dev qt6-multimedia-dev qt6-svg-dev qt6-qpa-plugins
 
       - name: Build with qmake
+        shell: bash
         run: |
-          qmake6 -v
-          g++ -dumpfullversion
+          qmake6 -v | tee linux-environment.txt
+          g++ --version | tee -a linux-environment.txt
+          cat /etc/os-release | tee -a linux-environment.txt
           mkdir build
           cd build
-          qmake6 ../TuneScape.pro CONFIG+=release
-          make -j4
+          qmake6 ../TuneScape.pro CONFIG+=release 2>&1 | tee ../linux-qmake-configure.txt
+          make -j4 2>&1 | tee ../linux-qmake-build.txt
 
       - name: Run QtTest
-        run: ./build/TuneScapeTests/TuneScapeTests
+        shell: bash
+        run: ./build/TuneScapeTests/TuneScapeTests -o -,txt -o linux-qttest.xml,junitxml
+
+      - name: Build CMake and run CTest
+        shell: bash
+        run: |
+          cmake -S . -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release 2>&1 | tee linux-cmake-configure.txt
+          cmake --build build-cmake --parallel 4 2>&1 | tee linux-cmake-build.txt
+          ctest --test-dir build-cmake --output-on-failure --no-tests=error --output-junit "$GITHUB_WORKSPACE/linux-ctest.xml"
+
+      - name: Preserve Linux build and test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build-and-test-logs
+          path: |
+            linux-*.txt
+            linux-*.xml
+            build-cmake/Testing/Temporary/
