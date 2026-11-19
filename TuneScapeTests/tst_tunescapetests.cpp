@@ -18,6 +18,8 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QtTest>
+#include <QSortFilterProxyModel>
+#include "ui_mainwindow.h"
 #include "include/AppConfig.h"
 #include "include/Country.h"
 #include "include/jsonlistprocessor.h"
@@ -130,7 +132,7 @@ QByteArray imageFixture(const QSize &size, const QColor &color)
     return image.save(&output, "PNG") ? bytes : QByteArray();
 }
 
-QColor modelIconColor(const RadioStationsModel &model, int row)
+QColor modelIconColor(const QAbstractItemModel &model, int row)
 {
     const auto icon = model.data(model.index(row, 0), Qt::DecorationRole).value<QIcon>();
     const auto image = icon.pixmap(QSize(20, 20)).toImage();
@@ -295,6 +297,15 @@ private slots:
     void testPlaybackErrors();
     void testPlaybackStallAndSystemWake();
     void testPlaybackStopDuringBuffering();
+    void testCountrySessionAcrossChanges_data();
+    void testCountrySessionAcrossChanges();
+    void testListSelectionSurvivesNavigation();
+    void testStationProxyIdentity_data();
+    void testStationProxyIdentity();
+    void testViewDestructionCancelsRequests_data();
+    void testViewDestructionCancelsRequests();
+    void testCountryRebind();
+    void testStationMenuClosesWithView();
     void testPlaybackModelIdentity();
     void testPlaybackViewsAndTray();
     void testPlaybackShutdownFinalizesRecording();
@@ -326,6 +337,7 @@ private slots:
     void testImageTimeoutAndConcurrencyLimit();
     void testImageCacheEviction();
     void testLargeImageAndHighDpi();
+    void testTableImagesFollowStationIdentity_data();
     void testTableImagesFollowStationIdentity();
     void testTableImagesLoadVisibleRowsAndCancelOnClose();
     void testAppConfigCheckFileIsExists();
@@ -380,6 +392,290 @@ void TuneScapeTests::cleanupTestCase()
         QVERIFY(workingDirectory.remove());
 }
 
+void TuneScapeTests::testCountrySessionAcrossChanges_data()
+{
+    QTest::addColumn<bool>("playing");
+    QTest::newRow("connecting") << false;
+    QTest::newRow("playing") << true;
+}
+
+void TuneScapeTests::testCountrySessionAcrossChanges()
+{
+    QFETCH(bool, playing);
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 4000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList list(&ui, &favorites, &api, &playback);
+    Country country;
+    country.setData(&ui, &list);
+    ui.tabRadioListWidget->setCurrentWidget(ui.listCountries);
+    QTRY_VERIFY(http.client("/json/countries"));
+    QVERIFY(http.respondJson("/json/countries", "[{\"name\":\"Poland\",\"iso_3166_1\":\"PL\"},{\"name\":\"UK\",\"iso_3166_1\":\"GB\"}]"));
+    QTRY_COMPARE(ui.comboBox->count(), 2);
+    auto *model = qobject_cast<RadioStationsModel *>(ui.tableOfCoutries->model());
+    QVERIFY(model);
+    const auto station = playbackStation("Keep playing", http.url("/live"));
+    model->setStations({station});
+    emit ui.tableOfCoutries->activated(model->index(0, 0));
+    emit ui.tableOfCoutries->doubleClicked(model->index(0, 0));
+    if (playing)
+        audio.confirmPlaying();
+    const auto state = playback.state();
+    const auto generation = playback.generation();
+    QSignalSpy sessions(&playback, &PlaybackController::sessionChanged);
+    const auto select = [&](int row) {
+        ui.comboBox->setCurrentIndex(row);
+        emit ui.comboBox->textActivated(ui.comboBox->currentText());
+    };
+    select(0);
+    const QByteArray pl = "/json/stations/search?countrycode=PL";
+    const QByteArray gb = "/json/stations/search?countrycode=GB";
+    QTRY_VERIFY(http.client(pl));
+    auto *retired = http.client(pl);
+    QVERIFY(http.respond(retired, "[", 100, "200 OK", "application/json"));
+    select(1);
+    QTRY_VERIFY(http.client(gb));
+    QTRY_COMPARE(retired->state(), QAbstractSocket::UnconnectedState);
+    select(0);
+    QTRY_VERIFY(http.client(pl) != retired);
+    QVERIFY(http.respondJson(pl, "[{\"name\":\"Fresh PL\",\"url\":\"http://127.0.0.1/other\"}]"));
+    QTRY_COMPARE(model->size(), 1);
+    QCOMPARE(model->station(0).station, QString("Fresh PL"));
+    ui.tabRadioListWidget->setCurrentIndex(0);
+    ui.tabRadioListWidget->setCurrentWidget(ui.listCountries);
+    QCOMPARE(model->size(), 1);
+    QCOMPARE(playback.state(), state);
+    QCOMPARE(playback.generation(), generation);
+    QCOMPARE(playback.streamUrl(), QUrl(station.streamUrl));
+    QCOMPARE(sessions.size(), 0);
+    QCOMPARE(audio.attempts.size(), 1);
+    ui.stop->click();
+    QCOMPARE(playback.state(), PlaybackController::State::Stopped);
+    QCOMPARE(sessions.size(), 1);
+}
+
+void TuneScapeTests::testListSelectionSurvivesNavigation()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 4000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    RadioExplorer explorer(&ui);
+    explorer.createMenu();
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList list(&ui, &favorites, &api, &playback);
+    const auto one = playbackStation("One", http.url("/one"));
+    const auto two = playbackStation("Two", http.url("/two"));
+    list.applyFavoritePlaylist({one, two});
+    list.setFavoriteLibrary();
+    emit ui.tableView->activated(list.stationModel().index(0, 0));
+    audio.confirmPlaying();
+    ui.tableView->setCurrentIndex(list.stationModel().index(1, 0));
+    const auto generation = playback.generation();
+    list.selectPlaylist(TOP);
+    list.setFavoriteLibrary();
+    QCOMPARE(ui.tableView->currentIndex().row(), 1);
+    list.stationModel().setStations({two, one});
+    QCOMPARE(ui.tableView->currentIndex().row(), 0);
+    QCOMPARE(RadioStationsModel::stationAt(ui.tableView->currentIndex())->station, two.station);
+    ui.serachInput->setText("other");
+    emit ui.serachInput->returnPressed();
+    const QByteArray target = "/json/stations/search?name=other";
+    QTRY_VERIFY(http.client(target));
+    QVERIFY(http.respondJson(target, "[{\"name\":\"Other\"}]"));
+    QTRY_COMPARE(list.stationModel().size(), 1);
+    list.setFavoriteLibrary();
+    QCOMPARE(ui.tableView->currentIndex().row(), 1);
+    QCOMPARE(playback.generation(), generation);
+    QCOMPARE(playback.streamUrl(), QUrl(one.streamUrl));
+    QCOMPARE(audio.attempts.size(), 1);
+}
+
+void TuneScapeTests::testStationProxyIdentity_data()
+{
+    QTest::addColumn<bool>("countries");
+    QTest::newRow("radio-list") << false;
+    QTest::newRow("country") << true;
+}
+
+void TuneScapeTests::testStationProxyIdentity()
+{
+    QFETCH(bool, countries);
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 4000);
+    QMainWindow window;
+    Ui::MainWindow ui;
+    ui.setupUi(&window);
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    RadioList list(&ui, &favorites, &api, &playback);
+    Country country;
+    country.setData(&ui, &list);
+    Theme theme(*qApp);
+    list.setTheme(&theme);
+    country.setTheme(&theme);
+    auto *view = countries ? ui.tableOfCoutries : ui.tableView;
+    auto *model = qobject_cast<RadioStationsModel *>(view->model());
+    QVERIFY(model);
+    emit view->activated({});
+    QStandardItemModel foreign(1, 1);
+    emit view->activated(foreign.index(0, 0));
+    QVERIFY(audio.attempts.isEmpty());
+    list.togglePlayback(); // Empty visible model.
+    QVERIFY(audio.attempts.isEmpty());
+    const auto zulu = playbackStation("Zulu", http.url("/zulu"));
+    const auto alpha = playbackStation("Alpha", http.url("/alpha"));
+    model->setStations({zulu, alpha});
+    QSortFilterProxyModel proxy;
+    proxy.setSourceModel(model);
+    proxy.sort(0);
+    view->setModel(&proxy);
+    emit view->activated(proxy.index(0, 0));
+    emit view->doubleClicked(proxy.index(0, 0));
+    QCOMPARE(playback.streamUrl(), QUrl(alpha.streamUrl));
+    QCOMPARE(audio.attempts.size(), 1);
+    auto *delegate = qobject_cast<CustomColorDelegate *>(view->itemDelegate());
+    QVERIFY(delegate);
+    QCOMPARE(delegate->playingRow(), 0);
+    const auto generation = playback.generation();
+    proxy.sort(0, Qt::DescendingOrder);
+    QCOMPARE(delegate->playingRow(), 1);
+    proxy.setFilterFixedString("Zulu");
+    QCOMPARE(proxy.rowCount(), 1);
+    QCOMPARE(delegate->playingRow(), -1);
+    QCOMPARE(playback.generation(), generation);
+    QCOMPARE(audio.attempts.size(), 1);
+    proxy.setFilterFixedString("absent");
+    emit view->activated(proxy.index(0, 0));
+    QCOMPARE(audio.attempts.size(), 1);
+}
+
+void TuneScapeTests::testViewDestructionCancelsRequests_data()
+{
+    QTest::addColumn<bool>("windowClosed");
+    QTest::newRow("country-controller-destroyed") << false;
+    QTest::newRow("widgets-destroyed-first") << true;
+}
+
+void TuneScapeTests::testViewDestructionCancelsRequests()
+{
+    QFETCH(bool, windowClosed);
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 4000);
+    auto window = std::make_unique<QMainWindow>();
+    Ui::MainWindow ui;
+    ui.setupUi(window.get());
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    auto list = std::make_unique<RadioList>(&ui, &favorites, &api, &playback);
+    auto country = std::make_unique<Country>();
+    country->setData(&ui, list.get());
+    country->load();
+    QTRY_VERIFY(http.client("/json/countries"));
+    const QPointer<QTcpSocket> countryReply(http.client("/json/countries"));
+    QVERIFY(http.respond(countryReply, "[", 100, "200 OK", "application/json"));
+    ui.serachInput->setText("pending");
+    emit ui.serachInput->returnPressed();
+    const QByteArray search = "/json/stations/search?name=pending";
+    QTRY_VERIFY(http.client(search));
+    const QPointer<RadioStationsModel> retired(qobject_cast<RadioStationsModel *>(ui.tableOfCoutries->model()));
+    const auto station = playbackStation("Independent session", http.url("/live"));
+    playback.play(station);
+    const auto generation = playback.generation();
+    QTRY_VERIFY(http.client("/live"));
+    QTRY_VERIFY(http.client("/json/stations/search?name=Independent%20session&nameExact=true"));
+    if (windowClosed)
+        window.reset();
+    else
+        country.reset();
+    QVERIFY(retired.isNull());
+    QTRY_VERIFY(!countryReply || countryReply->state() == QAbstractSocket::UnconnectedState);
+    if (windowClosed) {
+        QTRY_COMPARE(http.client(search)->state(), QAbstractSocket::UnconnectedState);
+        country->load(); // Detached objects accept no new requests.
+        list->togglePlayback();
+    } else {
+        QCOMPARE(http.client(search)->state(), QAbstractSocket::ConnectedState);
+    }
+    audio.confirmPlaying();
+    QCOMPARE(playback.generation(), generation);
+    QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(audio.attempts.size(), 1);
+    playback.stop();
+    country.reset();
+    list.reset();
+    QTRY_COMPARE(http.activeConnections(), 0);
+}
+
+void TuneScapeTests::testCountryRebind()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 4000);
+    QMainWindow firstWindow, secondWindow;
+    Ui::MainWindow first, second;
+    first.setupUi(&firstWindow);
+    second.setupUi(&secondWindow);
+    FavoriteManager favorites;
+    RadioList firstList(&first, &favorites, &api), secondList(&second, &favorites, &api);
+    Country country;
+    country.setData(&first, &firstList);
+    country.load();
+    QTRY_VERIFY(http.client("/json/countries"));
+    const QPointer<QTcpSocket> old(http.client("/json/countries"));
+    country.setData(&second, &secondList);
+    country.setData(&second, &secondList); // Repeated binding is idempotent.
+    QVERIFY(!first.tableOfCoutries->model());
+    country.load();
+    country.load();
+    QTRY_COMPARE(http.requestCount("/json/countries"), 2);
+    QTRY_VERIFY(!old || old->state() == QAbstractSocket::UnconnectedState);
+    QVERIFY(http.respondJson("/json/countries", "[{\"name\":\"Poland\",\"iso_3166_1\":\"PL\"}]"));
+    QTRY_COMPARE(second.comboBox->count(), 1);
+    QCOMPARE(first.comboBox->count(), 0);
+    QCOMPARE(country.findChildren<RadioStationsModel *>().size(), 1);
+}
+
+void TuneScapeTests::testStationMenuClosesWithView()
+{
+    TestHttpServer http;
+    QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    auto window = std::make_unique<QMainWindow>();
+    Ui::MainWindow ui;
+    ui.setupUi(window.get());
+    FavoriteManager favorites;
+    ControlledAudio audio;
+    PlaybackController playback(audio);
+    auto list = std::make_unique<RadioList>(&ui, &favorites, &api, &playback);
+    list->stationModel().setStations({playbackStation("Menu snapshot", http.url("/live"))});
+    window->show();
+    const auto point = ui.tableView->visualRect(list->stationModel().index(0, 0)).center();
+    bool menuObserved = false;
+    QTimer::singleShot(0, qApp, [&] {
+        menuObserved = ui.tableView->findChild<QMenu *>() != nullptr;
+        window.reset();
+    });
+    list->showStationMenu(ui.tableView, point);
+    QVERIFY(menuObserved);
+    QVERIFY(audio.attempts.isEmpty());
+    list.reset();
+}
+
 void TuneScapeTests::testRadioListPause()
 {
     TestHttpServer http;
@@ -397,7 +693,7 @@ void TuneScapeTests::testRadioListPause()
     QSignalSpy sessions(&playback, &PlaybackController::sessionChanged);
     const auto station = playbackStation("Station", http.url("/metadata"));
 
-    radioList.radioStationsModel->setStations({station});
+    radioList.stationModel().setStations({station});
     ui.playPause->click();
     QCOMPARE(playback.state(), State::Connecting);
     audio.confirmPlaying();
@@ -619,7 +915,7 @@ void TuneScapeTests::testPlaybackModelIdentity()
     QStandardItemModel foreign(1, 1);
     emit ui.tableView->doubleClicked(foreign.index(0, 0));
     QVERIFY(audio.attempts.isEmpty());
-    const auto index = list.radioStationsModel->index(0, 0);
+    const auto index = list.stationModel().index(0, 0);
     emit ui.tableView->activated(index);
     emit ui.tableView->doubleClicked(index);
     audio.confirmPlaying();
@@ -629,7 +925,7 @@ void TuneScapeTests::testPlaybackModelIdentity()
     QCOMPARE(audio.attempts.size(), 1);
     const auto generation = playback.generation();
 
-    list.radioStationsModel->setStations({two, one});
+    list.stationModel().setStations({two, one});
     QCOMPARE(selection->playingRow(), 1);
     list.selectPlaylist(Stations::TOP);
     QCOMPARE(selection->playingRow(), -1);
@@ -675,8 +971,16 @@ void TuneScapeTests::testPlaybackViewsAndTray()
 
     const auto one = playbackStation("One", http.url("/one"));
     const auto two = playbackStation("Two", http.url("/two"));
-    list.allStations.resize(Stations::SEARCH + 1);
-    list.allStations[Stations::TOP] = {one, two};
+    http.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        const QJsonArray data = target == "/json/stations/topvote/20"
+            ? QJsonArray{QJsonObject{{"name", one.station}, {"url", one.streamUrl}},
+                         QJsonObject{{"name", two.station}, {"url", two.streamUrl}}} : QJsonArray{};
+        const auto bytes = QJsonDocument(data).toJson(QJsonDocument::Compact);
+        http.respond(socket, bytes, bytes.size(), "200 OK", "application/json");
+        socket->disconnectFromHost();
+    };
+    list.loadAllData();
+    QTRY_COMPARE(list.stations(Stations::TOP).size(), 2);
     tray.loadTrayList(Stations::TOP);
     QMenu *top = nullptr;
     for (auto *action : menu->actions()) {
@@ -686,7 +990,7 @@ void TuneScapeTests::testPlaybackViewsAndTray()
     QVERIFY(top);
     auto *oneAction = top->actions().value(0);
     QVERIFY(oneAction);
-    list.allStations[Stations::TOP] = {two, one};
+    list.stationModel().setStations({two, one});
     oneAction->trigger();
     QCOMPARE(playback.streamUrl(), QUrl(one.streamUrl));
     QCOMPARE(name->text(), one.station);
@@ -1355,7 +1659,7 @@ void TuneScapeTests::testCatalogListsDoNotOverwriteVisibleSelection()
     const QByteArray newest = "/json/stations/lastchange/20";
     QTRY_VERIFY(http.client(top) && http.client(popular) && http.client(newest));
     QVERIFY(window.isVisible());
-    QCOMPARE(radioList.radioStationsModel->size(), 0);
+    QCOMPARE(radioList.stationModel().size(), 0);
     auto *tree = ui.treeView->model();
     const auto library = tree->index(0, 0);
     const auto popularIndex = tree->index(1, 0, library);
@@ -1363,15 +1667,15 @@ void TuneScapeTests::testCatalogListsDoNotOverwriteVisibleSelection()
     emit ui.treeView->clicked(popularIndex);
 
     QVERIFY(http.respondJson(popular, "[{\"name\":\"Popular station\"}]"));
-    QTRY_COMPARE(radioList.radioStationsModel->size(), 1);
-    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Popular station"));
+    QTRY_COMPARE(radioList.stationModel().size(), 1);
+    QCOMPARE(radioList.stationModel().station(0).station, QString("Popular station"));
     QVERIFY(http.respondJson(top, "[{\"name\":\"Top station\"}]"));
     QVERIFY(http.respondJson(newest, "[{\"name\":\"New station\"}]"));
     QTRY_COMPARE(lists.size(), 3);
-    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Popular station"));
+    QCOMPARE(radioList.stationModel().station(0).station, QString("Popular station"));
     QCOMPARE(radioList.stations(Stations::NEW).first().station, QString("New station"));
     emit ui.treeView->clicked(tree->index(0, 0, library));
-    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Top station"));
+    QCOMPARE(radioList.stationModel().station(0).station, QString("Top station"));
 }
 
 void TuneScapeTests::testCatalogCountrySearchAndTabChange()
@@ -1457,8 +1761,8 @@ void TuneScapeTests::testCatalogSearchReplacementAndCancellation()
     QTRY_VERIFY(http.client(fresh));
     QTRY_COMPARE(http.client(old)->state(), QAbstractSocket::UnconnectedState);
     QVERIFY(http.respondJson(fresh, "[{\"name\":\"Fresh result\"}]"));
-    QTRY_COMPARE(radioList.radioStationsModel->size(), 1);
-    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Fresh result"));
+    QTRY_COMPARE(radioList.stationModel().size(), 1);
+    QCOMPARE(radioList.stationModel().station(0).station, QString("Fresh result"));
 
     for (int attempt = 0; attempt < 3; ++attempt) {
         const QString name = QStringLiteral("cancel-%1").arg(attempt);
@@ -1469,7 +1773,7 @@ void TuneScapeTests::testCatalogSearchReplacementAndCancellation()
         cancel->click();
         QTRY_COMPARE(http.client(target)->state(), QAbstractSocket::UnconnectedState);
         QVERIFY(!progress->isVisible());
-        QCOMPARE(radioList.radioStationsModel->size(), 0);
+        QCOMPARE(radioList.stationModel().size(), 0);
     }
 }
 
@@ -1551,8 +1855,8 @@ void TuneScapeTests::testCatalogFailureLeavesPlaybackAndRecordingRunning()
     emit ui.serachInput->returnPressed();
     QTRY_VERIFY(http.client(target) != failedRequest);
     QVERIFY(http.respondJson(target, "[{\"name\":\"Recovered\"}]"));
-    QTRY_COMPARE(radioList.radioStationsModel->size(), 1);
-    QCOMPARE(radioList.radioStationsModel->station(0).station, QString("Recovered"));
+    QTRY_COMPARE(radioList.stationModel().size(), 1);
+    QCOMPARE(radioList.stationModel().station(0).station, QString("Recovered"));
     QCOMPARE(http.client("/live")->write("more"), 4);
     QTRY_COMPARE(recorder.bytesWritten(), 9);
     ui.playPause->click();
@@ -1710,16 +2014,27 @@ void TuneScapeTests::testLargeImageAndHighDpi()
     QCOMPARE(http.requestCount("/large"), 1);
 }
 
+void TuneScapeTests::testTableImagesFollowStationIdentity_data()
+{
+    QTest::addColumn<bool>("useProxy");
+    QTest::newRow("direct-model") << false;
+    QTest::newRow("sorted-proxy") << true;
+}
+
 void TuneScapeTests::testTableImagesFollowStationIdentity()
 {
+    QFETCH(bool, useProxy);
     TestHttpServer http;
     QVERIFY(http.listen());
     IconLoader loader;
     RadioStationsModel model;
+    QSortFilterProxyModel proxy;
+    proxy.setSourceModel(&model);
+    proxy.sort(0);
     QTableView view;
     view.setIconSize({20, 20});
     view.resize(380, 210);
-    view.setModel(&model);
+    view.setModel(useProxy ? static_cast<QAbstractItemModel *>(&proxy) : &model);
     model.bindIcons(&view, &loader);
     view.show();
     const auto station = [&](const QString &name, const QString &path) {
@@ -1735,6 +2050,8 @@ void TuneScapeTests::testTableImagesFollowStationIdentity()
     model.setStations({station("First", "/first"), station("Second", "/second")});
     QTRY_COMPARE(http.client("/old")->state(), QAbstractSocket::UnconnectedState);
     QTRY_VERIFY(http.client("/first") && http.client("/second"));
+    if (useProxy)
+        proxy.sort(0, Qt::DescendingOrder); // Move rows while both replies are pending.
     QSignalSpy updates(&model, &RadioStationsModel::dataChanged);
     QVERIFY(http.respondImage("/second", imageFixture({24, 24}, Qt::blue)));
     QTRY_COMPARE(modelIconColor(model, 1), QColor(Qt::blue));
@@ -1742,6 +2059,12 @@ void TuneScapeTests::testTableImagesFollowStationIdentity()
     QTRY_COMPARE(modelIconColor(model, 0), QColor(Qt::red));
     QCOMPARE(modelIconColor(model, 1), QColor(Qt::blue));
     QCOMPARE(updates.size(), 2);
+    if (useProxy) {
+        QCOMPARE(modelIconColor(proxy, 0), QColor(Qt::blue));
+        QCOMPARE(modelIconColor(proxy, 1), QColor(Qt::red));
+        QCOMPARE(http.requestCount("/first"), 1);
+        QCOMPARE(http.requestCount("/second"), 1);
+    }
 }
 
 void TuneScapeTests::testTableImagesLoadVisibleRowsAndCancelOnClose()

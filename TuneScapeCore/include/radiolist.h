@@ -13,13 +13,15 @@
 #include "include/streamreader.h"
 #include "include/streamrecorder.h"
 #include "include/theme.h"
-#include "ui_mainwindow.h"
 #include <QPointer>
 #include <array>
 
-enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH, DISCOVERY };
+enum Stations { TOP, POPULAR, NEW, FAVORITE, SEARCH };
 
 class QProgressDialog;
+class QTableView;
+class QMainWindow;
+namespace Ui { class MainWindow; }
 
 class RadioList : public QObject
 {
@@ -51,8 +53,8 @@ public:
     void setTheme(Theme *theme);
     void applyFavoritePlaylist(QVector<RadioStation> stations);
 
-    QVector<QVector<RadioStation>> allStations;
-    RadioStationsModel *radioStationsModel;
+    RadioStationsModel &stationModel() const;
+    void showStationMenu(QTableView *view, const QPoint &position);
 
 signals:
     void trackTitleReceived(const QString &title);
@@ -66,6 +68,11 @@ private slots:
     void addRadioToFavorite();
 
 private:
+    void detachView();
+    void restoreSelection();
+    std::array<QVector<RadioStation>, Stations::SEARCH + 1> allStations;
+    std::array<std::optional<RadioStation>, Stations::SEARCH + 1> m_selections;
+    RadioStationsModel *radioStationsModel;
     void onSessionChanged();
     void updateStationColoring();
     QTableView *currentStationView() const;
@@ -88,14 +95,14 @@ private:
 
     int currentPlaylistIndex = -1;
     Ui::MainWindow *ui;
-    RadioBrowserApi *m_catalog;
+    QPointer<RadioBrowserApi> m_catalog;
     QPointer<PlaybackController> m_playback;
     std::array<RadioBrowserApi::RequestId, 3> m_playlistRequests{};
     std::array<bool, 3> m_playlistLoaded{};
     RadioBrowserApi::RequestId m_searchRequest = 0;
     RadioBrowserApi::RequestId m_detailsRequest = 0;
     RadioBrowserApi::RequestId m_progressRequest = 0;
-    QProgressDialog *m_catalogProgress;
+    QPointer<QProgressDialog> m_catalogProgress;
     QString m_progressMessage;
     QString m_detailsCodec;
     QString m_playbackStatus;

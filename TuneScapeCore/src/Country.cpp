@@ -1,92 +1,111 @@
 #include "include/Country.h"
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QPersistentModelIndex>
-#include <utility>
 #include <QTableView>
-#include "include/StationDetailsDialog.h"
+#include <utility>
 #include "include/radiolist.h"
 #include "include/jsonlistprocessor.h"
+#include "ui_mainwindow.h"
 
-namespace {
-
-constexpr auto WorldImagePath = ":/images/img/word.png";
-
-} // namespace
-
-void Country::setData(Ui::MainWindow *ui, RadioList *radioList)
+Country::~Country()
 {
-    Q_ASSERT(ui);
-    Q_ASSERT(radioList);
+    detach();
+}
 
-    this->ui = ui;
-    this->radioList = radioList;
-    catalog = &radioList->catalog();
-    connect(radioList, &QObject::destroyed, this, [this] {
-        delete countryStationsModel;
-        countryStationsModel = nullptr;
-        delete customColor.data();
-        if (catalog) {
-            catalog->cancel(std::exchange(countriesRequest, 0));
-            catalog->cancel(std::exchange(stationsRequest, 0));
-        }
-        countriesLoaded = false;
-        this->ui = nullptr;
-        this->radioList = nullptr;
-        theme = nullptr;
-    });
-    connect(ui->tabRadioListWidget, &QTabWidget::currentChanged, this, [this] {
-        if (!this->ui || !this->radioList)
+void Country::detach()
+{
+    for (const auto &connection : connections)
+        disconnect(connection);
+    connections.clear();
+    const auto countryId = std::exchange(countriesRequest, 0);
+    const auto stationId = std::exchange(stationsRequest, 0);
+    if (radioList) {
+        radioList->hideCatalogProgress(countryId);
+        radioList->hideCatalogProgress(stationId);
+    }
+    if (catalog) {
+        catalog->cancel(countryId);
+        catalog->cancel(stationId);
+    }
+    if (stationView) {
+        if (stationView->model() == countryStationsModel)
+            stationView->setModel(nullptr);
+        if (customColor && stationView->itemDelegate() == customColor)
+            stationView->setItemDelegate(nullptr);
+    }
+    delete customColor.data();
+    delete std::exchange(countryStationsModel, nullptr);
+    selector.clear();
+    stationView.clear();
+    worldImage.clear();
+    tabs.clear();
+    countryTab.clear();
+    radioList.clear();
+    catalog.clear();
+    countriesLoaded = false;
+}
+
+void Country::setData(Ui::MainWindow *ui, RadioList *list)
+{
+    Q_ASSERT(ui && list);
+    if (stationView == ui->tableOfCoutries && radioList == list)
+        return;
+    detach();
+    selector = ui->comboBox;
+    stationView = ui->tableOfCoutries;
+    worldImage = ui->worldImage;
+    tabs = ui->tabRadioListWidget;
+    countryTab = ui->listCountries;
+    radioList = list;
+    catalog = &list->catalog();
+    connections.append(connect(list, &QObject::destroyed, this, [this] {
+        radioList.clear(); // The owner's UI helpers have already been destroyed.
+        detach();
+    }));
+    connections.append(connect(stationView, &QObject::destroyed, this, [this] {
+        // QWidget emits destroyed while its derived table interface is already gone.
+        stationView.clear();
+        detach();
+    }));
+    connections.append(connect(tabs, &QTabWidget::currentChanged, this, [this] {
+        if (!tabs || !radioList || !stationView)
             return;
-        if (this->ui->tabRadioListWidget->currentWidget() == this->ui->listCountries) {
+        if (tabs->currentWidget() == countryTab) {
             load();
         } else {
             cancelStationSearch();
-            this->radioList->hideCatalogProgress(countriesRequest);
+            radioList->hideCatalogProgress(countriesRequest);
         }
-    });
-
+    }));
     countryStationsModel = new RadioStationsModel(this);
-    ui->tableOfCoutries->setModel(countryStationsModel);
-    ui->tableOfCoutries->setIconSize(QSize(20, 20));
-    countryStationsModel->bindIcons(ui->tableOfCoutries, &radioList->stationImages());
-
-    connect(ui->comboBox, &QComboBox::textActivated, this, &Country::searchCountry);
-
-    connect(ui->tableOfCoutries, &QTableView::doubleClicked, this, &Country::playIndex);
-    connect(ui->tableOfCoutries, &QTableView::activated, this, &Country::playIndex);
-    connect(countryStationsModel, &RadioStationsModel::modelReset, this, &Country::updateThemeAppearance);
-    connect(&radioList->playback(), &PlaybackController::sessionChanged, this, &Country::updateThemeAppearance);
-
-    pixmap.load(WorldImagePath);
-    ui->worldImage->setPixmap(pixmap);
-    ui->worldImage->setAlignment(Qt::AlignCenter);
-
-    ui->tableOfCoutries->setVisible(false);
-    ui->tableOfCoutries->setContextMenuPolicy(Qt::CustomContextMenu);
-
-    connect(ui->tableOfCoutries,
-            &QTableView::customContextMenuRequested,
-            this,
-            &Country::showStationContextMenu);
-    ui->tableOfCoutries->verticalHeader()->setDefaultSectionSize(30);
-
-    QHeaderView *header = ui->tableOfCoutries->horizontalHeader();
-
+    stationView->setModel(countryStationsModel);
+    stationView->setIconSize(QSize(20, 20));
+    countryStationsModel->bindIcons(stationView, &list->stationImages());
+    connections.append(connect(selector, &QComboBox::textActivated, this, &Country::searchCountry));
+    connections.append(connect(stationView, &QTableView::doubleClicked, this, &Country::playIndex));
+    connections.append(connect(stationView, &QTableView::activated, this, &Country::playIndex));
+    connections.append(connect(countryStationsModel, &RadioStationsModel::modelReset, this, &Country::updateThemeAppearance));
+    connections.append(connect(&list->playback(), &PlaybackController::sessionChanged, this, &Country::updateThemeAppearance));
+    connections.append(connect(stationView, &QTableView::customContextMenuRequested, this, &Country::showStationContextMenu));
+    worldImage->setPixmap(QPixmap(":/images/img/word.png"));
+    worldImage->setAlignment(Qt::AlignCenter);
+    stationView->setVisible(false);
+    stationView->setContextMenuPolicy(Qt::CustomContextMenu);
+    stationView->verticalHeader()->setDefaultSectionSize(30);
+    auto *header = stationView->horizontalHeader();
     header->setSectionResizeMode(static_cast<int>(Column::StationColumn), QHeaderView::Stretch);
-
-    header->setSectionResizeMode(static_cast<int>(Column::GenreColumn),
-                                 QHeaderView::ResizeToContents);
+    header->setSectionResizeMode(static_cast<int>(Column::GenreColumn), QHeaderView::ResizeToContents);
+    updateThemeAppearance();
 }
 
 void Country::load()
 {
-    if (!radioList || countriesLoaded)
+    if (!radioList || !catalog || !stationView || countriesLoaded)
         return;
     if (!countriesRequest) {
         countriesRequest = catalog->request(QUrl("json/countries"), this,
             [this](auto id, const auto &result) {
-                if (id != countriesRequest)
+                if (id != countriesRequest || !radioList || !selector)
                     return;
                 countriesRequest = 0;
                 radioList->showCatalogResult(id, result);
@@ -97,60 +116,67 @@ void Country::load()
                 }
             });
     }
-    if (ui->tabRadioListWidget->currentWidget() == ui->listCountries)
+    if (tabs->currentWidget() == countryTab)
         radioList->showCatalogProgress(countriesRequest, tr("Loading Radio Browser countries…"));
 }
 
 void Country::loadCountriesToComboBox(const QJsonArray &countries)
 {
-    ui->comboBox->clear();
-    for (const QJsonValue &entry : countries) {
+    selector->clear();
+    for (const auto &entry : countries) {
         const auto object = entry.toObject();
         const auto name = object["name"].toString();
         if (!name.isEmpty())
-            ui->comboBox->addItem(name, object["iso_3166_1"].toString());
+            selector->addItem(name, object["iso_3166_1"].toString());
     }
 }
 
 void Country::cancelStationSearch()
 {
     const auto id = std::exchange(stationsRequest, 0);
-    radioList->hideCatalogProgress(id);
-    radioList->catalog().cancel(id);
+    if (radioList)
+        radioList->hideCatalogProgress(id);
+    if (catalog)
+        catalog->cancel(id);
 }
 
 void Country::searchCountry(const QString &country)
 {
-    if (!radioList)
+    if (!radioList || !catalog || !stationView)
         return;
     cancelStationSearch();
-    ui->tableOfCoutries->show();
-    ui->worldImage->hide();
+    stationView->show();
+    worldImage->hide();
     countryStationsModel->setStations({});
-
-    const auto countryCode = ui->comboBox->currentData().toString();
-    const QUrl endpoint = countryCode.isEmpty()
+    const auto countryCode = selector->currentData().toString();
+    const auto endpoint = countryCode.isEmpty()
         ? RadioBrowserApi::endpoint("json/stations/search", "country", country)
         : RadioBrowserApi::endpoint("json/stations/search", "countrycode", countryCode);
     stationsRequest = catalog->request(endpoint, this,
         [this](auto id, const auto &result) {
-            if (id != stationsRequest)
+            if (id != stationsRequest || !radioList || !countryStationsModel)
                 return;
             stationsRequest = 0;
             radioList->showCatalogResult(id, result);
-            if (result.status == RadioBrowserApi::Status::Success) {
+            if (result.status == RadioBrowserApi::Status::Success)
                 countryStationsModel->setStations(JsonListProcessor::stationsFromJson(result.data));
-            }
         });
     radioList->showCatalogProgress(stationsRequest, tr("Loading stations for %1…").arg(country));
 }
 
 void Country::playIndex(const QModelIndex &index)
 {
-    if (radioList && countryStationsModel && index.isValid()
-        && index.model() == countryStationsModel
-        && index.row() >= 0 && index.row() < countryStationsModel->size()) {
-        radioList->playback().play(countryStationsModel->station(index.row()));
+    if (radioList && stationView && index.model() == stationView->model()) {
+        if (auto connection = connect(index.model(), &QAbstractItemModel::layoutChanged, this, &Country::updateThemeAppearance, Qt::UniqueConnection))
+            connections.append(connection);
+        if (auto connection = connect(index.model(), &QAbstractItemModel::modelReset, this, &Country::updateThemeAppearance, Qt::UniqueConnection))
+            connections.append(connection);
+        if (auto connection = connect(index.model(), &QAbstractItemModel::rowsRemoved, this, &Country::updateThemeAppearance, Qt::UniqueConnection))
+            connections.append(connection);
+        if (auto connection = connect(index.model(), &QAbstractItemModel::rowsInserted, this, &Country::updateThemeAppearance, Qt::UniqueConnection))
+            connections.append(connection);
+        if (const auto station = RadioStationsModel::stationAt(index))
+            radioList->playback().play(*station);
     }
 }
 
@@ -162,84 +188,22 @@ void Country::setTheme(Theme *newTheme)
 
 void Country::updateThemeAppearance()
 {
-    if (!theme || !countryStationsModel || !radioList)
+    if (!theme || !countryStationsModel || !radioList || !stationView)
         return;
     if (!customColor) {
-        customColor = new CustomColorDelegate(-1, theme->playingRowColor(), ui->tableOfCoutries);
-        ui->tableOfCoutries->setItemDelegate(customColor);
+        customColor = new CustomColorDelegate(-1, theme->playingRowColor(), stationView);
+        stationView->setItemDelegate(customColor);
     }
     const auto &playback = radioList->playback();
     const auto &station = playback.station();
     const int row = playback.hasActiveSession() && station
-        ? countryStationsModel->rowForStation(*station) : -1;
+        ? RadioStationsModel::viewRowForStation(stationView->model(), *station) : -1;
     customColor->setPlayingRow(row, theme->playingRowColor());
-    ui->tableOfCoutries->viewport()->update();
+    stationView->viewport()->update();
 }
 
 void Country::showStationContextMenu(const QPoint &position)
 {
-    if (!countryStationsModel || !radioList)
-        return;
-
-    const QPersistentModelIndex index(ui->tableOfCoutries->indexAt(position));
-
-    if (!index.isValid())
-        return;
-
-    if (index.row() < 0 || index.row() >= countryStationsModel->size())
-        return;
-
-    const RadioStation station = countryStationsModel->station(index.row());
-
-    QMenu menu(ui->tableOfCoutries);
-
-    auto &playback = radioList->playback();
-    const bool activeStation = playback.hasActiveSession() && playback.matches(station);
-    const auto generation = playback.generation();
-
-    QAction *playAction = menu.addAction(activeStation ? tr("Stop") : tr("Play"));
-
-    const bool isFavorite = radioList->isFavorite(station);
-
-    QAction *favoriteAction = menu.addAction(isFavorite ? tr("Remove from favorites")
-                                                        : tr("Add to favorites"));
-
-    QAction *detailsAction = menu.addAction(tr("Details"));
-
-    menu.addSeparator();
-
-    QAction *openHomepageAction = menu.addAction(tr("Open homepage"));
-    openHomepageAction->setEnabled(!station.homepage.isEmpty());
-
-    QAction *selectedAction = menu.exec(ui->tableOfCoutries->viewport()->mapToGlobal(position));
-
-    if (!selectedAction)
-        return;
-
-    if (selectedAction == playAction) {
-        if (activeStation) {
-            if (playback.generation() == generation && playback.matches(station))
-                playback.stop();
-        } else if (index.isValid()) {
-            playback.play(station);
-        }
-
-        return;
-    }
-
-    if (selectedAction == favoriteAction) {
-        radioList->setFavorite(station, !isFavorite);
-        return;
-    }
-
-    if (selectedAction == detailsAction) {
-        StationDetailsDialog dialog(station, radioList->stationImages(), ui->tableOfCoutries);
-
-        dialog.exec();
-        return;
-    }
-
-    if (selectedAction == openHomepageAction) {
-        QDesktopServices::openUrl(QUrl(station.homepage));
-    }
+    if (radioList && stationView)
+        radioList->showStationMenu(stationView, position);
 }

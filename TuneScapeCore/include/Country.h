@@ -1,10 +1,7 @@
 #ifndef COUNTRY_H
 #define COUNTRY_H
 
-#include <QDesktopServices>
-#include <QMenu>
 #include <QObject>
-#include <QPixmap>
 #include <QPointer>
 #include <QString>
 #include <QUrl>
@@ -19,6 +16,11 @@ class MainWindow;
 }
 
 class RadioList;
+class QComboBox;
+class QTableView;
+class QLabel;
+class QTabWidget;
+class QWidget;
 
 class Country : public QObject
 {
@@ -27,7 +29,7 @@ class Country : public QObject
 public:
     Country() = default;
 
-    ~Country() override = default;
+    ~Country() override;
 
     void setData(Ui::MainWindow *ui, RadioList *radioList);
     void load();
@@ -44,8 +46,14 @@ private slots:
 private:
     void loadCountriesToComboBox(const QJsonArray &countries);
     void cancelStationSearch();
+    void detach();
 
-    Ui::MainWindow *ui = nullptr;
+    QPointer<QComboBox> selector;
+    QPointer<QTableView> stationView;
+    QPointer<QLabel> worldImage;
+    QPointer<QTabWidget> tabs;
+    QPointer<QWidget> countryTab;
+    QVector<QMetaObject::Connection> connections;
     QPointer<RadioList> radioList;
     QPointer<RadioBrowserApi> catalog;
 
@@ -53,7 +61,6 @@ private:
     RadioBrowserApi::RequestId stationsRequest = 0;
     bool countriesLoaded = false;
 
-    QPixmap pixmap;
     QPointer<CustomColorDelegate> customColor;
 
     RadioStationsModel *countryStationsModel = nullptr;

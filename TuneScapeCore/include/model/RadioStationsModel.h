@@ -2,6 +2,7 @@
 #define RADIOSTATIONSMODEL_H
 #include <QAbstractTableModel>
 #include <QObject>
+#include <optional>
 #include "include/IconLoader.h"
 #include "include/data/RadioStation.h"
 
@@ -30,6 +31,9 @@ public:
     void bindIcons(QTableView *view, IconLoader *loader);
 
     const QVector<RadioStation> &stations() const;
+    // Map a view index through proxies before taking an immutable station snapshot.
+    static std::optional<RadioStation> stationAt(QModelIndex index);
+    static int viewRowForStation(const QAbstractItemModel *model, const RadioStation &station);
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;

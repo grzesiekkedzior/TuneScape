@@ -6,6 +6,8 @@
 #include <QScrollBar>
 #include <QScreen>
 #include <QTableView>
+#include <QAbstractProxyModel>
+#include <QSet>
 #include <QUrl>
 #include <QWindow>
 
@@ -19,6 +21,33 @@ RadioStationsModel::RadioStationsModel(QObject *parent)
 RadioStationsModel::~RadioStationsModel()
 {
     clearIcons();
+}
+
+std::optional<RadioStation> RadioStationsModel::stationAt(QModelIndex index)
+{
+    while (index.isValid()) {
+        if (const auto *proxy = qobject_cast<const QAbstractProxyModel *>(index.model())) {
+            index = proxy->mapToSource(index);
+            continue;
+        }
+        const auto *model = qobject_cast<const RadioStationsModel *>(index.model());
+        if (model && index.row() >= 0 && index.row() < model->size())
+            return model->station(index.row());
+        break;
+    }
+    return {};
+}
+
+int RadioStationsModel::viewRowForStation(const QAbstractItemModel *model, const RadioStation &station)
+{
+    if (model) {
+        for (int row = 0; row < model->rowCount(); ++row) {
+            const auto candidate = stationAt(model->index(row, 0));
+            if (candidate && FavoriteManager::sameStation(*candidate, station))
+                return row;
+        }
+    }
+    return -1;
 }
 
 int RadioStationsModel::rowCount(const QModelIndex &parent) const
@@ -178,6 +207,7 @@ bool RadioStationsModel::eventFilter(QObject *watched, QEvent *event)
         break;
     case QEvent::Resize:
     case QEvent::Hide:
+    case QEvent::Paint:
 #if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
     case QEvent::DevicePixelRatioChange:
 #endif
@@ -206,7 +236,7 @@ void RadioStationsModel::clearIcons()
 
 void RadioStationsModel::updateVisibleIcons()
 {
-    if (!m_view || !m_loader || m_view->model() != this || !m_view->isVisible() || m_stations.isEmpty()) {
+    if (!m_view || !m_loader || !m_view->model() || !m_view->isVisible() || m_stations.isEmpty()) {
         clearIcons();
         return;
     }
@@ -219,9 +249,20 @@ void RadioStationsModel::updateVisibleIcons()
     }
     const int first = m_view->rowAt(0);
     const int bottomRow = m_view->rowAt(m_view->viewport()->height() - 1);
-    const int last = bottomRow < 0 ? size() - 1 : qMin(bottomRow, size() - 1);
+    const int last = bottomRow < 0 ? m_view->model()->rowCount() - 1
+                                  : qMin(bottomRow, m_view->model()->rowCount() - 1);
+    QSet<int> visibleRows;
+    for (int row = first; first >= 0 && row <= last; ++row) {
+        if (m_view->isRowHidden(row))
+            continue;
+        auto index = m_view->model()->index(row, 0);
+        while (auto *proxy = qobject_cast<const QAbstractProxyModel *>(index.model()))
+            index = proxy->mapToSource(index);
+        if (index.isValid() && index.model() == this)
+            visibleRows.insert(index.row());
+    }
     for (auto it = m_icons.begin(); it != m_icons.end();) {
-        if (first < 0 || it.key() < first || it.key() > last) {
+        if (!visibleRows.contains(it.key())) {
             m_loader->cancel(it->request);
             it = m_icons.erase(it);
         } else {
@@ -230,9 +271,9 @@ void RadioStationsModel::updateVisibleIcons()
     }
     if (first < 0)
         return;
-    for (int row = first; row <= last; ++row) {
+    for (int row : visibleRows) {
         const auto &station = m_stations.at(row);
-        if (station.iconUrl.isEmpty() || m_icons.contains(row) || m_view->isRowHidden(row))
+        if (station.iconUrl.isEmpty() || m_icons.contains(row))
             continue;
         const QPersistentModelIndex target(index(row, static_cast<int>(Column::StationColumn)));
         const auto generation = m_generation;
