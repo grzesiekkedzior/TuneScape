@@ -19,9 +19,28 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Select Python for aqtinstall
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12.10"
+          architecture: x64
+
+      - name: Verify installer Python
+        shell: pwsh
+        run: |
+          python --version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -c "import sys; assert sys.version_info[:3] == (3, 12, 10), sys.version"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Install Qt 6.12 and MinGW 15.1
         uses: jurplel/install-qt-action@v4
         with:
+          setup-python: false
+          # aqt 3.3.0 selects a nonexistent repository for Qt >= 6.8 MinGW.
+          # Pin the verified upstream fix until a release includes it.
+          aqtsource: "https://github.com/miurahr/aqtinstall/archive/5a49f2b391ae8ee1d3c0dd87f8b33c1d49a4deb7.tar.gz"
+          py7zrversion: "==1.1.3"
           version: "6.12.0"
           arch: win64_mingw
           modules: qtmultimedia
@@ -33,7 +52,9 @@ jobs:
           $compiler = (Resolve-Path "$env:QT_ROOT_DIR/../../Tools/mingw1510_64/bin").Path
           $compiler | Out-File $env:GITHUB_PATH -Append
           "COMPILER_BIN=$compiler" | Out-File $env:GITHUB_ENV -Append
+          Write-Host "Qt: $env:QT_ROOT_DIR; compiler: $compiler"
           if ((& "$compiler/g++.exe" -dumpfullversion) -ne '15.1.0') { throw 'Expected GCC 15.1.0' }
+          if ((& "$compiler/g++.exe" -dumpmachine) -ne 'x86_64-w64-mingw32') { throw 'Expected MinGW x64' }
           if ((& "$env:QT_ROOT_DIR/bin/qmake.exe" -query QT_VERSION) -ne '6.12.0') { throw 'Expected Qt 6.12.0' }
 
       - name: Build with qmake
@@ -81,6 +102,7 @@ jobs:
         with:
           name: windows-test-logs
           path: |
+            **/aqtinstall.log
             qttest.txt
             build-cmake/Testing/Temporary/
             ${{ runner.temp }}/TuneScape-dist/deployment-manifest.json
