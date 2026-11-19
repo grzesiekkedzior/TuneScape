@@ -19,13 +19,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install Qt 6.7 and MinGW 11.2
+      - name: Install Qt 6.12 and MinGW 15.1
         uses: jurplel/install-qt-action@v4
         with:
-          version: "6.7.0"
+          version: "6.12.0"
           arch: win64_mingw
           modules: qtmultimedia
-          tools: tools_mingw90,qt.tools.win64_mingw900
+          tools: tools_mingw1510,qt.tools.win64_mingw1510
+
+      - name: Select and verify compiler
+        shell: pwsh
+        run: |
+          $compiler = (Resolve-Path "$env:QT_ROOT_DIR/../../Tools/mingw1510_64/bin").Path
+          $compiler | Out-File $env:GITHUB_PATH -Append
+          "COMPILER_BIN=$compiler" | Out-File $env:GITHUB_ENV -Append
+          if ((& "$compiler/g++.exe" -dumpfullversion) -ne '15.1.0') { throw 'Expected GCC 15.1.0' }
+          if ((& "$env:QT_ROOT_DIR/bin/qmake.exe" -query QT_VERSION) -ne '6.12.0') { throw 'Expected Qt 6.12.0' }
 
       - name: Build with qmake
         shell: pwsh
@@ -39,10 +48,42 @@ jobs:
           & "$env:QT_ROOT_DIR/bin/qmake.exe" ../TuneScape.pro 'CONFIG+=release'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           mingw32-make -j4
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run QtTest
         shell: pwsh
-        run: .\build\TuneScapeTests\release\TuneScapeTests.exe
+        run: |
+          $env:TUNESCAPE_TEST_MEDIA = '0'
+          $p = Start-Process -FilePath .\build\TuneScapeTests\release\TuneScapeTests.exe -ArgumentList '-o','qttest.txt,txt' -WindowStyle Hidden -PassThru
+          if (!$p.WaitForExit(120000)) { $p.Kill(); throw 'QtTest timeout' }
+          Get-Content qttest.txt
+          if ($p.ExitCode -ne 0) { exit $p.ExitCode }
+
+      - name: Build CMake and run CTest
+        shell: pwsh
+        run: |
+          cmake -S . -B build-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR" "-DCMAKE_CXX_COMPILER=$env:COMPILER_BIN/g++.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build-cmake --parallel 4
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:TUNESCAPE_TEST_MEDIA = '0'
+          ctest --test-dir build-cmake --output-on-failure --no-tests=error
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Verify Windows deployment
+        shell: pwsh
+        run: |
+          ./tools/windows/deploy.ps1 -QtRoot $env:QT_ROOT_DIR -CompilerBin $env:COMPILER_BIN -Executable ./build/TuneScapeCore/release/TuneScapeCore.exe -OutputDirectory "$env:RUNNER_TEMP/TuneScape-dist"
+
+      - name: Preserve test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-logs
+          path: |
+            qttest.txt
+            build-cmake/Testing/Temporary/
+            ${{ runner.temp }}/TuneScape-dist/deployment-manifest.json
 
   linux:
     runs-on: ubuntu-24.04

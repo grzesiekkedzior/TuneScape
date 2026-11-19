@@ -4,7 +4,11 @@ Use a Qt 6 kit with a C++17 compiler that matches its libraries. The
 build uses Qt Core, GUI, Widgets, Network, Multimedia and SVG. Tests
 also use Qt Test. qmake is the primary build system.
 
-Windows (PowerShell, Qt 6.7 and MinGW 11.2)
+Windows (PowerShell, Qt 6.12.0 and MinGW 15.1)
+
+Detailed reproducible build, Qt Creator and deployment instructions:
+    ../tools/windows/README.md
+Historical Qt 6.7.0 / MinGW 11.2 remains supported in a separate kit/build.
 
 Put the bin directories of the Qt kit and its MinGW toolchain on PATH.
 From the repository root:

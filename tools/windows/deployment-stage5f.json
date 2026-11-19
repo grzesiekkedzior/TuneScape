@@ -1,0 +1,188 @@
+[
+  {
+    "File": "avcodec-63.dll",
+    "Bytes": 19813176,
+    "Version": "63.1.101",
+    "Sha256": "6EFBDA095902100E4799924203FD9B4F7BC8D1F4EA2CB1DB9D9566C84B549E45"
+  },
+  {
+    "File": "avformat-63.dll",
+    "Bytes": 3865912,
+    "Version": "63.1.101",
+    "Sha256": "C597791805D7CA8E437877D4D754DFB580D0FDBCCE8FFED9198D42E906CFB0AB"
+  },
+  {
+    "File": "avutil-61.dll",
+    "Bytes": 1110328,
+    "Version": "61.1.101",
+    "Sha256": "8139654B2AA4317474866E6BA0B5CE822A7043E251DAF3E345B02E6901E5DC0F"
+  },
+  {
+    "File": "D3Dcompiler_47.dll",
+    "Bytes": 4173928,
+    "Version": "6.3.9600.16384 (winblue_rtm.130821-1623)",
+    "Sha256": "E994847E01A6F1E4CBDC5A864616AC262F67EE4F14DB194984661A8D927AB7F4"
+  },
+  {
+    "File": "libgcc_s_seh-1.dll",
+    "Bytes": 109056,
+    "Version": null,
+    "Sha256": "5E27589147CAA6D7A30F4CC058A14C455DC62233901FFFF9A1797EDE425E9F86"
+  },
+  {
+    "File": "libstdc++-6.dll",
+    "Bytes": 2243072,
+    "Version": null,
+    "Sha256": "8013488C5528BAD7966CA07F3EA2E7A9B743CACB258FE76B46A326F821CC83B0"
+  },
+  {
+    "File": "libwinpthread-1.dll",
+    "Bytes": 53248,
+    "Version": "1, 0, 0, 0",
+    "Sha256": "C7C7DCED65FFF71C7BB61F80C771C562F533D26D72722D9D6091129A3B03D5CE"
+  },
+  {
+    "File": "opengl32sw.dll",
+    "Bytes": 20639888,
+    "Version": null,
+    "Sha256": "B04DE4541863BC7D8879040A78889C4849C1B1DA2784C4630F734C146C2998CE"
+  },
+  {
+    "File": "qt.conf",
+    "Bytes": 28,
+    "Version": null,
+    "Sha256": "398BF77E917E09BB1AEF3A644B97C3096D27159E11C889725521284098186A8F"
+  },
+  {
+    "File": "Qt6Core.dll",
+    "Bytes": 11812192,
+    "Version": "6.12.0.0",
+    "Sha256": "6ADC4C9CFDF7A5BC56B35750C990C32473F697776FCCC30FF3C08910F1514961"
+  },
+  {
+    "File": "Qt6Gui.dll",
+    "Bytes": 12598104,
+    "Version": "6.12.0.0",
+    "Sha256": "E13833669112A9B3F7409C8F232838DAF8F8CAE546E979F43B0377E315EEAB29"
+  },
+  {
+    "File": "Qt6Multimedia.dll",
+    "Bytes": 1553240,
+    "Version": "6.12.0.0",
+    "Sha256": "9B67FFE39771AB909B1DBA3032374882D90675E8CB668EF12B746263A174F585"
+  },
+  {
+    "File": "Qt6Network.dll",
+    "Bytes": 2083672,
+    "Version": "6.12.0.0",
+    "Sha256": "348EEF53A687BF1F67E691C67A395C2A6866DF251948772450A064F820777FFD"
+  },
+  {
+    "File": "Qt6Svg.dll",
+    "Bytes": 658264,
+    "Version": "6.12.0.0",
+    "Sha256": "02BBB292F7989E4C8B189FEA978847A330621EC81CA825CC28A7B64F600E14D2"
+  },
+  {
+    "File": "Qt6Widgets.dll",
+    "Bytes": 7531352,
+    "Version": "6.12.0.0",
+    "Sha256": "73A62BE5829DE338E13315F6E218A0724BD02F4DD898D02F35051EB5DD6C23F1"
+  },
+  {
+    "File": "swresample-7.dll",
+    "Bytes": 189240,
+    "Version": "7.1.101",
+    "Sha256": "EA5685E181E2FE97D07284EBB392F4E88A8BAE76D93974B4355FF3B4CB02FFF0"
+  },
+  {
+    "File": "swscale-10.dll",
+    "Bytes": 2282808,
+    "Version": "10.1.101",
+    "Sha256": "57EC59C825597909D8B558EB900D71994A91A26FF5A3937CA24552861DD0ECF4"
+  },
+  {
+    "File": "TuneScapeCore.exe",
+    "Bytes": 983552,
+    "Version": null,
+    "Sha256": "0E699C3B1FC938EB3A6C7978D7860E6FC7A1475FBDC39AD253FEEA62E97AA383"
+  },
+  {
+    "File": "generic\\qtuiotouchplugin.dll",
+    "Bytes": 104296,
+    "Version": "6.12.0.0",
+    "Sha256": "2E26E55A037F4F443E275853994F52A842B95DFE7AF04CB25E5DAEFC18DEDA21"
+  },
+  {
+    "File": "iconengines\\qsvgicon.dll",
+    "Bytes": 76136,
+    "Version": "6.12.0.0",
+    "Sha256": "616366D6294299BEDEFE64A91995BE8B1AC0AF438399D5A3D730DCD3E3267838"
+  },
+  {
+    "File": "imageformats\\qgif.dll",
+    "Bytes": 48488,
+    "Version": "6.12.0.0",
+    "Sha256": "6C2A2C460F6A9EC7298F8357CDB6013E6F270D239887A9B492DCF087C4A0BAEC"
+  },
+  {
+    "File": "imageformats\\qico.dll",
+    "Bytes": 50536,
+    "Version": "6.12.0.0",
+    "Sha256": "6C3DC3DA8F7D6127993D72AEC5BD63284AD46D52CADDF6B48055538E26F30BBE"
+  },
+  {
+    "File": "imageformats\\qjpeg.dll",
+    "Bytes": 709992,
+    "Version": "6.12.0.0",
+    "Sha256": "E40DEF8F71AA180B008E3FE0FF9EA62E91BC09D87A28D8F2BA01F50D57E45787"
+  },
+  {
+    "File": "imageformats\\qsvg.dll",
+    "Bytes": 40296,
+    "Version": "6.12.0.0",
+    "Sha256": "01E31BF83A9C9CF0376596AB688219E940120BDC86C3E25B193D98971C0DCA40"
+  },
+  {
+    "File": "multimedia\\ffmpegmediaplugin.dll",
+    "Bytes": 775528,
+    "Version": "6.12.0.0",
+    "Sha256": "C9775FF5C84435C32DCB0AC8E8F89106A7AB05611AA22DB0BA2FB47B39B5C35A"
+  },
+  {
+    "File": "multimedia\\windowsmediaplugin.dll",
+    "Bytes": 456040,
+    "Version": "6.12.0.0",
+    "Sha256": "FF29E5C762892A959935DAC814ACD4A3D014DD63EDEBED89C9BC293904510774"
+  },
+  {
+    "File": "networkinformation\\qnetworklistmanager.dll",
+    "Bytes": 102248,
+    "Version": "6.12.0.0",
+    "Sha256": "A6D1FF4C5692D04033F7E1C07ED4DBB364A80E246C37B149F44213AC1A8781EB"
+  },
+  {
+    "File": "platforms\\qwindows.dll",
+    "Bytes": 1338216,
+    "Version": "6.12.0.0",
+    "Sha256": "FE1A2405D400664D53FAAA8EB1575DB4630EA08A9B529AD0EFD482F14C9D58F6"
+  },
+  {
+    "File": "styles\\qmodernwindowsstyle.dll",
+    "Bytes": 269672,
+    "Version": "6.12.0.0",
+    "Sha256": "B4ED47AFCB2DF3D2756B492F9373DF79AD10B083D94D7A26F554861C2F1F25A7"
+  },
+  {
+    "File": "tls\\qcertonlybackend.dll",
+    "Bytes": 115048,
+    "Version": "6.12.0.0",
+    "Sha256": "C8C30CBE0D22BA66D25E70C9FDF7BBA3E5C897A6C365A950249801B2047D6C39"
+  },
+  {
+    "File": "tls\\qschannelbackend.dll",
+    "Bytes": 292712,
+    "Version": "6.12.0.0",
+    "Sha256": "27DF29799EBB736BAAE00877FDE7AB1F482130B233CF72239F7947CE94CA6DD5"
+  }
+]
