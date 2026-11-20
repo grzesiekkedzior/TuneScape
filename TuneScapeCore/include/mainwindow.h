@@ -27,9 +27,13 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(Theme &theme, QWidget *parent = nullptr);
+    explicit MainWindow(Theme &theme, QWidget *parent = nullptr,
+                        RadioBrowserApi *catalog = nullptr, PlaybackController *playback = nullptr);
     ~MainWindow();
     Ui::MainWindow *getUi() const;
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void info();
@@ -52,7 +56,7 @@ private:
     music_data::ResolverService *m_resolverService;
 
     void set_icon_btn();
-    void start();
+    void start(RadioBrowserApi *catalog, PlaybackController *playback);
     void resizeEvent(QResizeEvent *event);
 
     void infoDialogApp();

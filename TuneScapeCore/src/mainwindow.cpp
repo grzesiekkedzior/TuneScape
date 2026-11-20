@@ -5,11 +5,12 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QSystemTrayIcon>
+#include <QCloseEvent>
 #include "ui_mainwindow.h"
 #include "include/AppConfig.h"
 #include "include/theme.h"
 
-MainWindow::MainWindow(Theme &theme, QWidget *parent)
+MainWindow::MainWindow(Theme &theme, QWidget *parent, RadioBrowserApi *catalog, PlaybackController *playback)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , m_theme(theme)
@@ -48,7 +49,7 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
     ui->licencesTextBrowser->setSource(QUrl("qrc:/src/files/licenses_qtextbrowser.html"));
     ui->licencesTextBrowser->setOpenExternalLinks(true);
     set_icon_btn();
-    start();
+    start(catalog, playback);
     trackView = new TrackView(ui, this, &radioList->stationImages());
     m_resolverService = new music_data::ResolverService(new music_data::MusicBrainzClient,
                                                         new music_data::CoverArtClient,
@@ -83,6 +84,15 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    // Closing is Exit. Background playback is selected explicitly by hiding to Tray/MiniPlayer.
+    radioList->playback().stop();
+    radioList->miniPlayerWindow().hide();
+    trayIcon->prepareForQuit();
+    QMainWindow::closeEvent(event);
+}
+
 void MainWindow::set_icon_btn()
 {
     ui->stop->setIcon(QIcon(":/images/img/stop30.png"));
@@ -94,12 +104,13 @@ void MainWindow::set_icon_btn()
     ui->record->setIcon(QIcon(":/images/img/red-save-32.png"));
 }
 
-void MainWindow::start()
+void MainWindow::start(RadioBrowserApi *catalog, PlaybackController *playback)
 {
     radioExplorer = new RadioExplorer(ui);
     favoriteManager = new FavoriteManager{this};
 
-    radioList = new RadioList(ui, favoriteManager);
+    radioList = new RadioList(ui, favoriteManager, catalog, playback);
+    radioList->setParent(this);
     radioList->setMainWindow(this);
     radioList->setTheme(&m_theme);
 
@@ -107,10 +118,13 @@ void MainWindow::start()
 
 
     trayIcon = new TrayIcon(ui, *this);
+    trayIcon->setParent(this);
+    trayIcon->hide(); // This QWidget owns Tray helpers; it is not a visible application panel.
     trayIcon->setRadioList(radioList);
     connect(radioList, &RadioList::catalogPlaylistLoaded, trayIcon, &TrayIcon::loadTrayList);
 
     appMenu = new Menu(ui, radioList, favoriteManager);
+    appMenu->setParent(this);
 
     country.setData(ui, radioList);
     country.setTheme(&m_theme);

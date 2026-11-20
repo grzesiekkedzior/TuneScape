@@ -1,4 +1,5 @@
 #include "include/trayicon.h"
+#include "include/WindowPresentation.h"
 
 #include <QApplication>
 #include <QColor>
@@ -9,8 +10,10 @@
 #include <QMenu>
 #include <QScreen>
 #include <QVBoxLayout>
+#include <QStatusBar>
 
 #include <algorithm>
+#include <utility>
 
 Notifications NOTIFICATIONS;
 
@@ -23,10 +26,23 @@ constexpr auto PauseIconPath = ":/images/img/pause30.png";
 
 } // namespace
 
-TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
-    : ui(ui)
+TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow, std::function<bool()> trayAvailable)
+    : stationImage(ui->infoLabel)
+    , metadataText(ui->infoData)
     , mainWindow(&mainWindow)
+    , m_trayAvailable(std::move(trayAvailable))
 {
+    if (!m_trayAvailable)
+        m_trayAvailable = &QSystemTrayIcon::isSystemTrayAvailable;
+    m_trayWatch.setInterval(1000);
+    connect(&m_trayWatch, &QTimer::timeout, this, &TrayIcon::checkTrayAvailability);
+    connect(ui->centralwidget, &QObject::destroyed, this, [this] {
+        stationImage.clear();
+        metadataText.clear();
+        this->mainWindow.clear();
+        prepareForQuit();
+        setRadioList(nullptr);
+    });
     appConfig = new AppConfig("application.properties");
     appConfig->setParent(this);
 
@@ -79,8 +95,11 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     createNowPlayingPanel();
 
     playPauseAction = trayMenu->addAction(QIcon(":/images/img/play32.png"), tr("Play"));
+    restoreAction = trayMenu->addAction(tr("Show TuneScape"));
+    restoreAction->setObjectName(QStringLiteral("restoreMainWindowAction"));
 
     exitAction = trayMenu->addAction(QIcon(":/images/img/exit64.png"), tr("Exit"));
+    exitAction->setObjectName(QStringLiteral("exitApplicationAction"));
 
     trayMenu->addMenu(top);
     trayMenu->addMenu(popular);
@@ -107,6 +126,15 @@ TrayIcon::TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow)
     connect(systemTrayIcon, &QSystemTrayIcon::activated, this, &TrayIcon::iconActivated);
 
     connect(trayMenu, &QMenu::triggered, this, &TrayIcon::trayMenuClicked);
+    for (auto *screen : QGuiApplication::screens())
+        watchScreen(screen);
+    connect(qGuiApp, &QGuiApplication::screenAdded, this, [this](QScreen *screen) {
+        watchScreen(screen);
+        updatePanelGeometry();
+    });
+    connect(qGuiApp, &QGuiApplication::screenRemoved, this, [this] {
+        QTimer::singleShot(0, this, &TrayIcon::updatePanelGeometry);
+    });
 
 }
 
@@ -117,6 +145,7 @@ void TrayIcon::createNowPlayingPanel()
                                        | Qt::WindowStaysOnTopHint);
 
     nowPlayingWidget->setObjectName(QStringLiteral("nowPlayingWindow"));
+    nowPlayingWidget->setAttribute(Qt::WA_QuitOnClose, false);
     nowPlayingWidget->setAttribute(Qt::WA_ShowWithoutActivating);
     nowPlayingWidget->setAttribute(Qt::WA_TranslucentBackground);
     nowPlayingWidget->setAutoFillBackground(false);
@@ -207,14 +236,14 @@ void TrayIcon::createNowPlayingPanel()
 
 void TrayIcon::showNowPlayingPanel()
 {
-    if (!nowPlayingWidget)
+    if (m_shuttingDown || !nowPlayingWidget)
         return;
 
     updateNowPlayingPanel();
     nowPlayingWidget->adjustSize();
 
     QTimer::singleShot(0, this, [this]() {
-        if (!nowPlayingWidget)
+        if (m_shuttingDown || !nowPlayingWidget)
             return;
 
         updateNowPlayingPanelStyle();
@@ -229,7 +258,8 @@ void TrayIcon::showNowPlayingPanel()
         }
 
         nowPlayingWidget->show();
-        nowPlayingWidget->raise();
+        if (WindowPresentation::supportsPositioning(QGuiApplication::platformName()))
+            nowPlayingWidget->raise();
     });
 }
 
@@ -306,7 +336,7 @@ void TrayIcon::updateNowPlayingPanelStyle()
 
 void TrayIcon::positionPinnedNowPlayingPanel()
 {
-    if (!nowPlayingWidget)
+    if (!nowPlayingWidget || !WindowPresentation::supportsPositioning(QGuiApplication::platformName()))
         return;
 
     constexpr int Margin = 16;
@@ -330,11 +360,15 @@ void TrayIcon::positionPinnedNowPlayingPanel()
 
     const int y = area.top() + Margin;
 
-    nowPlayingWidget->move(x, y);
+    const auto fitted = WindowPresentation::fittedGeometry(QRect(QPoint(x, y), nowPlayingWidget->size()), {area});
+    nowPlayingWidget->resize(fitted.size());
+    nowPlayingWidget->move(fitted.topLeft());
 }
 
 void TrayIcon::setNowPlayingPinned(bool pinned)
 {
+    if (m_shuttingDown)
+        return;
     keepNowPlayingVisible = pinned;
 
     if (!nowPlayingWidget)
@@ -346,7 +380,8 @@ void TrayIcon::setNowPlayingPinned(bool pinned)
         updateNowPlayingPanelStyle();
         positionPinnedNowPlayingPanel();
         nowPlayingWidget->show();
-        nowPlayingWidget->raise();
+        if (WindowPresentation::supportsPositioning(QGuiApplication::platformName()))
+            nowPlayingWidget->raise();
         return;
     }
 
@@ -355,7 +390,8 @@ void TrayIcon::setNowPlayingPinned(bool pinned)
     if (trayMenu && trayMenu->isVisible()) {
         positionNowPlayingPanel();
         nowPlayingWidget->show();
-        nowPlayingWidget->raise();
+        if (WindowPresentation::supportsPositioning(QGuiApplication::platformName()))
+            nowPlayingWidget->raise();
     } else {
         nowPlayingWidget->hide();
     }
@@ -363,7 +399,8 @@ void TrayIcon::setNowPlayingPinned(bool pinned)
 
 void TrayIcon::positionNowPlayingPanel()
 {
-    if (!trayMenu || !nowPlayingWidget || keepNowPlayingVisible)
+    if (!trayMenu || !nowPlayingWidget || keepNowPlayingVisible
+        || !WindowPresentation::supportsPositioning(QGuiApplication::platformName()))
         return;
 
     constexpr int Gap = 8;
@@ -382,17 +419,11 @@ void TrayIcon::positionNowPlayingPanel()
     int x = menuGeometry.right() - panelSize.width() + 1;
     int y = menuGeometry.top() - panelSize.height() - Gap;
 
-    if (!availableGeometry.isNull()) {
-        x = qBound(availableGeometry.left(), x, availableGeometry.right() - panelSize.width() + 1);
-
-        if (y < availableGeometry.top())
-            y = menuGeometry.bottom() + Gap;
-
-        if (y + panelSize.height() > availableGeometry.bottom() + 1)
-            y = availableGeometry.bottom() - panelSize.height() + 1;
-    }
-
-    nowPlayingWidget->move(x, y);
+    if (y < availableGeometry.top())
+        y = menuGeometry.bottom() + Gap;
+    const auto fitted = WindowPresentation::fittedGeometry(QRect(QPoint(x, y), panelSize), {availableGeometry});
+    nowPlayingWidget->resize(fitted.size());
+    nowPlayingWidget->move(fitted.topLeft());
 }
 
 void TrayIcon::clearNowPlayingPanel()
@@ -412,13 +443,15 @@ void TrayIcon::clearNowPlayingPanel()
 
 void TrayIcon::updateNowPlayingPanel()
 {
-    if (!playback || !playback->station()) {
+    if (m_shuttingDown)
+        return;
+    if (!stationImage || !metadataText || !playback || !playback->station()) {
         clearNowPlayingPanel();
         return;
     }
 
     const auto &station = *playback->station();
-    const auto image = ui->infoLabel->pixmap();
+    const auto image = stationImage->pixmap();
     const QSize size(44, 44);
     nowPlayingIcon->setPixmap(image.isNull()
         ? QIcon(DefaultStationIconPath).pixmap(size)
@@ -426,7 +459,7 @@ void TrayIcon::updateNowPlayingPanel()
     nowPlayingStation->setText(station.station);
     nowPlayingStation->setToolTip(station.station);
 
-    const auto metadata = ui->infoData->text();
+    const auto metadata = metadataText->text();
     const auto title = metadata.isEmpty() ? tr("Live stream") : metadata;
     nowPlayingTitle->setText(title);
     nowPlayingTitle->setToolTip(title);
@@ -508,10 +541,21 @@ void TrayIcon::setTrayListIcon()
 
 void TrayIcon::trayIconButtonClicked()
 {
+    if (!mainWindow || m_shuttingDown)
+        return;
+    if (!m_trayAvailable()) {
+        mainWindow->showMinimized();
+        mainWindow->statusBar()->showMessage(tr("System tray unavailable; minimized to the taskbar."), 7000);
+        return;
+    }
     if (!systemTrayIcon->isVisible())
         systemTrayIcon->show();
 
+    m_hiddenToTray = true;
     mainWindow->hide();
+    if (radioList)
+        radioList->miniPlayerWindow().hide();
+    m_trayWatch.start();
 
     updateNowPlayingPanel();
 }
@@ -525,7 +569,7 @@ void TrayIcon::setNotifications(bool enabled)
 
 void TrayIcon::loadTrayList(Stations station)
 {
-    if (!radioList)
+    if (m_shuttingDown || !radioList || !mainWindow)
         return;
 
     const QIcon defaultIcon(DefaultStationIconPath);
@@ -545,13 +589,13 @@ void TrayIcon::loadTrayList(Stations station)
             const QUrl iconUrl(stations[row].iconUrl);
             if (!iconUrl.isEmpty()) {
                 radioList->stationImages().request(iconUrl, QSize(32, 32), mainWindow->devicePixelRatioF(),
-                    action, [this, action, row, &actions, &icons](auto, const QPixmap &pixmap) {
-                        if (pixmap.isNull() || actions.value(row) != action)
+                    action, [owner = QPointer<TrayIcon>(this), action, row, &actions, &icons](auto, const QPixmap &pixmap) {
+                        if (!owner || owner->m_shuttingDown || pixmap.isNull() || actions.value(row) != action)
                             return;
                         icons[row] = QIcon(pixmap);
-                        if (action->isChecked() && playback
-                            && playback->state() == PlaybackController::State::Playing)
-                            updateNowPlayingPanel();
+                        if (action->isChecked() && owner->playback
+                            && owner->playback->state() == PlaybackController::State::Playing)
+                            owner->updateNowPlayingPanel();
                         else
                             action->setIcon(icons[row]);
                     }, IconLoader::Priority::Background);
@@ -577,10 +621,22 @@ void TrayIcon::loadTrayList(Stations station)
 
 void TrayIcon::trayMenuClicked(QAction *action)
 {
-    if (!action)
+    if (!action || m_shuttingDown)
         return;
     if (action == exitAction) {
+        if (m_shuttingDown)
+            return;
+        if (playback)
+            playback->stop();
+        if (radioList)
+            radioList->miniPlayerWindow().hide();
+        prepareForQuit();
+        if (mainWindow)
+            mainWindow->close();
+        emit quitRequested();
         QApplication::quit();
+    } else if (action == restoreAction) {
+        restoreMainWindow();
     } else if (action == playPauseAction && radioList) {
         radioList->togglePlayback();
     } else if (action == turnOnOffNotification) {
@@ -597,6 +653,8 @@ void TrayIcon::trayMenuClicked(QAction *action)
 
 void TrayIcon::handleTitleFromRadioList(const QString &data)
 {
+    if (m_shuttingDown || !mainWindow)
+        return;
     updateNowPlayingPanel();
     if (data.isEmpty())
         return;
@@ -636,15 +694,22 @@ QSystemTrayIcon *TrayIcon::getSystemTrayIcon() const
 
 void TrayIcon::setRadioList(RadioList *list)
 {
-    if (radioList == list)
+    if (list && m_shuttingDown)
+        return;
+    if (list && radioList == list)
         return;
     if (radioList)
         disconnect(radioList, nullptr, this, nullptr);
     if (playback)
         disconnect(playback, nullptr, this, nullptr);
+    stationActions.clear();
+    top->clear(); popular->clear(); newRadio->clear();
+    topVector.clear(); popularVector.clear(); newRadioVector.clear();
+    topIcons.clear(); popularIcons.clear(); newRadioIcons.clear();
     radioList = list;
     playback = list ? &list->playback() : nullptr;
     if (list) {
+        connect(list, &QObject::destroyed, this, [this] { setRadioList(nullptr); });
         connect(list, &RadioList::trackTitleReceived, this, &TrayIcon::handleTitleFromRadioList);
         connect(list, &RadioList::stationImageChanged, this, &TrayIcon::updateNowPlayingPanel);
         connect(playback, &PlaybackController::stateChanged, this, [this] {
@@ -665,16 +730,11 @@ void TrayIcon::iconActivated(QSystemTrayIcon::ActivationReason reason)
     updateNowPlayingPanel();
 
     switch (reason) {
+    case QSystemTrayIcon::Trigger:
     case QSystemTrayIcon::DoubleClick:
-        if (mainWindow->isVisible()) {
-            mainWindow->hide();
-        } else {
-            mainWindow->showNormal();
-            mainWindow->activateWindow();
-        }
+        restoreMainWindow();
         break;
 
-    case QSystemTrayIcon::Trigger:
     case QSystemTrayIcon::MiddleClick:
     case QSystemTrayIcon::Context:
     case QSystemTrayIcon::Unknown:
@@ -732,5 +792,61 @@ void TrayIcon::updatePlayPauseAction()
 
 TrayIcon::~TrayIcon()
 {
+    prepareForQuit();
+    setRadioList(nullptr);
+    // Cancel image subscriptions while the action vectors and this derived object still exist.
+    delete trayMenu;
+    trayMenu = nullptr;
     delete nowPlayingWidget;
+}
+
+void TrayIcon::restoreMainWindow()
+{
+    if (m_shuttingDown || !mainWindow)
+        return;
+    m_hiddenToTray = false;
+    m_trayWatch.stop();
+    WindowPresentation::restore(mainWindow);
+    if (radioList)
+        radioList->miniPlayerWindow().hide();
+}
+
+void TrayIcon::checkTrayAvailability()
+{
+    if (!m_hiddenToTray || !mainWindow || m_shuttingDown)
+        return;
+    if (!m_trayAvailable())
+        restoreMainWindow();
+    else if (mainWindow->isVisible()) {
+        m_hiddenToTray = false;
+        m_trayWatch.stop();
+    }
+}
+
+void TrayIcon::prepareForQuit()
+{
+    m_shuttingDown = true;
+    m_hiddenToTray = false;
+    m_trayWatch.stop();
+    clearRecentTitlesTimer->stop();
+    systemTrayIcon->hide();
+    trayMenu->close();
+    nowPlayingWidget->hide();
+}
+
+void TrayIcon::watchScreen(QScreen *screen)
+{
+    connect(screen, &QScreen::availableGeometryChanged, this, &TrayIcon::updatePanelGeometry, Qt::UniqueConnection);
+}
+
+void TrayIcon::updatePanelGeometry()
+{
+    if (m_shuttingDown || !nowPlayingWidget->isVisible())
+        return;
+    if (keepNowPlayingVisible)
+        positionPinnedNowPlayingPanel();
+    else if (trayMenu->isVisible())
+        positionNowPlayingPanel();
+    else
+        hideNowPlayingPanel();
 }

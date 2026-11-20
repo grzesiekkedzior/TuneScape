@@ -1,5 +1,6 @@
 #include "include/radiolist.h"
 #include "ui_mainwindow.h"
+#include "include/WindowPresentation.h"
 #include <QCoreApplication>
 #include <QDesktopServices>
 #include <QMenu>
@@ -13,6 +14,7 @@
 #include <QHeaderView>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <QSignalBlocker>
 #include <QUrl>
 #include <algorithm>
 #include <utility>
@@ -96,6 +98,7 @@ RadioList::RadioList(Ui::MainWindow *ui, FavoriteManager *favoriteManager, Radio
     connect(ui->favorite, &QPushButton::clicked, this, &RadioList::addRadioToFavorite);
     connect(ui->minplr, &QPushButton::clicked, this, &RadioList::showMiniplayer);
     connect(miniPlayer.getMui()->maxWindow, &QPushButton::clicked, this, &RadioList::maximizeWindow);
+    connect(&miniPlayer, &miniplayer::restoreMainWindowRequested, this, &RadioList::maximizeWindow);
 
     //trash header signal
     ui->tableView->setModel(radioStationsModel);
@@ -140,6 +143,8 @@ RadioList::~RadioList()
 void RadioList::detachView()
 {
     ui = nullptr;
+    miniPlayer.hide();
+    miniPlayer.setEnabled(false);
     m_progressRequest = 0;
     if (m_playback) {
         disconnect(m_playback, nullptr, this, nullptr);
@@ -240,9 +245,9 @@ void RadioList::showMiniplayer()
 {
     if (!ui || !mainWindow)
         return;
-    miniPlayer.show();
     int value = ui->horizontalVolumeSlider->value();
     miniPlayer.getMui()->dial->setValue(value);
+    WindowPresentation::restore(&miniPlayer);
     mainWindow->hide();
 }
 
@@ -250,8 +255,8 @@ void RadioList::maximizeWindow()
 {
     if (!ui || !mainWindow)
         return;
-    miniPlayer.window()->close();
-    mainWindow->show();
+    WindowPresentation::restore(mainWindow);
+    miniPlayer.hide();
     int value = miniPlayer.getMui()->dial->value();
     ui->horizontalVolumeSlider->setValue(value);
 }
@@ -419,6 +424,10 @@ void RadioList::sliderMoved(int volume)
 {
     if (!ui || !m_playback)
         return;
+    const QSignalBlocker mainVolume(ui->horizontalVolumeSlider);
+    const QSignalBlocker miniVolume(miniPlayer.getMui()->dial);
+    ui->horizontalVolumeSlider->setValue(volume);
+    miniPlayer.getMui()->dial->setValue(volume);
     m_playback->setVolume(volume);
     playerUIController.setVolumeIcon(volume);
 }

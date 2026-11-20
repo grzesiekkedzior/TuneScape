@@ -32,6 +32,8 @@
 #include "include/miniplayer.h"
 #include "include/radioexplorer.h"
 #include "include/radiolist.h"
+#include "include/mainwindow.h"
+#include "include/WindowPresentation.h"
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -302,6 +304,17 @@ class TuneScapeTests : public QObject
     Q_OBJECT
 
 private slots:
+    void testTrayRestoresWindow_data();
+    void testTrayRestoresWindow();
+    void testTrayAvailability_data();
+    void testTrayAvailability();
+    void testMiniPlayerWindowTransitions();
+    void testWindowObjectsLifetime_data();
+    void testWindowObjectsLifetime();
+    void testMainWindowCloseSemantics();
+    void testTrayExitStopsAndQuits();
+    void testWindowGeometry_data();
+    void testWindowGeometry();
     void testMetadataNormalization_data();
     void testMetadataNormalization();
     void testMetadataHttpFailures_data();
@@ -3277,6 +3290,278 @@ void TuneScapeTests::testMetadataEmptyResults()
     QTRY_COMPARE(http.requestCount(), 3);
     window.reset();
     QTRY_COMPARE(http.activeConnections(), 0);
+}
+
+namespace {
+void serveCatalog(TestHttpServer &http)
+{
+    http.onRequest = [&http](QTcpSocket *socket, const QByteArray &target) {
+        if (target.startsWith("/json/")) {
+            http.respond(socket, "[]", 2, "200 OK", "application/json");
+            socket->disconnectFromHost();
+        }
+    };
+}
+}
+
+void TuneScapeTests::testTrayRestoresWindow_data()
+{
+    QTest::addColumn<QString>("state");
+    QTest::newRow("hidden") << QString("hidden");
+    QTest::newRow("minimized") << QString("minimized");
+    QTest::newRow("maximized-minimized") << QString("maximized");
+}
+
+void TuneScapeTests::testTrayRestoresWindow()
+{
+    QFETCH(QString, state);
+    TestHttpServer http; QVERIFY(http.listen()); serveCatalog(http);
+    RadioBrowserApi api({http.url("/")}, 1500);
+    FavoriteManager favorites; ControlledAudio audio; PlaybackController playback(audio);
+    QMainWindow window; Ui::MainWindow ui; ui.setupUi(&window);
+    RadioList list(&ui, &favorites, &api, &playback); list.setMainWindow(&window);
+    TrayIcon tray(&ui, window); tray.setRadioList(&list);
+    window.show();
+    playback.play(playbackStation("Window session", http.url("/live"))); audio.confirmPlaying();
+    const auto generation = playback.generation();
+    QTRY_VERIFY(http.client("/live"));
+    if (state == "hidden") window.hide();
+    else {
+        if (state == "maximized") window.showMaximized();
+        window.showMinimized(); QVERIFY(window.isMinimized());
+    }
+    auto *icon = tray.getSystemTrayIcon();
+    for (int i = 0; i < 4; ++i) {
+        emit icon->activated(QSystemTrayIcon::Trigger);
+        emit icon->activated(QSystemTrayIcon::DoubleClick);
+        QVERIFY(window.isVisible()); QVERIFY(!window.isMinimized());
+    }
+    if (state == "maximized") QVERIFY(window.isMaximized());
+    window.hide(); emit icon->activated(QSystemTrayIcon::Context); QVERIFY(!window.isVisible());
+    auto *restore = icon->contextMenu()->findChild<QAction *>("restoreMainWindowAction"); QVERIFY(restore);
+    restore->trigger(); QVERIFY(window.isVisible()); QVERIFY(!window.isMinimized());
+    int windows = 0;
+    for (auto *widget : QApplication::topLevelWidgets()) windows += qobject_cast<QMainWindow *>(widget) != nullptr;
+    QCOMPARE(windows, 1);
+    QCOMPARE(playback.generation(), generation); QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(audio.attempts.size(), 1);
+}
+
+void TuneScapeTests::testTrayAvailability_data()
+{
+    QTest::addColumn<bool>("available");
+    QTest::newRow("tray-available-then-lost") << true;
+    QTest::newRow("no-system-tray") << false;
+}
+void TuneScapeTests::testTrayAvailability()
+{
+    QFETCH(bool, available);
+    TestHttpServer http; QVERIFY(http.listen()); serveCatalog(http);
+    RadioBrowserApi api({http.url("/")}, 1500);
+    FavoriteManager favorites; ControlledAudio audio; PlaybackController playback(audio);
+    QMainWindow window; Ui::MainWindow ui; ui.setupUi(&window);
+    RadioList list(&ui, &favorites, &api, &playback); list.setMainWindow(&window);
+    TrayIcon tray(&ui, window, [&] { return available; }); tray.setRadioList(&list);
+    window.show();
+    playback.play(playbackStation("Background", http.url("/live"))); audio.confirmPlaying();
+    QTRY_VERIFY(http.client("/live"));
+    const auto generation = playback.generation();
+    ui.tryIcon->click();
+    if (available) {
+        QVERIFY(!window.isVisible());
+        available = false;
+        QTRY_VERIFY(window.isVisible()); // Real availability timer recovers a hidden window.
+        QVERIFY(!window.isMinimized());
+    } else {
+        QVERIFY(window.isVisible()); QVERIFY(window.isMinimized());
+    }
+    QCOMPARE(playback.generation(), generation); QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(audio.attempts.size(), 1);
+}
+
+void TuneScapeTests::testMiniPlayerWindowTransitions()
+{
+    TestHttpServer http; QVERIFY(http.listen()); serveCatalog(http);
+    RadioBrowserApi api({http.url("/")}, 1500);
+    FavoriteManager favorites; ControlledAudio audio; PlaybackController playback(audio);
+    QMainWindow window; Ui::MainWindow ui; ui.setupUi(&window);
+    RadioList list(&ui, &favorites, &api, &playback); list.setMainWindow(&window);
+    auto &mini = list.miniPlayerWindow(); auto *mui = mini.getMui();
+    window.show();
+    auto station = playbackStation("A", http.url("/a")); station.iconUrl = http.url("/image").toString();
+    playback.play(station); audio.confirmPlaying();
+    QTRY_VERIFY(http.client("/a") && http.client("/image"));
+    const auto generation = playback.generation();
+    ui.minplr->click(); QVERIFY(mini.isVisible()); QVERIFY(!window.isVisible());
+    QVERIFY(respondIcy(http.client("/a"), "StreamTitle='Hidden track';"));
+    QVERIFY(http.respondImage("/image", imageFixture({40, 40}, Qt::red)));
+    QTRY_COMPARE(mui->radioText->text(), QString("Hidden track"));
+    QCOMPARE(ui.infoData->text(), mui->radioText->text());
+    QTRY_COMPARE(mui->radioImage->pixmap().toImage().pixelColor(0, 0), QColor(Qt::red));
+    mui->dial->setValue(37); QCOMPARE(ui.horizontalVolumeSlider->value(), 37);
+    mui->play->click(); QCOMPARE(playback.state(), PlaybackController::State::Paused);
+    QCOMPARE(ui.playPause->toolTip(), QString("Play")); QCOMPARE(mui->play->toolTip(), QString("Play"));
+    mui->play->click(); audio.confirmPlaying(); QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(playback.generation(), generation);
+    mini.showMinimized(); ui.minplr->click(); QVERIFY(!mini.isMinimized());
+    mini.close(); QVERIFY(window.isVisible()); QVERIFY(!mini.isVisible());
+    QCOMPARE(ui.infoData->text(), QString("Hidden track"));
+    const auto update = icyBlock("StreamTitle='After close';");
+    QCOMPARE(http.client("/a")->write(update), update.size());
+    QTRY_COMPARE(ui.infoData->text(), QString("After close"));
+    QCOMPARE(mui->radioText->text(), ui.infoData->text()); QVERIFY(!mini.isVisible());
+    ui.horizontalVolumeSlider->setValue(17); QCOMPARE(mui->dial->value(), 17);
+    mui->stayTop->setChecked(true); emit mui->stayTop->clicked(true);
+    QVERIFY(mini.windowFlags().testFlag(Qt::WindowStaysOnTopHint)); QVERIFY(!mini.isVisible());
+    ui.minplr->click(); QVERIFY(mini.isVisible());
+    mui->stayTop->click();
+    QVERIFY(!mui->stayTop->isChecked()); QVERIFY(!mini.windowFlags().testFlag(Qt::WindowStaysOnTopHint));
+    QVERIFY(mini.isVisible());
+    station.station = "B"; station.streamUrl = http.url("/b").toString();
+    playback.play(station); audio.confirmPlaying();
+    QVERIFY(!window.isVisible()); QVERIFY(mini.isVisible());
+    QCOMPARE(playback.generation(), generation + 1); QCOMPARE(audio.attempts.size(), 3);
+    QTRY_VERIFY(http.client("/b"));
+    QTRY_COMPARE(mui->radioImage->pixmap().toImage().pixelColor(0, 0), QColor(Qt::red));
+    QCOMPARE(http.requestCount("/image"), 1);
+    QVERIFY(respondIcy(http.client("/b"), "StreamTitle='B track';"));
+    QTRY_COMPARE(mui->radioText->text(), QString("B track"));
+    const auto inProgress = icyBlock("StreamTitle='Close in progress';");
+    QCOMPARE(http.client("/b")->write(inProgress.left(9)), 9);
+    mini.close();
+    QCOMPARE(http.client("/b")->write(inProgress.mid(9)), inProgress.size() - 9);
+    QTRY_COMPARE(ui.infoData->text(), QString("Close in progress"));
+    QCOMPARE(mui->radioText->text(), ui.infoData->text());
+    QVERIFY(window.isVisible()); QVERIFY(!mini.isVisible());
+    QCOMPARE(playback.generation(), generation + 1);
+    ui.stop->click(); QCOMPARE(mui->play->toolTip(), QString("Play")); QVERIFY(mui->radioText->text().isEmpty());
+}
+
+void TuneScapeTests::testWindowObjectsLifetime_data()
+{
+    QTest::addColumn<QString>("order");
+    QTest::newRow("widgets-first") << QString("widgets");
+    QTest::newRow("tray-first") << QString("tray");
+    QTest::newRow("list-first") << QString("list");
+}
+void TuneScapeTests::testWindowObjectsLifetime()
+{
+    QFETCH(QString, order);
+    TestHttpServer http; QVERIFY(http.listen());
+    http.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        if (!target.startsWith("/json/")) return;
+        const auto data = target == "/json/stations/topvote/20"
+            ? QByteArray("[{\"name\":\"Icon pending\",\"url\":\"") + http.url("/live").toEncoded() + "\",\"favicon\":\"" + http.url("/icon").toEncoded() + "\"}]" : QByteArray("[]");
+        http.respond(socket, data, data.size(), "200 OK", "application/json"); socket->disconnectFromHost();
+    };
+    RadioBrowserApi api({http.url("/")}, 1500);
+    FavoriteManager favorites; ControlledAudio audio; PlaybackController playback(audio);
+    auto window = std::make_unique<QMainWindow>(); Ui::MainWindow ui; ui.setupUi(window.get());
+    RadioExplorer explorer(&ui); explorer.createMenu();
+    auto list = std::make_unique<RadioList>(&ui, &favorites, &api, &playback); list->setMainWindow(window.get());
+    auto tray = std::make_unique<TrayIcon>(&ui, *window); tray->setRadioList(list.get());
+    list->loadAllData(); QTRY_COMPARE(list->stations(TOP).size(), 1);
+    tray->loadTrayList(TOP); QTRY_VERIFY(http.client("/icon"));
+    const QPointer<QTcpSocket> pending(http.client("/icon"));
+    playback.play(playbackStation("Live", http.url("/live"))); QTRY_VERIFY(http.client("/live"));
+    const auto generation = playback.generation();
+    if (order == "widgets") {
+        window.reset(); audio.confirmPlaying();
+        emit tray->getSystemTrayIcon()->activated(QSystemTrayIcon::Trigger);
+        QVERIFY(!list->miniPlayerWindow().isVisible()); QVERIFY(!list->miniPlayerWindow().isEnabled());
+        QCOMPARE(playback.generation(), generation);
+        tray.reset(); list.reset();
+    } else if (order == "tray") {
+        tray.reset(); audio.confirmPlaying();
+        QCOMPARE(playback.generation(), generation);
+        list.reset(); window.reset();
+    } else {
+        list.reset(); window->hide();
+        emit tray->getSystemTrayIcon()->activated(QSystemTrayIcon::Trigger);
+        QVERIFY(window->isVisible()); QCOMPARE(playback.state(), PlaybackController::State::Stopped);
+        tray.reset(); window.reset();
+    }
+    QTRY_VERIFY(!pending || pending->state() == QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testMainWindowCloseSemantics()
+{
+    TestHttpServer http; QVERIFY(http.listen()); serveCatalog(http);
+    RadioBrowserApi api({http.url("/")}, 1500); ControlledAudio audio; PlaybackController playback(audio);
+    Theme theme(*qApp); MainWindow window(theme, nullptr, &api, &playback);
+    auto *list = window.findChild<RadioList *>(); auto *tray = window.findChild<TrayIcon *>(); QVERIFY(list && tray);
+    window.show(); playback.play(playbackStation("Close", http.url("/live"))); audio.confirmPlaying();
+    QTRY_VERIFY(http.client("/live"));
+    const auto generation = playback.generation();
+    window.showMinimized(); QCOMPARE(playback.state(), PlaybackController::State::Playing);
+    QCOMPARE(playback.generation(), generation);
+    WindowPresentation::restore(&window);
+    window.getUi()->minplr->click(); QVERIFY(list->miniPlayerWindow().isVisible());
+    window.close();
+    QVERIFY(!window.isVisible()); QVERIFY(!list->miniPlayerWindow().isVisible());
+    QVERIFY(!tray->getSystemTrayIcon()->isVisible());
+    QCOMPARE(playback.state(), PlaybackController::State::Stopped); QCOMPARE(audio.stops, 1);
+    QTRY_COMPARE(http.client("/live")->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testTrayExitStopsAndQuits()
+{
+    if (qEnvironmentVariableIntValue("TUNESCAPE_WINDOW_EXIT_CHILD") != 1) {
+        QTemporaryDir logs; QVERIFY(logs.isValid()); const auto log = logs.filePath("exit.txt");
+        QProcess child; auto env = QProcessEnvironment::systemEnvironment(); env.insert("TUNESCAPE_WINDOW_EXIT_CHILD", "1"); child.setProcessEnvironment(env);
+        child.start(QCoreApplication::applicationFilePath(), {"testTrayExitStopsAndQuits", "-o", log + ",txt"});
+        QVERIFY(child.waitForStarted(5000));
+        if (!child.waitForFinished(25000)) { child.kill(); child.waitForFinished(); QFAIL("Exit did not finish the child QApplication event loop"); }
+        const auto output = fileContents(log); qInfo().noquote() << output;
+        QCOMPARE(child.exitStatus(), QProcess::NormalExit); QCOMPARE(child.exitCode(), 0);
+        return;
+    }
+    QTemporaryDir recordings; QVERIFY(recordings.isValid());
+    TestHttpServer http; QVERIFY(http.listen()); serveCatalog(http);
+    RadioBrowserApi api({http.url("/")}, 1500); ControlledAudio audio; PlaybackController playback(audio);
+    Theme theme(*qApp); MainWindow window(theme, nullptr, &api, &playback);
+    auto *list = window.findChild<RadioList *>(); auto *tray = window.findChild<TrayIcon *>(); QVERIFY(list && tray);
+    window.show(); playback.play(playbackStation("Quit", http.url("/live"))); audio.confirmPlaying();
+    QTRY_VERIFY(http.client("/live"));
+    auto &recorder = list->getStreamRecorder(); recorder.startRecording(http.url("/record"), "Quit", "MP3", recordings.path());
+    QTRY_VERIFY(http.client("/record")); QVERIFY(http.respond(http.client("/record"), "saved on exit"));
+    QTRY_COMPARE(recorder.bytesWritten(), 13); const auto file = recorder.filePath();
+    window.getUi()->minplr->click(); QVERIFY(!window.isVisible()); QVERIFY(list->miniPlayerWindow().isVisible());
+    auto *menu = tray->getSystemTrayIcon()->contextMenu();
+    auto *exit = menu->findChild<QAction *>("exitApplicationAction"); QVERIFY(exit);
+    QSignalSpy quitting(tray, &TrayIcon::quitRequested);
+    bool miniReturned = false;
+    QTimer::singleShot(0, &window, [&] {
+        list->miniPlayerWindow().close();
+        miniReturned = window.isVisible() && !list->miniPlayerWindow().isVisible();
+        window.getUi()->minplr->click();
+        QTimer::singleShot(0, exit, &QAction::trigger);
+    });
+    QCOMPARE(qApp->exec(), 0);
+    QCOMPARE(quitting.size(), 1); QCOMPARE(playback.state(), PlaybackController::State::Stopped);
+    QVERIFY(miniReturned);
+    QVERIFY(!list->miniPlayerWindow().isVisible()); QVERIFY(!window.isVisible());
+    QCOMPARE(recorder.state(), StreamRecorder::State::Idle); QCOMPARE(fileContents(file), QByteArray("saved on exit"));
+    QTRY_COMPARE(http.client("/live")->state(), QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(http.client("/record")->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testWindowGeometry_data()
+{
+    QTest::addColumn<QRect>("geometry"); QTest::addColumn<QList<QRect>>("screens"); QTest::addColumn<QRect>("expected");
+    QTest::newRow("on-screen") << QRect(100,100,320,200) << QList<QRect>{QRect(0,0,1920,1080)} << QRect(100,100,320,200);
+    QTest::newRow("removed-monitor") << QRect(2500,100,400,300) << QList<QRect>{QRect(0,0,1920,1080)} << QRect(1520,100,400,300);
+    QTest::newRow("negative-coordinates") << QRect(-2100,-500,400,300) << QList<QRect>{QRect(-1920,0,1920,1080)} << QRect(-1920,0,400,300);
+    QTest::newRow("small-workarea") << QRect(900,600,1600,1000) << QList<QRect>{QRect(0,0,800,600)} << QRect(0,0,800,600);
+    QTest::newRow("second-monitor") << QRect(2000,100,400,300) << QList<QRect>{QRect(0,0,1920,1080),QRect(1920,0,1920,1080)} << QRect(2000,100,400,300);
+    QTest::newRow("no-screens") << QRect(500,500,400,300) << QList<QRect>{} << QRect(500,500,400,300);
+}
+void TuneScapeTests::testWindowGeometry()
+{
+    QFETCH(QRect, geometry); QFETCH(QList<QRect>, screens); QFETCH(QRect, expected);
+    QCOMPARE(WindowPresentation::fittedGeometry(geometry, screens), expected);
+    QVERIFY(WindowPresentation::supportsPositioning("windows")); QVERIFY(WindowPresentation::supportsPositioning("xcb"));
+    QVERIFY(!WindowPresentation::supportsPositioning("wayland")); QVERIFY(!WindowPresentation::supportsPositioning("wayland-egl"));
 }
 
 QTEST_MAIN(TuneScapeTests)

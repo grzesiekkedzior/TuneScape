@@ -9,6 +9,9 @@
 #include <QTimer>
 #include <QVector>
 #include <QWidget>
+#include <QPointer>
+#include <functional>
+class QScreen;
 
 #include "ui_mainwindow.h"
 #include "AppConfig.h"
@@ -25,7 +28,7 @@ class TrayIcon : public QWidget
     Q_OBJECT
 
 public:
-    explicit TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow);
+    explicit TrayIcon(Ui::MainWindow *ui, QMainWindow &mainWindow, std::function<bool()> trayAvailable = {});
     ~TrayIcon() override;
 
     void setRadioList(RadioList *newRadioList);
@@ -36,6 +39,10 @@ public:
     void setIsNotificationEnable(bool newIsNotificationEnable);
 
     void loadTrayList(Stations station);
+    void prepareForQuit();
+
+signals:
+    void quitRequested();
 
 private slots:
     void iconActivated(QSystemTrayIcon::ActivationReason reason);
@@ -43,6 +50,8 @@ private slots:
     void trayMenuClicked(QAction *action);
     void handleTitleFromRadioList(const QString &data);
     void clearRecentTitles();
+    void restoreMainWindow();
+    void checkTrayAvailability();
 
 private:
     void setClearTimer();
@@ -63,15 +72,18 @@ private:
     void restoreStationIcons();
     void clearStationHighlights();
     void updatePlayPauseAction();
+    void watchScreen(QScreen *screen);
+    void updatePanelGeometry();
 
     struct StationAction {
         RadioStation station;
         Stations playlist;
     };
 
-    Ui::MainWindow *ui = nullptr;
+    QPointer<QLabel> stationImage;
+    QPointer<QLabel> metadataText;
     QSystemTrayIcon *systemTrayIcon = nullptr;
-    QMainWindow *mainWindow = nullptr;
+    QPointer<QMainWindow> mainWindow;
 
     QMenu *trayMenu = nullptr;
     QMenu *top = nullptr;
@@ -92,6 +104,7 @@ private:
 
     QAction *playPauseAction = nullptr;
     QAction *exitAction = nullptr;
+    QAction *restoreAction = nullptr;
     QAction *turnOnOffNotification = nullptr;
     QAction *keepNowPlayingVisibleAction = nullptr;
 
@@ -107,6 +120,10 @@ private:
     AppConfig *appConfig = nullptr;
     bool isNotificationEnabled = true;
     bool keepNowPlayingVisible = false;
+    bool m_shuttingDown = false;
+    bool m_hiddenToTray = false;
+    std::function<bool()> m_trayAvailable;
+    QTimer m_trayWatch;
 
     QSet<QString> recentTitles;
     QTimer *clearRecentTitlesTimer = nullptr;
