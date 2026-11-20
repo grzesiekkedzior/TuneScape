@@ -1,224 +1,137 @@
 #include "include/music_data/services/ResolverService.h"
-#include <QDebug>
 #include <QJsonArray>
-#include <QNetworkReply>
+#include <QUuid>
 
-music_data::ResolverService::ResolverService(MusicBrainzClient *mbc,
-                                             CoverArtClient *cac,
-                                             ExternalLinksClient *elc,
-                                             QObject *parent)
-    : QObject(parent)
-    , m_musicBrainzClient(mbc)
-    , m_coverArtClient(cac)
-    , m_externalLinksClient(elc)
+using namespace music_data;
+namespace {
+QString key(const QString &value) { return value.normalized(QString::NormalizationForm_C).simplified().toCaseFolded(); }
+bool mbid(const QString &value) { return !QUuid(value).isNull(); }
+QString artist(const QJsonObject &json)
+{
+    QString name;
+    for (const auto &credit : json["artist-credit"].toArray()) {
+        const auto object = credit.toObject();
+        name += object["name"].toString(object["artist"].toObject()["name"].toString()) + object["joinphrase"].toString();
+    }
+    return name.trimmed();
+}
+}
+
+ResolverService::ResolverService(MusicBrainzClient *mbc, CoverArtClient *cac, ExternalLinksClient *elc, QObject *parent)
+    : QObject(parent), m_musicBrainzClient(mbc), m_coverArtClient(cac), m_externalLinksClient(elc)
 {
     mbc->setParent(this);
     cac->setParent(this);
     elc->setParent(this);
-
-    connect(m_musicBrainzClient,
-            &MusicBrainzClient::searchFinished,
-            this,
-            &ResolverService::handleSearchResult);
-
-    connect(m_musicBrainzClient,
-            &MusicBrainzClient::lookupFinished,
-            this,
-            &ResolverService::handleLookupResult);
-
-    connect(m_coverArtClient,
-            &CoverArtClient::coverFinished,
-            this,
-            &ResolverService::handleCoverResult);
-
-    connect(m_externalLinksClient,
-            &ExternalLinksClient::linksReady,
-            this,
-            &ResolverService::handleLinksResult);
+    elc->useQueue(&mbc->requests(), mbc->baseUrl());
+    connect(mbc, &MusicBrainzClient::searchFinished, this, &ResolverService::handleSearchResult);
+    connect(mbc, &MusicBrainzClient::lookupFinished, this, &ResolverService::handleLookupResult);
+    connect(cac, &CoverArtClient::coverFinished, this, &ResolverService::handleCoverResult);
+    connect(elc, &ExternalLinksClient::linksReady, this, &ResolverService::handleLinksResult);
+    connect(mbc, &MusicBrainzClient::requestFailed, this, [this](auto token, const auto &message) {
+        if (token == m_generation) emit error(message);
+    });
 }
-
-void music_data::ResolverService::resolveTrack(const QString &query)
+ResolverService::~ResolverService()
 {
+    m_musicBrainzClient->cancel();
+    m_coverArtClient->cancel();
+}
+void ResolverService::cancel()
+{
+    ++m_generation;
+    m_stage = Stage::Idle;
+    m_key.clear();
+    m_track = {};
+    m_musicBrainzClient->cancel();
+    m_coverArtClient->cancel();
+    emit cleared();
+}
+void ResolverService::resolveTrack(const QString &query)
+{
+    const auto data = MusicBrainzClient::extractData(query);
+    const auto next = key(data.artist) + QChar(0x1f) + key(data.title);
+    if (!m_key.isEmpty() && m_key == next) return;
     cancel();
-    m_musicBrainzClient->searchRecording(query);
+    if (!MusicBrainzClient::isValidTrack(data)) return;
+    m_query = data;
+    m_key = next;
+    m_track.artist = data.artist;
+    m_track.title = data.title;
+    emit trackReady(m_track); // Keep trustworthy stream text even if enrichment fails.
+    m_stage = Stage::Search;
+    m_musicBrainzClient->searchRecording(query, m_generation);
 }
-
-void music_data::ResolverService::cancel()
+void ResolverService::handleSearchResult(quint64 token, const QJsonObject &json)
 {
-    m_pending = {};
-    // The three clients own their network managers and keep their replies under them.
-    for (auto *reply : findChildren<QNetworkReply *>()) {
-        disconnect(reply, nullptr, m_musicBrainzClient, nullptr);
-        disconnect(reply, nullptr, m_coverArtClient, nullptr);
-        disconnect(reply, nullptr, m_externalLinksClient, nullptr);
-        if (!reply->isFinished())
-            reply->abort();
-        reply->deleteLater();
-    }
-}
-
-void music_data::ResolverService::handleSearchResult(const QJsonObject &json)
-{
-    auto recordings = json.value("recordings").toArray();
-
-    if (recordings.isEmpty()) {
-        qDebug() << "No recordings found";
-        return;
-    }
-
-    auto first = recordings[0].toObject();
-
-    QString mbid = first.value("id").toString();
-
-    if (mbid.isEmpty()) {
-        qDebug() << "No MBID found";
-        return;
-    }
-
-    qDebug() << "Recording MBID:" << mbid;
-
-    m_musicBrainzClient->getRecordingByID(mbid);
-}
-
-void music_data::ResolverService::handleLookupResult(const QJsonObject &json)
-{
-    QString title = json.value("title").toString();
-
-    QString artist;
-    QString artistMbid;
-
-    auto artistCredit = json.value("artist-credit").toArray();
-
-    for (const auto &item : artistCredit) {
-        auto obj = item.toObject();
-        auto artistObj = obj.value("artist").toObject();
-
-        QString name = obj.value("name").toString();
-        if (name.isEmpty())
-            name = artistObj.value("name").toString();
-
-        QString mbid = artistObj.value("id").toString();
-
-        if (!name.isEmpty()) {
-            artist = name;
-            artistMbid = mbid;
-            break;
+    if (token != m_generation || m_stage != Stage::Search) return;
+    m_stage = Stage::Idle;
+    QString selected;
+    for (const auto &value : json["recordings"].toArray()) {
+        const auto recording = value.toObject();
+        const auto id = recording["id"].toString();
+        if (mbid(id) && key(recording["title"].toString()) == key(m_query.title)
+            && (m_query.artist.isEmpty() || key(artist(recording)) == key(m_query.artist))) {
+            if (!selected.isEmpty() && selected != id) return; // Ambiguous: retain ICY instead of guessing an album.
+            selected = id;
         }
     }
-
-    QString releaseId;
-    QString album;
-    QString date;
-
-    auto releases = json.value("releases").toArray();
-
-    if (!releases.isEmpty()) {
-        auto first = releases[0].toObject();
-
-        releaseId = first.value("id").toString();
-        album = first.value("title").toString();
-        date = first.value("date").toString();
+    if (!selected.isEmpty()) {
+        m_recording = selected;
+        m_stage = Stage::Lookup;
+        m_musicBrainzClient->getRecordingByID(selected, token);
     }
-
-    m_pending.track.title = title;
-    m_pending.track.artist = artist;
-    m_pending.track.album = album;
-    m_pending.track.releaseDate = date;
-
-    m_pending.lookupReady = true;
-
-    // ===== COVER =====
-    if (!releaseId.isEmpty()) {
-        m_coverArtClient->getCover(releaseId);
-    } else {
-        m_pending.coverReady = true;
-    }
-
-    // ===== LINKS =====
-    if (!artistMbid.isEmpty()) {
-        m_externalLinksClient->getInfoByMbid(artistMbid);
-    } else {
-        m_pending.linksReady = true;
-    }
-
+}
+void ResolverService::handleLookupResult(quint64 token, const QJsonObject &json)
+{
+    if (token != m_generation || m_stage != Stage::Lookup) return;
+    m_stage = Stage::Idle;
+    if (json["id"].toString() != m_recording || key(json["title"].toString()) != key(m_query.title)) return;
+    const auto name = artist(json);
+    if (!m_query.artist.isEmpty() && key(name) != key(m_query.artist)) return;
+    m_track.title = json["title"].toString();
+    m_track.artist = name;
+    const auto releases = json["releases"].toArray();
+    const auto release = releases.isEmpty() ? QJsonObject{} : releases.first().toObject();
+    m_track.album = release["title"].toString();
+    m_track.releaseDate = release["date"].toString();
+    const auto releaseId = release["id"].toString();
+    const auto credits = json["artist-credit"].toArray();
+    const auto artistId = credits.isEmpty() ? QString() : credits.first().toObject()["artist"].toObject()["id"].toString();
+    m_coverReady = !mbid(releaseId);
+    m_linksReady = !mbid(artistId);
+    m_stage = Stage::Enrich;
+    if (!m_coverReady) m_coverArtClient->getCover(releaseId, token);
+    if (!m_linksReady) m_externalLinksClient->getInfoByMbid(artistId, token);
     checkReady();
 }
-
-void music_data::ResolverService::handleCoverResult(const QJsonObject &json)
+void ResolverService::handleCoverResult(quint64 token, const QJsonObject &json)
 {
-    auto images = json.value("images").toArray();
-
-    if (!images.isEmpty()) {
-        auto first = images[0].toObject();
-        QString coverUrl = first.value("image").toString();
-
-        m_pending.track.coverUrl = coverUrl;
-    } else {
-        qDebug() << "No cover found";
+    if (token != m_generation || m_stage != Stage::Enrich || m_coverReady) return;
+    const auto images = json["images"].toArray();
+    QJsonObject chosen;
+    for (const auto &value : images) {
+        const auto image = value.toObject();
+        if (chosen.isEmpty() || image["front"].toBool()) chosen = image;
+        if (image["front"].toBool()) break;
     }
-
-    m_pending.coverReady = true;
+    const auto thumbs = chosen["thumbnails"].toObject();
+    const QUrl url(thumbs["250"].toString(chosen["image"].toString()));
+    if (url.isValid() && (url.scheme() == "http" || url.scheme() == "https")) m_track.coverUrl = url.toString();
+    m_coverReady = true;
     checkReady();
 }
-
-void music_data::ResolverService::handleLinksResult(const QMap<QString, QList<QUrl> > &links)
+void ResolverService::handleLinksResult(quint64 token, const QMap<QString, QList<QUrl>> &links)
 {
-    qDebug() << "LINKS";
-
-    for (auto it = links.begin(); it != links.end(); ++it) {
-        const QString &type = it.key();
-        const QList<QUrl> &urls = it.value();
-
-        qDebug() << "Type:" << type;
-
-        for (const QUrl &url : urls) {
-            qDebug() << "  -" << url.toString();
-        }
-    }
-
-    m_pending.track.links = links;
-    m_pending.linksReady = true;
-
+    if (token != m_generation || m_stage != Stage::Enrich || m_linksReady) return;
+    m_track.links = links;
+    m_linksReady = true;
     checkReady();
 }
-
-void music_data::ResolverService::checkReady()
+void ResolverService::checkReady()
 {
-    qDebug() << "\n=== PENDING STATE ===";
-    qDebug() << "lookupReady:" << m_pending.lookupReady;
-    qDebug() << "coverReady:" << m_pending.coverReady;
-    qDebug() << "linksReady:" << m_pending.linksReady;
-
-    qDebug() << "\n--- TRACK DATA ---";
-    qDebug() << "Artist:" << m_pending.track.artist;
-    qDebug() << "Title:" << m_pending.track.title;
-    qDebug() << "Album:" << m_pending.track.album;
-    qDebug() << "ReleaseDate:" << m_pending.track.releaseDate;
-    qDebug() << "Cover URL:" << m_pending.track.coverUrl;
-
-    qDebug() << "\n--- LINKS ---";
-    if (m_pending.track.links.isEmpty()) {
-        qDebug() << "No links";
-    } else {
-        for (auto it = m_pending.track.links.begin(); it != m_pending.track.links.end(); ++it) {
-            const QString &type = it.key();
-            const QList<QUrl> &urls = it.value();
-
-            qDebug() << "Type:" << type;
-
-            for (const QUrl &url : urls) {
-                qDebug() << "  -" << url.toString();
-            }
-        }
-    }
-
-    qDebug() << "====================\n";
-
-    if (m_pending.lookupReady && m_pending.coverReady && m_pending.linksReady) {
-        qDebug() << "=== TRACK READY ===";
-
-        emit trackReady(m_pending.track);
-
-        m_pending = PendingTrack{};
+    if (m_stage == Stage::Enrich && m_coverReady && m_linksReady) {
+        m_stage = Stage::Idle;
+        emit trackReady(m_track);
     }
 }

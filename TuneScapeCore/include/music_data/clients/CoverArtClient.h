@@ -1,23 +1,19 @@
 #ifndef COVERARTCLIENT_H
 #define COVERARTCLIENT_H
-#include <QNetworkAccessManager>
-#include <QObject>
-
+#include "JsonRequestQueue.h"
 namespace music_data {
 class CoverArtClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit CoverArtClient(QObject *parent = nullptr);
-
-    void getCover(const QString &releaseMbid);
+    explicit CoverArtClient(QObject *parent = nullptr, QUrl base = QUrl("https://coverartarchive.org/release/"), int timeoutMs = 8000);
+    void getCover(const QString &mbid, quint64 token = 0);
+    void cancel() { m_requests.cancel(); }
 signals:
-    void coverFinished(const QJsonObject &json);
-
+    void coverFinished(quint64 token, const QJsonObject &json);
 private:
-    QNetworkAccessManager *m_man;
-    QString coverUrl{};
+    QUrl m_base;
+    JsonRequestQueue m_requests;
 };
-} // namespace music_data
-
-#endif // COVERARTCLIENT_H
+}
+#endif

@@ -139,6 +139,7 @@ void TrayIcon::createNowPlayingPanel()
     nowPlayingStation->setFont(stationFont);
 
     nowPlayingTitle = new QLabel(tr("Select a station"), nowPlayingFrame);
+    nowPlayingTitle->setTextFormat(Qt::PlainText);
     nowPlayingTitle->setTextInteractionFlags(Qt::NoTextInteraction);
 
     QFont titleFont = nowPlayingTitle->font();
@@ -596,10 +597,9 @@ void TrayIcon::trayMenuClicked(QAction *action)
 
 void TrayIcon::handleTitleFromRadioList(const QString &data)
 {
+    updateNowPlayingPanel();
     if (data.isEmpty())
         return;
-
-    updateNowPlayingPanel();
 
     if (!isNotificationEnabled || recentTitles.contains(data))
         return;

@@ -1,77 +1,28 @@
 #include "include/music_data/clients/ExternalLinksClient.h"
 #include <QJsonArray>
-#include <QNetworkReply>
-#include "qjsondocument.h"
-
-music_data::ExternalLinksClient::ExternalLinksClient(QObject *parent)
-    : QObject(parent)
-    , m_man(new QNetworkAccessManager(this))
-{}
-
-void music_data::ExternalLinksClient::getInfoByMbid(const QString &mbid)
+using namespace music_data;
+ExternalLinksClient::ExternalLinksClient(QObject *parent)
+    : QObject(parent), m_requests(new JsonRequestQueue(1000, 8000, this)) {}
+void ExternalLinksClient::useQueue(JsonRequestQueue *queue, const QUrl &base)
 {
-    fetchRelations(mbid);
+    if (m_requests && m_requests->parent() == this) delete m_requests.data();
+    m_requests = queue;
+    m_base = base;
 }
-
-QMap<QString, QList<QUrl>> music_data::ExternalLinksClient::extractGroupedLinks(
-    const QJsonObject &json)
+QMap<QString, QList<QUrl>> ExternalLinksClient::extractGroupedLinks(const QJsonObject &json)
 {
-    QMap<QString, QList<QUrl>> grouped;
-
-    auto relations = json.value("relations").toArray();
-
-    for (const auto &relVal : relations) {
-        auto rel = relVal.toObject();
-
-        QString type = rel.value("type").toString().toLower().trimmed();
-        QString urlStr = rel["url"].toObject().value("resource").toString();
-
-        if (urlStr.isEmpty())
-            continue;
-
-        QUrl url(urlStr);
-
-        //QString group = normalizeType(type);
-
-        grouped[type].append(url);
+    QMap<QString, QList<QUrl>> links;
+    for (const auto &value : json["relations"].toArray()) {
+        const auto relation = value.toObject();
+        const QUrl url(relation["url"].toObject()["resource"].toString());
+        if (url.isValid() && (url.scheme() == "http" || url.scheme() == "https"))
+            links[relation["type"].toString().trimmed()].append(url);
     }
-
-    return grouped;
+    return links;
 }
-
-void music_data::ExternalLinksClient::fetchRelations(const QString &mbid)
+void ExternalLinksClient::getInfoByMbid(const QString &mbid, quint64 token)
 {
-    if (mbid.isEmpty()) {
-        emit linksReady({});
-        return;
-    }
-
-    QString url = QString("https://musicbrainz.org/ws/2/artist/%1?inc=url-rels&fmt=json").arg(mbid);
-
-    QNetworkRequest req((QUrl(url)));
-    req.setRawHeader("User-Agent", "TuneScape/5.0.0 grzesiekkedzior@gmail.com");
-
-    auto reply = m_man->get(req);
-
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        reply->deleteLater();
-
-        if (reply->error() != QNetworkReply::NoError) {
-            qDebug() << "ExternalLinks error:" << reply->errorString();
-            emit linksReady({});
-            return;
-        }
-
-        auto data = reply->readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(data);
-
-        if (!doc.isObject()) {
-            emit linksReady({});
-            return;
-        }
-
-        auto links = extractGroupedLinks(doc.object());
-
-        emit linksReady(links);
-    });
+    if (!m_requests) return;
+    const auto url = JsonRequestQueue::withQuery(m_base.resolved(QUrl("artist/" + QString::fromLatin1(QUrl::toPercentEncoding(mbid)))), {{"inc", "url-rels"}, {"fmt", "json"}});
+    m_requests->request(url, this, token, [this](auto id, const auto &result) { emit linksReady(id, extractGroupedLinks(result.data)); });
 }

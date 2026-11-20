@@ -1,10 +1,11 @@
 #ifndef QUERYDATA_H
 #define QUERYDATA_H
-namespace {
+#include <QString>
+namespace music_data {
 struct QueryData
 {
     QString artist;
     QString title;
 };
-} // namespace
+} // namespace music_data
 #endif // QUERYDATA_H

@@ -1,38 +1,27 @@
 #ifndef MUSICBRAINZCLIENT_H
 #define MUSICBRAINZCLIENT_H
-
-#include <QJsonObject>
-#include <QNetworkAccessManager>
-#include <QObject>
+#include "JsonRequestQueue.h"
 #include "include/music_data/models/QueryData.h"
-
 namespace music_data {
 class MusicBrainzClient : public QObject
 {
     Q_OBJECT
 public:
-    explicit MusicBrainzClient(QObject *parent = nullptr);
-    void searchRecording(const QString &rawquery);
-    void getRecordingByID(const QString &mbid);
-
+    explicit MusicBrainzClient(QObject *parent = nullptr, QUrl base = QUrl("https://musicbrainz.org/ws/2/"), int timeoutMs = 8000);
+    void searchRecording(const QString &query, quint64 token = 0);
+    void getRecordingByID(const QString &mbid, quint64 token = 0);
+    void cancel() { m_requests.cancel(); }
+    JsonRequestQueue &requests() { return m_requests; }
+    QUrl baseUrl() const { return m_base; }
+    static QueryData extractData(const QString &raw);
+    static bool isValidTrack(const QueryData &data);
 signals:
-    void searchFinished(const QJsonObject &result);
-    void lookupFinished(const QJsonObject &result);
-
+    void searchFinished(quint64 token, const QJsonObject &result);
+    void lookupFinished(quint64 token, const QJsonObject &result);
+    void requestFailed(quint64 token, const QString &message);
 private:
-    QNetworkAccessManager *m_man;
-    const QString USER_AGENT_HEADER
-        = "TuneScape/5.0.0 ( https://github.com/grzesiekkedzior/TuneScape; "
-          "grzesiekkedzior@gmail.com )";
-    const QString RECORDING_API = "https://musicbrainz.org/ws/2/recording";
-    const QString ARTIST_API = "https://musicbrainz.org/ws/2/artist";
-
-    int m_lastRequestTime;
-
-    QueryData extractData(const QString &rawData);
-    QString cleanRawData(const QString &raw);
-    bool isValidTrack(const QueryData &data);
+    QUrl m_base;
+    JsonRequestQueue m_requests;
 };
-} // namespace music_data
-
-#endif // MUSICBRAINZCLIENT_H
+}
+#endif

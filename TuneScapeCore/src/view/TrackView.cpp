@@ -1,99 +1,61 @@
 #include "include/view/TrackView.h"
-#include <QNetworkReply>
-#include <QUrl>
 #include "include/music_data/models/Track.h"
 #include "ui_mainwindow.h"
+#include <utility>
 
-TrackView::TrackView(Ui::MainWindow *ui, QObject *parent)
-    : QObject(parent)
-    , ui(ui)
+TrackView::TrackView(Ui::MainWindow *ui, QObject *parent, IconLoader *images)
+    : QObject(parent), m_cover(ui->cover), m_title(ui->title), m_artist(ui->artist),
+      m_album(ui->album), m_year(ui->year), m_links(ui->linksBrowser),
+      m_images(images ? images : new IconLoader(this)), m_defaultCover(":/images/img/cover.png")
 {
-    networkManager = new QNetworkAccessManager(this);
-    defaulrCoverAlbum = QPixmap(":/images/img/cover.png");
-    ui->cover->setPixmap(defaulrCoverAlbum);
+    for (auto *label : {ui->title, ui->artist, ui->album, ui->year}) label->setTextFormat(Qt::PlainText);
+    m_cover->setPixmap(m_defaultCover);
     ui->description->hide();
-    ui->linksBrowser->setOpenExternalLinks(true);
+    m_links->setOpenExternalLinks(true);
+    connect(m_cover, &QObject::destroyed, this, [this] { cancelCover(); });
 }
-
-void TrackView::setTrack(const music_data::Track &track)
-{
-    if (!track.isValid())
-        return;
-
-    loadCover(track.coverUrl);
-
-    ui->title->setText(track.title);
-    ui->artist->setText(track.artist);
-    ui->album->setText(track.album);
-    ui->year->setText(track.releaseDate);
-
-    ui->linksBrowser->setHtml(generateLinksHtml(track.links));
-}
-
-void TrackView::loadCover(const QString &url)
-{
-    cancelCover();
-    ui->cover->setPixmap(defaulrCoverAlbum);
-
-    if (url.isEmpty())
-        return;
-
-    QNetworkRequest request((QUrl(url)));
-    QNetworkReply *reply = networkManager->get(request);
-    coverReply = reply;
-
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (coverReply != reply)
-            return;
-        coverReply.clear();
-        reply->deleteLater();
-        if (reply->error() != QNetworkReply::NoError)
-            return;
-
-        QPixmap pixmap;
-        if (pixmap.loadFromData(reply->readAll())) {
-            ui->cover->setPixmap(pixmap);
-            ui->cover->setScaledContents(true);
-        }
-    });
-}
-
+TrackView::~TrackView() { cancelCover(); }
 void TrackView::cancelCover()
 {
-    auto *reply = coverReply.data();
-    coverReply.clear();
-    if (reply) {
-        disconnect(reply, nullptr, this, nullptr);
-        reply->abort();
-        reply->deleteLater();
-    }
+    ++m_generation;
+    const auto request = std::exchange(m_request, 0);
+    if (m_images) m_images->cancel(request);
 }
-
-QString TrackView::generateLinksHtml(const QMap<QString, QList<QUrl>> &links)
+void TrackView::setTrack(const music_data::Track &track)
 {
+    clear();
+    if (!track.isValid() || !m_cover || !m_title || !m_artist || !m_album || !m_year || !m_links) return;
+    m_title->setText(track.title);
+    m_artist->setText(track.artist);
+    m_album->setText(track.album);
+    m_year->setText(track.releaseDate);
     QString html;
-
-    for (auto it = links.begin(); it != links.end(); ++it) {
-        html += "<b>" + it.key() + "</b><br>";
-
-        for (const QUrl &url : it.value()) {
-            html += "• <a href='" + url.toString() + "'>" + url.toString() + "</a><br>";
+    for (auto it = track.links.cbegin(); it != track.links.cend(); ++it) {
+        html += "<b>" + it.key().toHtmlEscaped() + "</b><br>";
+        for (const auto &url : it.value()) {
+            if (url.scheme() != "https" && url.scheme() != "http") continue;
+            html += QString::fromUtf8("\xe2\x80\xa2 <a href=\"") + url.toString(QUrl::FullyEncoded).toHtmlEscaped()
+                 + "\">" + url.toDisplayString().toHtmlEscaped() + "</a><br>";
         }
-
         html += "<br>";
     }
-
-    return html;
+    m_links->setHtml(html);
+    if (!m_images || track.coverUrl.isEmpty()) return;
+    const auto generation = m_generation;
+    m_request = m_images->request(QUrl(track.coverUrl), QSize(250, 250), m_cover->devicePixelRatioF(), this,
+        [this, generation](auto id, const QPixmap &image) {
+            if (generation != m_generation || id != m_request || !m_cover) return;
+            m_request = 0;
+            if (!image.isNull()) {
+                m_cover->setPixmap(image);
+                m_cover->setScaledContents(true);
+            }
+        });
 }
-
 void TrackView::clear()
 {
     cancelCover();
-    ui->cover->clear();
-    ui->title->clear();
-    ui->artist->clear();
-    ui->album->clear();
-    ui->year->clear();
-    ui->linksBrowser->clear();
-    ui->cover->setPixmap(defaulrCoverAlbum);
+    if (m_cover) m_cover->setPixmap(m_defaultCover);
+    for (const auto &label : {m_title, m_artist, m_album, m_year}) if (label) label->clear();
+    if (m_links) m_links->clear();
 }

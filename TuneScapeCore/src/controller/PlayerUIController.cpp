@@ -52,6 +52,8 @@ void PlayerUIController::setMetadata(const QString &metadata)
     Q_ASSERT(m_ui);
     Q_ASSERT(m_miniPlayer);
 
+    m_ui->infoData->setTextFormat(Qt::PlainText);
+    m_miniPlayer->getMui()->radioText->setTextFormat(Qt::PlainText);
     m_ui->infoData->setText(metadata);
     m_miniPlayer->getMui()->radioText->setText(metadata);
 }

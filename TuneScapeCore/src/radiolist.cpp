@@ -12,6 +12,7 @@
 #include <QTimer>
 #include <QHeaderView>
 #include <QJsonObject>
+#include <QRegularExpression>
 #include <QUrl>
 #include <algorithm>
 #include <utility>
@@ -575,13 +576,12 @@ void RadioList::addRadioToFavorite()
 
 void RadioList::handleDataReceived(quint64 generation, const QString &data)
 {
-    if (generation != m_playback->generation() || !m_playback->hasActiveSession())
+    if (!ui || !m_playback || generation != m_playback->generation() || !m_playback->hasActiveSession())
         return;
-    const int start = data.indexOf("StreamTitle='");
-    const int end = data.indexOf("';", start);
-    if (start < 0 || end < 0)
-        return;
-    const QString title = data.mid(start + 13, end - (start + 13));
+    static const QRegularExpression field("(?:^|;)\\s*StreamTitle='(.*?)';", QRegularExpression::DotMatchesEverythingOption);
+    const auto match = field.match(data);
+    if (!match.hasMatch()) return;
+    const QString title = match.captured(1).trimmed().normalized(QString::NormalizationForm_C);
     if (title == m_trackTitle)
         return;
     m_trackTitle = title;

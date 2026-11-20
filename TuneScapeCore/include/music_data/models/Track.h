@@ -16,7 +16,7 @@ struct Track
     QString coverUrl;
     QMap<QString, QList<QUrl>> links;
 
-    bool isValid() const { return !artist.isEmpty() && !title.isEmpty(); }
+    bool isValid() const { return !title.trimmed().isEmpty(); }
 };
 } // namespace music_data
 #endif // TRACK_H

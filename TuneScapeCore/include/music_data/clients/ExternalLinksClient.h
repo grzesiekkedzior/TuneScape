@@ -1,25 +1,21 @@
 #ifndef EXTERNALLINKSCLIENT_H
 #define EXTERNALLINKSCLIENT_H
-#include <QJsonObject>
-#include <QMap>
-#include <QNetworkAccessManager>
-#include <QObject>
-
+#include "JsonRequestQueue.h"
 namespace music_data {
 class ExternalLinksClient : public QObject
 {
     Q_OBJECT
 public:
     explicit ExternalLinksClient(QObject *parent = nullptr);
-    void getInfoByMbid(const QString &mbid);
+    void useQueue(JsonRequestQueue *queue, const QUrl &base);
+    void getInfoByMbid(const QString &mbid, quint64 token = 0);
+    void fetchRelations(const QString &mbid) { getInfoByMbid(mbid); }
     QMap<QString, QList<QUrl>> extractGroupedLinks(const QJsonObject &json);
-    void fetchRelations(const QString &mbid);
 signals:
-    void linksReady(const QMap<QString, QList<QUrl>> &links);
-
+    void linksReady(quint64 token, const QMap<QString, QList<QUrl>> &links);
 private:
-    QNetworkAccessManager *m_man;
+    QPointer<JsonRequestQueue> m_requests;
+    QUrl m_base = QUrl("https://musicbrainz.org/ws/2/");
 };
-} // namespace music_data
-
-#endif // EXTERNALLINKSCLIENT_H
+}
+#endif

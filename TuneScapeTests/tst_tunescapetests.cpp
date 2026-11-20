@@ -17,6 +17,7 @@
 #include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QUrlQuery>
 #include <QtTest>
 #include <QSortFilterProxyModel>
 #include "ui_mainwindow.h"
@@ -25,6 +26,7 @@
 #include "include/jsonlistprocessor.h"
 #include "include/trayicon.h"
 #include "include/music_data/models/Track.h"
+#include "include/music_data/services/ResolverService.h"
 #include "include/view/TrackView.h"
 #include "include/RadioBrowserApi.h"
 #include "include/miniplayer.h"
@@ -130,6 +132,18 @@ QByteArray imageFixture(const QSize &size, const QColor &color)
     QBuffer output(&bytes);
     output.open(QIODevice::WriteOnly);
     return image.save(&output, "PNG") ? bytes : QByteArray();
+}
+
+QByteArray icyBlock(const QByteArray &metadata)
+{
+    const int blocks = (metadata.size() + 15) / 16;
+    return QByteArray("AUD!") + char(blocks) + metadata + QByteArray(blocks * 16 - metadata.size(), '\0');
+}
+
+bool respondIcy(QTcpSocket *socket, const QByteArray &metadata)
+{
+    const auto bytes = QByteArray("HTTP/1.1 200 OK\r\nicy-metaint: 4\r\nConnection: close\r\n\r\n") + icyBlock(metadata);
+    return socket->write(bytes) == bytes.size();
 }
 
 QColor modelIconColor(const QAbstractItemModel &model, int row)
@@ -288,6 +302,18 @@ class TuneScapeTests : public QObject
     Q_OBJECT
 
 private slots:
+    void testMetadataNormalization_data();
+    void testMetadataNormalization();
+    void testMetadataHttpFailures_data();
+    void testMetadataHttpFailures();
+    void testMetadataQueuePacingAndCancellation();
+    void testMetadataCacheBudget();
+    void testMetadataEmptyResults();
+    void testMetadataResolverIdentityAndCache();
+    void testMetadataSessionCancellation();
+    void testMetadataCoverAndViewLifetime();
+    void testIcyFramingAndPresentation();
+    void testIcyMissingAndPartialBlocks();
     void initTestCase();
     void cleanupTestCase();
     void testRadioListPause();
@@ -2836,7 +2862,7 @@ void TuneScapeTests::testStationChangeStopsRecording()
     audio.confirmPlaying();
     QTRY_VERIFY(server.client("/old-metadata"));
     auto *oldMetadata = server.client("/old-metadata");
-    QVERIFY(server.respond(oldMetadata, "StreamTitle='Old';"));
+    QVERIFY(respondIcy(oldMetadata, "StreamTitle='Old';"));
     QTRY_COMPARE(titles.size(), 1);
     QCOMPARE(titles.first().at(0).toString(), QString("Old"));
 
@@ -2854,7 +2880,8 @@ void TuneScapeTests::testStationChangeStopsRecording()
     QCOMPARE(server.client("/recording")->write(" plus"), 5);
     QTRY_COMPARE(recorder.bytesWritten(), 14);
 
-    QCOMPARE(oldMetadata->write("StreamTitle='Late';"), 19);
+    const auto late = icyBlock("StreamTitle='Late';");
+    QCOMPARE(oldMetadata->write(late), late.size());
     playback.play(playbackStation("New station", server.url("/new-metadata")));
     QCOMPARE(recorder.state(), StreamRecorder::State::Idle);
     QCOMPARE(ui.record->toolTip(), RadioList::tr("Start recording"));
@@ -2863,7 +2890,7 @@ void TuneScapeTests::testStationChangeStopsRecording()
     QTRY_COMPARE(server.client("/recording")->state(), QAbstractSocket::UnconnectedState);
     QTRY_COMPARE(oldMetadata->state(), QAbstractSocket::UnconnectedState);
     QTRY_VERIFY(server.client("/new-metadata"));
-    QVERIFY(server.respond(server.client("/new-metadata"), "StreamTitle='New';"));
+    QVERIFY(respondIcy(server.client("/new-metadata"), "StreamTitle='New';"));
     QTRY_COMPARE(titles.size(), 2);
     QCOMPARE(titles.last().at(0).toString(), QString("New"));
 }
@@ -2884,6 +2911,372 @@ void TuneScapeTests::testRecorderDestructionClosesSession()
 
     QTRY_COMPARE(server.client("/shutdown")->state(), QAbstractSocket::UnconnectedState);
     QCOMPARE(fileContents(path), QByteArray("audio at shutdown"));
+}
+
+namespace {
+const QString RecordingId = "00000000-0000-0000-0000-000000000001";
+const QString ReleaseId = "00000000-0000-0000-0000-000000000002";
+const QString ArtistId = "00000000-0000-0000-0000-000000000003";
+QJsonObject recording(const QString &title)
+{
+    return {{"id", RecordingId}, {"title", title},
+            {"artist-credit", QJsonArray{QJsonObject{{"name", "Artist"}, {"artist", QJsonObject{{"id", ArtistId}, {"name", "Artist"}}}}}},
+            {"releases", QJsonArray{QJsonObject{{"id", ReleaseId}, {"title", "Album"}, {"date", "2024"}}}}};
+}
+std::unique_ptr<music_data::ResolverService> metadataResolver(TestHttpServer &http, int timeout = 3000)
+{
+    return std::make_unique<music_data::ResolverService>(
+        new music_data::MusicBrainzClient(nullptr, http.url("/mb/"), timeout),
+        new music_data::CoverArtClient(nullptr, http.url("/cover/"), timeout),
+        new music_data::ExternalLinksClient);
+}
+QByteArray jsonBytes(const QJsonObject &json) { return QJsonDocument(json).toJson(QJsonDocument::Compact); }
+}
+
+void TuneScapeTests::testMetadataNormalization_data()
+{
+    QTest::addColumn<QString>("raw"); QTest::addColumn<QString>("artist"); QTest::addColumn<QString>("title");
+    QTest::newRow("unicode") << QString::fromUtf8("  Bj\xc3\xb6rk - J\xc3\xb3ga  ") << QString::fromUtf8("Bj\xc3\xb6rk") << QString::fromUtf8("J\xc3\xb3ga");
+    QTest::newRow("title-only") << QString("Only a title") << QString() << QString("Only a title");
+    QTest::newRow("punctuation") << QString("AC/DC & Friends - Song: \"A+B\"") << QString("AC/DC & Friends") << QString("Song: \"A+B\"");
+    QTest::newRow("do-not-strip-version") << QString("Artist - Song (Live)") << QString("Artist") << QString("Song (Live)");
+    QTest::newRow("empty") << QString("   ") << QString() << QString();
+    QTest::newRow("damaged") << QString(QChar(1)) << QString() << QString();
+}
+void TuneScapeTests::testMetadataNormalization()
+{
+    QFETCH(QString, raw); QFETCH(QString, artist); QFETCH(QString, title);
+    const auto parsed = music_data::MusicBrainzClient::extractData(raw);
+    QCOMPARE(parsed.artist, artist); QCOMPARE(parsed.title, title);
+    QCOMPARE(music_data::MusicBrainzClient::isValidTrack(parsed), !title.isEmpty());
+}
+
+void TuneScapeTests::testMetadataHttpFailures_data()
+{
+    QTest::addColumn<int>("status");
+    QTest::newRow("404") << 404; QTest::newRow("429") << 429; QTest::newRow("500") << 500;
+    QTest::newRow("invalid-json") << 200; QTest::newRow("timeout") << 0; QTest::newRow("oversized") << 999;
+}
+void TuneScapeTests::testMetadataHttpFailures()
+{
+    QFETCH(int, status);
+    TestHttpServer http; QVERIFY(http.listen());
+    music_data::JsonRequestQueue queue(0, status == 0 ? 150 : 3000);
+    QObject receiver;
+    int completions = 0;
+    QList<quint64> tokens;
+    const auto receive = [&](quint64 token, const auto &result) {
+        ++completions; tokens.append(token);
+        QVERIFY(result.data.isEmpty()); QVERIFY(!result.error.isEmpty());
+    };
+    queue.request(http.url("/failure"), &receiver, 1, receive);
+    queue.request(http.url("/failure"), &receiver, 2, receive);
+    QTRY_VERIFY(http.client("/failure"));
+    if (status) {
+        const auto body = status == 999 ? QByteArray(1024 * 1024 + 1, 'x') : QByteArray("broken");
+        QVERIFY(http.respondJson("/failure", body, status == 999 ? "200 OK" : QByteArray::number(status) + " Test"));
+    }
+    QTRY_COMPARE(completions, 2);
+    QCOMPARE(tokens, QList<quint64>({1, 2}));
+    QCOMPARE(http.requestCount("/failure"), 1);
+    queue.request(http.url("/failure"), &receiver, 3, receive);
+    QTRY_COMPARE(completions, 3);
+    QCOMPARE(http.requestCount("/failure"), 1); // Negative cache prevents retry storms.
+    if (status == 429) {
+        queue.request(http.url("/backoff"), &receiver, 4, receive);
+        QTest::qWait(50); // Run the event loop: a zero-spacing queue must still respect server backoff.
+        QCOMPARE(http.requestCount("/backoff"), 0);
+        queue.cancel();
+    }
+}
+
+void TuneScapeTests::testMetadataQueuePacingAndCancellation()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    music_data::JsonRequestQueue queue(1000, 3000);
+    QObject receiver;
+    QElapsedTimer clock; clock.start();
+    QList<qint64> starts;
+    http.onRequest = [&](QTcpSocket *socket, const auto &) {
+        starts.append(clock.elapsed());
+        http.respond(socket, "{}", 2, "200 OK", "application/json"); socket->disconnectFromHost();
+    };
+    int completed = 0;
+    const auto receive = [&](auto, const auto &) { ++completed; };
+    queue.request(http.url("/search"), &receiver, 1, receive);
+    queue.request(http.url("/lookup"), &receiver, 1, receive);
+    QTRY_COMPARE(completed, 2);
+    QVERIFY(starts[1] - starts[0] >= 900);
+    queue.request(http.url("/pending"), &receiver, 2, receive);
+    queue.cancel(); // Queued work is canceled, without resetting the rate clock.
+    QCOMPARE(http.requestCount("/pending"), 0);
+    queue.request(http.url("/search"), &receiver, 3, receive); // Async cache callback must also be canceled.
+    queue.cancel();
+    QCoreApplication::processEvents();
+    QCOMPARE(completed, 2);
+    http.onRequest = {};
+    auto other = std::make_unique<music_data::JsonRequestQueue>(0, 3000);
+    other->request(http.url("/active"), &receiver, 4, receive);
+    QTRY_VERIFY(http.client("/active"));
+    other.reset();
+    QTRY_COMPARE(http.client("/active")->state(), QAbstractSocket::UnconnectedState);
+    QCOMPARE(completed, 2);
+}
+
+void TuneScapeTests::testMetadataResolverIdentityAndCache()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    auto resolver = metadataResolver(http);
+    auto *mb = resolver->findChild<music_data::MusicBrainzClient *>();
+    auto *cover = resolver->findChild<music_data::CoverArtClient *>();
+    auto *links = resolver->findChild<music_data::ExternalLinksClient *>();
+    QSignalSpy relations(links, &music_data::ExternalLinksClient::linksReady);
+    QSignalSpy searches(mb, &music_data::MusicBrainzClient::searchFinished);
+    QList<music_data::Track> ready;
+    connect(resolver.get(), &music_data::ResolverService::trackReady, this, [&](const auto &track) { ready.append(track); });
+    QByteArray searchTarget;
+    http.onRequest = [&](QTcpSocket *socket, const QByteArray &target) {
+        const auto path = QUrl::fromEncoded(target).path();
+        if (path == "/mb/recording") {
+            searchTarget = target;
+            const QJsonObject response{{"recordings", QJsonArray{recording("Wrong song"), recording("One")}}};
+            const auto bytes = jsonBytes(response); http.respond(socket, bytes, bytes.size(), "200 OK", "application/json"); socket->disconnectFromHost();
+        } else if (path.startsWith("/mb/recording/")) {
+            const auto bytes = jsonBytes(recording("One")); http.respond(socket, bytes, bytes.size(), "200 OK", "application/json"); socket->disconnectFromHost();
+        } else if (path.startsWith("/mb/artist/")) {
+            http.respond(socket, "{}", 2, "200 OK", "application/json"); socket->disconnectFromHost();
+        }
+    };
+    resolver->resolveTrack("Artist - One");
+    for (int i = 0; i < 10; ++i) resolver->resolveTrack(" Artist - One ");
+    QCOMPARE(ready.size(), 1);
+    QTRY_VERIFY(http.client("/cover/" + ReleaseId.toUtf8()));
+    QTRY_COMPARE(http.requestCount(), 4); // search + lookup + relations + cover JSON
+    QTRY_COMPARE(relations.size(), 1); // Relations must have reached the cache before cancellation.
+    const auto firstToken = searches.first().at(0).toULongLong();
+    const auto pendingCover = QPointer<QTcpSocket>(http.client("/cover/" + ReleaseId.toUtf8()));
+    resolver->resolveTrack("Artist - Two");
+    QVERIFY(ready.last().coverUrl.isEmpty());
+    resolver->resolveTrack("Artist - One");
+    emit cover->coverFinished(firstToken, {{"images", QJsonArray{QJsonObject{{"front", true}, {"image", http.url("/wrong.png").toString()}}}}});
+    emit mb->lookupFinished(firstToken, recording("Wrong song"));
+    QCOMPARE(ready.last().title, QString("One"));
+    QVERIFY(ready.last().coverUrl.isEmpty());
+    QTRY_VERIFY(!pendingCover || pendingCover->state() == QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(http.requestCount("/cover/" + ReleaseId.toUtf8()), 2);
+    const QJsonObject artwork{{"images", QJsonArray{QJsonObject{{"front", true}, {"image", http.url("/full.png").toString()},
+        {"thumbnails", QJsonObject{{"250", http.url("/front.png").toString()}}}}}}};
+    QVERIFY(http.respondJson("/cover/" + ReleaseId.toUtf8(), jsonBytes(artwork)));
+    QTRY_COMPARE(ready.last().coverUrl, http.url("/front.png").toString());
+    QCOMPARE(ready.last().artist, QString("Artist")); QCOMPARE(ready.last().album, QString("Album"));
+    QCOMPARE(http.requestCount(searchTarget), 1);
+    QCOMPARE(http.requestCount(), 5); // Other JSON results were reused; Two was canceled while queued.
+    const auto count = http.requestCount();
+    resolver->cancel(); resolver->resolveTrack("Artist - One");
+    QTRY_COMPARE(ready.last().coverUrl, http.url("/front.png").toString());
+    QCOMPARE(http.requestCount(), count); // Entire resolution from positive cache.
+    resolver->cancel();
+    const auto before = ready.size();
+    emit cover->coverFinished(firstToken, artwork);
+    QCOMPARE(ready.size(), before);
+    qInfo() << "Metadata GETs: cold=4, duplicate=0, warm=0; canceled cover restarted=1";
+}
+
+void TuneScapeTests::testMetadataSessionCancellation()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    QByteArray lastTarget;
+    http.onRequest = [&](QTcpSocket *, const QByteArray &target) { lastTarget = target; };
+    auto resolver = metadataResolver(http);
+    ControlledAudio audio; PlaybackController playback(audio);
+    connect(&playback, &PlaybackController::sessionChanged, resolver.get(), &music_data::ResolverService::cancel);
+    int cleared = 0;
+    connect(resolver.get(), &music_data::ResolverService::cleared, this, [&] { ++cleared; });
+    playback.play(playbackStation("A", http.url("/a")));
+    resolver->resolveTrack("Artist - A song");
+    QTRY_COMPARE(http.requestCount(), 1);
+    QByteArray firstTarget;
+    // Derive the target using the same public URL encoder, not a private request ID.
+    firstTarget = music_data::JsonRequestQueue::withQuery(http.url("/mb/recording"),
+        {{"query", "recording:\"A song\" AND artist:\"Artist\""}, {"fmt", "json"}, {"limit", "5"}}).toEncoded(QUrl::RemoveScheme | QUrl::RemoveAuthority);
+    auto *old = http.client(firstTarget); QVERIFY(old);
+    audio.confirmPlaying(); playback.pause();
+    QCOMPARE(old->state(), QAbstractSocket::ConnectedState);
+    const auto generation = playback.generation();
+    playback.resume(); QCOMPARE(playback.generation(), generation);
+    QCOMPARE(http.requestCount(), 1);
+    playback.play(playbackStation("B", http.url("/b")));
+    resolver->resolveTrack("Artist - B song");
+    playback.play(playbackStation("A", http.url("/a")));
+    resolver->resolveTrack("Artist - A song");
+    QTRY_COMPARE(old->state(), QAbstractSocket::UnconnectedState);
+    QTRY_COMPARE(http.requestCount(firstTarget), 2);
+    playback.stop();
+    QTRY_COMPARE(http.client(firstTarget)->state(), QAbstractSocket::UnconnectedState);
+    QVERIFY(cleared >= 4);
+    resolver->resolveTrack(QString::fromUtf8("AC/DC & Friends - Song: \"A+B\""));
+    QTRY_COMPARE(http.requestCount(), 3);
+    QVERIFY(lastTarget.contains("%2B"));
+    const QUrlQuery query(QUrl::fromEncoded(lastTarget));
+    QCOMPARE(query.queryItemValue("query", QUrl::FullyDecoded), QString("recording:\"Song: \\\"A+B\\\"\" AND artist:\"AC/DC & Friends\""));
+    QVERIFY(http.request(lastTarget).contains("User-Agent: TuneScape/6.0"));
+    // Session teardown also cancels queued and active operations.
+    resolver.reset();
+    QTRY_COMPARE(http.activeConnections(), 0);
+}
+
+void TuneScapeTests::testMetadataCoverAndViewLifetime()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    IconLoader images;
+    auto window = std::make_unique<QMainWindow>(); Ui::MainWindow ui; ui.setupUi(window.get());
+    auto view = std::make_unique<TrackView>(&ui, nullptr, &images);
+    music_data::Track track; track.title = "Old"; track.coverUrl = http.url("/old.png").toString();
+    view->setTrack(track); QTRY_VERIFY(http.client("/old.png"));
+    track.title = "<b>New</b>"; track.coverUrl = http.url("/new.png").toString();
+    track.links["<script>"].append(QUrl("javascript:alert(1)"));
+    view->setTrack(track);
+    QTRY_COMPARE(http.client("/old.png")->state(), QAbstractSocket::UnconnectedState);
+    QTRY_VERIFY(http.client("/new.png"));
+    QVERIFY(http.respondImage("/new.png", imageFixture({32, 32}, Qt::blue)));
+    QTRY_COMPARE(ui.cover->pixmap().toImage().pixelColor(0, 0), QColor(Qt::blue));
+    QCOMPARE(ui.title->text(), track.title); QCOMPARE(ui.title->textFormat(), Qt::PlainText);
+    QVERIFY(!ui.linksBrowser->toHtml().contains("javascript:"));
+    view->clear(); QVERIFY(ui.title->text().isEmpty());
+    view->setTrack(track);
+    QTRY_COMPARE(ui.cover->pixmap().toImage().pixelColor(0, 0), QColor(Qt::blue));
+    QCOMPARE(http.requestCount("/new.png"), 1);
+    track.coverUrl = http.url("/pending.png").toString(); view->setTrack(track);
+    QTRY_VERIFY(http.client("/pending.png")); window.reset();
+    QTRY_COMPARE(http.client("/pending.png")->state(), QAbstractSocket::UnconnectedState);
+    view->setTrack(track); view->clear(); view.reset();
+}
+
+void TuneScapeTests::testIcyFramingAndPresentation()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    RadioBrowserApi api({http.url("/")}, 1500);
+    QMainWindow window; Ui::MainWindow ui; ui.setupUi(&window);
+    FavoriteManager favorites; ControlledAudio audio; PlaybackController playback(audio);
+    RadioList list(&ui, &favorites, &api, &playback);
+    TrayIcon tray(&ui, window);
+    tray.setRadioList(&list);
+    tray.setIsNotificationEnable(false);
+    QSignalSpy titles(&list, &RadioList::trackTitleReceived);
+    playback.play(playbackStation("ICY", http.url("/icy")));
+    QTRY_VERIFY(http.client("/icy"));
+    const auto title = QString::fromUtf8("Bj\xc3\xb6rk - J\xc3\xb3ga");
+    const auto metadata = QByteArray("StreamTitle='") + title.toUtf8() + "';";
+    auto *socket = http.client("/icy");
+    const QByteArray header = "HTTP/1.1 200 OK\r\nicy-metaint: 4\r\nConnection: close\r\n\r\n";
+    QCOMPARE(socket->write(header), header.size());
+    const auto block = icyBlock(metadata);
+    const int split = block.indexOf(char(0xc3)) + 1; // Fragment inside a UTF-8 code point.
+    QCOMPARE(socket->write(block.left(split)), split);
+    QCoreApplication::processEvents(); QCOMPARE(titles.size(), 0);
+    QCOMPARE(socket->write(block.mid(split)), block.size() - split);
+    QTRY_COMPARE(titles.size(), 1);
+    QCOMPARE(ui.infoData->text(), title);
+    QCOMPARE(list.miniPlayerWindow().getMui()->radioText->text(), title);
+    QPointer<QLabel> trayTitle;
+    for (auto *widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == "nowPlayingWindow") {
+            for (auto *label : widget->findChildren<QLabel *>())
+                if (label->text() == title) trayTitle = label;
+        }
+    }
+    QVERIFY(trayTitle);
+    audio.confirmPlaying(); playback.pause(); playback.resume();
+    QCOMPARE(ui.infoData->text(), title);
+    const auto repeatAndBroken = block + icyBlock("broken") + icyBlock("") + block + icyBlock("StreamTitle='';");
+    QCOMPARE(socket->write(repeatAndBroken), repeatAndBroken.size());
+    QTRY_COMPARE(titles.size(), 2); // Repeats/malformed/zero-length blocks did not publish updates.
+    QVERIFY(ui.infoData->text().isEmpty());
+    QCOMPARE(trayTitle->text(), TrayIcon::tr("Live stream"));
+    QCOMPARE(socket->write(block), block.size()); QTRY_COMPARE(titles.size(), 3);
+    playback.stop(); QVERIFY(ui.infoData->text().isEmpty());
+    QVERIFY(list.miniPlayerWindow().getMui()->radioText->text().isEmpty());
+    QCOMPARE(trayTitle->text(), TrayIcon::tr("Select a station"));
+    QTRY_COMPARE(socket->state(), QAbstractSocket::UnconnectedState);
+}
+
+void TuneScapeTests::testIcyMissingAndPartialBlocks()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    StreamReader reader; QSignalSpy data(&reader, &StreamReader::dataReceived);
+    reader.startStreaming(http.url("/no-header"), 10);
+    QTRY_VERIFY(http.client("/no-header"));
+    QVERIFY(http.respondJson("/no-header", "StreamTitle='Not metadata';"));
+    QTRY_COMPARE(http.client("/no-header")->state(), QAbstractSocket::UnconnectedState);
+    QCoreApplication::processEvents(); QCOMPARE(data.size(), 0);
+    reader.startStreaming(http.url("/partial"), 11); QTRY_VERIFY(http.client("/partial"));
+    const auto bytes = QByteArray("HTTP/1.1 200 OK\r\nicy-metaint: 4\r\nConnection: close\r\n\r\n") + icyBlock("StreamTitle='Truncated';").left(9);
+    auto *socket = http.client("/partial"); QCOMPARE(socket->write(bytes), bytes.size()); socket->disconnectFromHost();
+    QTRY_COMPARE(socket->state(), QAbstractSocket::UnconnectedState);
+    QCoreApplication::processEvents(); QCOMPARE(data.size(), 0);
+}
+
+void TuneScapeTests::testMetadataCacheBudget()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    music_data::JsonRequestQueue queue(0, 3000);
+    QObject receiver;
+    const auto payload = QByteArray("{\"payload\":\"") + QByteArray(256 * 1024, 'x') + "\"}";
+    http.onRequest = [&](QTcpSocket *socket, const auto &) {
+        http.respond(socket, payload, payload.size(), "200 OK", "application/json"); socket->disconnectFromHost();
+    };
+    int completed = 0;
+    const auto receive = [&](auto, const auto &result) {
+        QVERIFY(result.error.isEmpty()); QCOMPARE(result.data["payload"].toString().size(), 256 * 1024); ++completed;
+    };
+    for (int i = 0; i < 12; ++i) queue.request(http.url("/cache-" + QString::number(i)), &receiver, 1, receive);
+    QTRY_COMPARE(completed, 12);
+    queue.request(http.url("/cache-11"), &receiver, 2, receive);
+    QTRY_COMPARE(completed, 13); QCOMPARE(http.requestCount("/cache-11"), 1);
+    queue.request(http.url("/cache-0"), &receiver, 3, receive);
+    QTRY_COMPARE(completed, 14); QCOMPARE(http.requestCount("/cache-0"), 2);
+    qInfo() << "JSON cache budget=2 MiB; oldest item evicted after 12 x 256 KiB";
+}
+
+void TuneScapeTests::testMetadataEmptyResults()
+{
+    TestHttpServer http; QVERIFY(http.listen());
+    auto resolver = metadataResolver(http);
+    auto window = std::make_unique<QMainWindow>(); Ui::MainWindow ui; ui.setupUi(window.get());
+    IconLoader images; TrackView view(&ui, nullptr, &images);
+    connect(resolver.get(), &music_data::ResolverService::trackReady, &view, &TrackView::setTrack);
+    connect(resolver.get(), &music_data::ResolverService::cleared, &view, &TrackView::clear);
+    connect(ui.centralwidget, &QObject::destroyed, resolver.get(), &music_data::ResolverService::cancel);
+    auto *mb = resolver->findChild<music_data::MusicBrainzClient *>();
+    QSignalSpy searches(mb, &music_data::MusicBrainzClient::searchFinished);
+    http.onRequest = [&](QTcpSocket *socket, const auto &) {
+        const QByteArray body = "{\"recordings\":[]}";
+        http.respond(socket, body, body.size(), "200 OK", "application/json"); socket->disconnectFromHost();
+    };
+    resolver->resolveTrack("Only a title");
+    QTRY_COMPARE(searches.size(), 1);
+    QCOMPARE(ui.title->text(), QString("Only a title")); QVERIFY(ui.artist->text().isEmpty());
+    for (int i = 0; i < 10; ++i) resolver->resolveTrack("Only a title");
+    QCOMPARE(http.requestCount(), 1);
+    resolver->cancel(); QVERIFY(ui.title->text().isEmpty());
+    resolver->resolveTrack("Only a title"); QTRY_COMPARE(searches.size(), 2);
+    QCOMPARE(http.requestCount(), 1);
+    resolver->resolveTrack("werbung"); QVERIFY(ui.title->text().isEmpty());
+    resolver->resolveTrack("https://station.example"); resolver->resolveTrack("   ");
+    QCOMPARE(http.requestCount(), 1);
+    http.onRequest = [&](QTcpSocket *socket, const auto &) {
+        auto other = recording("Ambiguous"); other["id"] = "00000000-0000-0000-0000-000000000004";
+        const auto bytes = jsonBytes({{"recordings", QJsonArray{recording("Ambiguous"), other}}});
+        http.respond(socket, bytes, bytes.size(), "200 OK", "application/json"); socket->disconnectFromHost();
+    };
+    resolver->resolveTrack("Ambiguous"); QTRY_COMPARE(searches.size(), 3);
+    QCOMPARE(http.requestCount(), 2);
+    QCOMPARE(ui.title->text(), QString("Ambiguous")); QVERIFY(ui.album->text().isEmpty());
+    http.onRequest = {};
+    resolver->resolveTrack("Another title");
+    QTRY_COMPARE(http.requestCount(), 3);
+    window.reset();
+    QTRY_COMPARE(http.activeConnections(), 0);
 }
 
 QTEST_MAIN(TuneScapeTests)

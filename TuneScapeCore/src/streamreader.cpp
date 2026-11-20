@@ -2,6 +2,7 @@
 
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QStringDecoder>
 
 StreamReader::StreamReader(QObject *parent)
     : QObject(parent)
@@ -38,6 +39,11 @@ void StreamReader::stopStreaming()
 {
     auto *reply = m_reply.data();
     m_reply.clear();
+    m_headersRead = false;
+    m_interval = 0;
+    m_audioRemaining = 0;
+    m_metadataRemaining = -1;
+    m_metadata.clear();
     if (reply) {
         disconnect(reply, nullptr, this, nullptr);
         if (!reply->isFinished())
@@ -51,7 +57,34 @@ void StreamReader::readAvailable(QNetworkReply *reply, quint64 generation)
     if (m_reply != reply || reply->error() != QNetworkReply::NoError)
         return;
 
-    const QByteArray data = reply->readAll();
-    if (!data.isEmpty())
-        emit dataReceived(generation, QString::fromUtf8(data));
+    if (!m_headersRead) {
+        m_headersRead = true;
+        bool valid = false;
+        m_interval = reply->rawHeader("icy-metaint").toInt(&valid);
+        if (!valid || m_interval <= 0 || m_interval > 1024 * 1024) m_interval = 0;
+        m_audioRemaining = m_interval;
+    }
+    while (m_reply == reply && reply->bytesAvailable() > 0) {
+        if (!m_interval) { reply->read(65536); continue; }
+        if (m_audioRemaining > 0) {
+            m_audioRemaining -= int(reply->read(qMin(qint64(m_audioRemaining), reply->bytesAvailable())).size());
+        } else if (m_metadataRemaining < 0) {
+            m_metadataRemaining = int(static_cast<unsigned char>(reply->read(1).at(0))) * 16;
+            m_metadata.clear();
+            if (!m_metadataRemaining) { m_audioRemaining = m_interval; m_metadataRemaining = -1; }
+        } else {
+            const auto bytes = reply->read(qMin(qint64(m_metadataRemaining), reply->bytesAvailable()));
+            m_metadata += bytes;
+            m_metadataRemaining -= int(bytes.size());
+            if (!m_metadataRemaining) {
+                const auto nul = m_metadata.indexOf('\0');
+                const auto block = nul < 0 ? m_metadata : m_metadata.left(nul);
+                QStringDecoder decoder(QStringDecoder::Utf8);
+                const QString text = decoder.decode(block);
+                m_metadataRemaining = -1;
+                m_audioRemaining = m_interval;
+                emit dataReceived(generation, decoder.hasError() ? QString::fromLatin1(block) : text);
+            }
+        }
+    }
 }

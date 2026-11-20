@@ -49,7 +49,7 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
     ui->licencesTextBrowser->setOpenExternalLinks(true);
     set_icon_btn();
     start();
-    trackView = new TrackView(ui, this);
+    trackView = new TrackView(ui, this, &radioList->stationImages());
     m_resolverService = new music_data::ResolverService(new music_data::MusicBrainzClient,
                                                         new music_data::CoverArtClient,
                                                         new music_data::ExternalLinksClient, this);
@@ -66,7 +66,8 @@ MainWindow::MainWindow(Theme &theme, QWidget *parent)
             &TrackView::setTrack);
     connect(&radioList->playback(), &PlaybackController::sessionChanged,
             m_resolverService, &music_data::ResolverService::cancel);
-    connect(&radioList->playback(), &PlaybackController::sessionChanged, trackView, &TrackView::clear);
+    connect(m_resolverService, &music_data::ResolverService::cleared, trackView, &TrackView::clear);
+    connect(ui->centralwidget, &QObject::destroyed, m_resolverService, &music_data::ResolverService::cancel);
     connect(&m_theme, &Theme::themeChanged, radioList, &RadioList::updateThemeAppearance);
     connect(&m_theme, &Theme::themeChanged, &country, &Country::updateThemeAppearance);
 }
